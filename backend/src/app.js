@@ -1,0 +1,35 @@
+import express from "express";
+import cors from "cors";
+import morgan from "morgan";
+
+import { env } from "./config/env.js";
+import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
+import { healthRouter } from "./routes/health.routes.js";
+import { authRouter } from "./routes/auth.routes.js";
+import { announcementRouter } from "./routes/announcements.routes.js";
+import { ticketRouter } from "./routes/tickets.routes.js";
+import { eventRouter } from "./routes/events.routes.js";
+import { amenityRouter } from "./routes/amenities.routes.js";
+
+const app = express();
+
+app.use(
+  cors({
+    origin: env.clientOrigin,
+    credentials: true
+  })
+);
+app.use(express.json());
+app.use(morgan("dev"));
+
+app.use("/api/health", healthRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/announcements", announcementRouter);
+app.use("/api/tickets", ticketRouter);
+app.use("/api/events", eventRouter);
+app.use("/api/amenities", amenityRouter);
+
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+export { app };
