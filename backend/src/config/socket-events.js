@@ -3,6 +3,8 @@ export const SOCKET_EVENTS = {
   TICKET_CREATED: "ticket:created",
   TICKET_STATUS_UPDATED: "ticket:status_updated",
   EVENT_CREATED: "event:created",
+  EVENT_UPDATED: "event:updated",
+  EVENT_DELETED: "event:deleted",
   AMENITY_BOOKING_CREATED: "amenity:booking_created",
   AMENITY_BOOKING_STATUS_UPDATED: "amenity:booking_status_updated"
 };
