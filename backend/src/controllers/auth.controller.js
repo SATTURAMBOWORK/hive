@@ -5,6 +5,7 @@ import { Tenant } from "../models/tenant.model.js";
 import { AppError } from "../utils/app-error.js";
 import { signToken } from "../utils/jwt.js";
 import { ROLES } from "../config/roles.js";
+import { env } from "../config/env.js";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 6;
@@ -43,6 +44,10 @@ export async function register(req, res, next) {
     const email = normalizeEmail(req.body?.email);
     const password = sanitizeText(req.body?.password);
     const tenantSlug = sanitizeText(req.body?.tenantSlug).toLowerCase();
+    const desiredRole = sanitizeText(req.body?.desiredRole).toLowerCase();
+    const tenantName = sanitizeText(req.body?.tenantName);
+    const tenantCity = sanitizeText(req.body?.tenantCity) || "Bangalore";
+    const superAdminSignupKey = sanitizeText(req.body?.superAdminSignupKey);
 
     if (!fullName || !email || !password || !tenantSlug) {
       throw new AppError("fullName, email, password, tenantSlug are required", StatusCodes.BAD_REQUEST);
@@ -59,13 +64,55 @@ export async function register(req, res, next) {
       );
     }
 
-    const tenant = await Tenant.findOne({ slug: tenantSlug });
-    if (!tenant) {
-      throw new AppError("Invalid tenantSlug", StatusCodes.BAD_REQUEST);
-    }
+    let tenant = await Tenant.findOne({ slug: tenantSlug });
+    const isSuperAdminSignup = desiredRole === ROLES.SUPER_ADMIN;
 
-    if (!tenant.isActive) {
-      throw new AppError("Tenant is inactive", StatusCodes.FORBIDDEN);
+    if (isSuperAdminSignup) {
+      if (!env.superAdminSignupKey) {
+        throw new AppError(
+          "SUPER_ADMIN_SIGNUP_KEY is not configured on server",
+          StatusCodes.FORBIDDEN
+        );
+      }
+
+      if (superAdminSignupKey !== env.superAdminSignupKey) {
+        throw new AppError("Invalid super admin signup key", StatusCodes.FORBIDDEN);
+      }
+
+      if (!tenant) {
+        if (!tenantName) {
+          throw new AppError(
+            "tenantName is required when creating a new society",
+            StatusCodes.BAD_REQUEST
+          );
+        }
+
+        tenant = await Tenant.create({ slug: tenantSlug, name: tenantName, city: tenantCity });
+      }
+
+      if (!tenant.isActive) {
+        throw new AppError("Tenant is inactive", StatusCodes.FORBIDDEN);
+      }
+
+      const existingSuperAdmin = await User.findOne({
+        tenantId: tenant._id,
+        role: ROLES.SUPER_ADMIN
+      });
+
+      if (existingSuperAdmin) {
+        throw new AppError(
+          "Super admin already exists for this society",
+          StatusCodes.CONFLICT
+        );
+      }
+    } else {
+      if (!tenant) {
+        throw new AppError("Invalid tenantSlug", StatusCodes.BAD_REQUEST);
+      }
+
+      if (!tenant.isActive) {
+        throw new AppError("Tenant is inactive", StatusCodes.FORBIDDEN);
+      }
     }
 
     const existing = await User.findOne({ tenantId: tenant._id, email });
@@ -79,7 +126,7 @@ export async function register(req, res, next) {
       fullName,
       email,
       passwordHash,
-      role: ROLES.RESIDENT
+      role: isSuperAdminSignup ? ROLES.SUPER_ADMIN : ROLES.RESIDENT
     });
 
     res.status(StatusCodes.CREATED).json(buildAuthResponse(user));

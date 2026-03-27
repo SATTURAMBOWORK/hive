@@ -7,6 +7,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "seed:tenant": "node src/scripts/seed-tenant.js",
+    "seed:super-admin": "node src/scripts/seed-super-admin.js",
     "lint:todo": "echo \"Add ESLint later\""
   },
   "dependencies": {

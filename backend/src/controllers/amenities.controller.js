@@ -1,10 +1,12 @@
 import { StatusCodes } from "http-status-codes";
+import mongoose from "mongoose";
 import { AmenityBooking } from "../models/amenity-booking.model.js";
 import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const ALLOWED_STATUS_UPDATES = ["approved", "rejected", "cancelled"];
 
 function sanitizeText(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -76,6 +78,54 @@ export async function createAmenityBooking(req, res, next) {
     });
 
     res.status(StatusCodes.CREATED).json({ item: booking });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateAmenityBookingStatus(req, res, next) {
+  try {
+    const bookingId = sanitizeText(req.params?.bookingId);
+    const status = sanitizeText(req.body?.status);
+
+    if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+      throw new AppError("Invalid bookingId", StatusCodes.BAD_REQUEST);
+    }
+
+    if (!ALLOWED_STATUS_UPDATES.includes(status)) {
+      throw new AppError(
+        `status must be one of: ${ALLOWED_STATUS_UPDATES.join(", ")}`,
+        StatusCodes.BAD_REQUEST
+      );
+    }
+
+    const booking = await AmenityBooking.findOne({ _id: bookingId, tenantId: req.tenantId });
+    if (!booking) {
+      throw new AppError("Amenity booking not found", StatusCodes.NOT_FOUND);
+    }
+
+    const isApprover = ["committee", "super_admin"].includes(req.user.role);
+    const isRequester = booking.requestedBy.toString() === req.user.userId;
+
+    if (status === "cancelled") {
+      if (!isApprover && !isRequester) {
+        throw new AppError("Forbidden", StatusCodes.FORBIDDEN);
+      }
+    } else if (!isApprover) {
+      throw new AppError("Forbidden", StatusCodes.FORBIDDEN);
+    }
+
+    booking.status = status;
+    await booking.save();
+
+    const populatedBooking = await booking.populate("requestedBy", "fullName role");
+
+    const io = req.app.get("io");
+    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.AMENITY_BOOKING_STATUS_UPDATED, {
+      item: populatedBooking
+    });
+
+    res.json({ item: populatedBooking });
   } catch (error) {
     next(error);
   }

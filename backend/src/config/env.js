@@ -7,7 +7,8 @@ export const env = {
   mongoUri: process.env.MONGO_URI || "",
   jwtSecret: process.env.JWT_SECRET || "",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
-  clientOrigin: process.env.CLIENT_ORIGIN || "http://localhost:5173"
+  clientOrigin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
+  superAdminSignupKey: process.env.SUPER_ADMIN_SIGNUP_KEY || ""
 };
 
 if (!env.mongoUri) {
