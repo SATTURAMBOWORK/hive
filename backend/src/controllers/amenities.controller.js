@@ -1,9 +1,82 @@
-export async function listAmenityBookings(_req, res) {
-  // TODO (Learning Step): implement tenant booking list
-  res.json({ message: "Implement listAmenityBookings", items: [] });
+import { StatusCodes } from "http-status-codes";
+import { AmenityBooking } from "../models/amenity-booking.model.js";
+import { AppError } from "../utils/app-error.js";
+import { SOCKET_EVENTS } from "../config/socket-events.js";
+
+const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+function sanitizeText(value) {
+  return typeof value === "string" ? value.trim() : "";
 }
 
-export async function createAmenityBooking(_req, res) {
-  // TODO (Learning Step): implement conflict check and booking creation
-  res.status(201).json({ message: "Implement createAmenityBooking" });
+export async function listAmenityBookings(req, res, next) {
+  try {
+    const items = await AmenityBooking.find({ tenantId: req.tenantId })
+      .sort({ date: 1, startTime: 1, createdAt: -1 })
+      .populate("requestedBy", "fullName role");
+
+    res.json({ items });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createAmenityBooking(req, res, next) {
+  try {
+    const amenityName = sanitizeText(req.body?.amenityName);
+    const date = sanitizeText(req.body?.date);
+    const startTime = sanitizeText(req.body?.startTime);
+    const endTime = sanitizeText(req.body?.endTime);
+
+    if (!amenityName || !date || !startTime || !endTime) {
+      throw new AppError(
+        "amenityName, date, startTime and endTime are required",
+        StatusCodes.BAD_REQUEST
+      );
+    }
+
+    if (!DATE_REGEX.test(date)) {
+      throw new AppError("date must be in YYYY-MM-DD format", StatusCodes.BAD_REQUEST);
+    }
+
+    if (!TIME_REGEX.test(startTime) || !TIME_REGEX.test(endTime)) {
+      throw new AppError("startTime and endTime must be HH:mm", StatusCodes.BAD_REQUEST);
+    }
+
+    if (endTime <= startTime) {
+      throw new AppError("endTime must be after startTime", StatusCodes.BAD_REQUEST);
+    }
+
+    const conflicting = await AmenityBooking.findOne({
+      tenantId: req.tenantId,
+      amenityName,
+      date,
+      status: { $in: ["pending", "approved"] },
+      startTime: { $lt: endTime },
+      endTime: { $gt: startTime }
+    });
+
+    if (conflicting) {
+      throw new AppError("Amenity slot already booked for that time", StatusCodes.CONFLICT);
+    }
+
+    const booking = await AmenityBooking.create({
+      tenantId: req.tenantId,
+      amenityName,
+      date,
+      startTime,
+      endTime,
+      requestedBy: req.user.userId
+    });
+
+    const io = req.app.get("io");
+    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.AMENITY_BOOKING_CREATED, {
+      item: booking
+    });
+
+    res.status(StatusCodes.CREATED).json({ item: booking });
+  } catch (error) {
+    next(error);
+  }
 }
