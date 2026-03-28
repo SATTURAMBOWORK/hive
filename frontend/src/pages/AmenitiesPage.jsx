@@ -1,56 +1,121 @@
 import { useEffect, useMemo, useState } from "react";
+import { AdminManager } from "../components/AdminManager";
+import { AmenityGrid } from "../components/AmenityGrid";
 import { apiRequest } from "../components/api";
+import { BookingForm } from "../components/BookingForm";
 import { useAuth } from "../components/AuthContext";
 
-const APPROVER_STATUSES = ["approved", "rejected", "cancelled"];
+const DAY_KEYS = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday"
+];
 
-function resolveId(entity) {
-  if (!entity) return "";
-  return entity._id || entity.id || "";
+function buildOperatingHours(open, close) {
+  return DAY_KEYS.reduce((acc, day) => {
+    acc[day] = { open, close };
+    return acc;
+  }, {});
 }
 
 export function AmenitiesPage() {
   const { token, user } = useAuth();
-  const [items, setItems] = useState([]);
-  const [amenityName, setAmenityName] = useState("");
-  const [date, setDate] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+  const [amenities, setAmenities] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [activeAmenity, setActiveAmenity] = useState(null);
+  const [isBookingSubmitting, setIsBookingSubmitting] = useState(false);
+  const [bookingError, setBookingError] = useState("");
   const [error, setError] = useState("");
 
-  const isApprover = useMemo(
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [capacity, setCapacity] = useState(1);
+  const [isAutoApprove, setIsAutoApprove] = useState(false);
+  const [openTime, setOpenTime] = useState("06:00");
+  const [closeTime, setCloseTime] = useState("22:00");
+
+  const canManage = useMemo(
     () => ["committee", "super_admin"].includes(user?.role),
     [user?.role]
   );
 
-  async function loadItems() {
+  const pendingBookings = useMemo(
+    () => bookings.filter((booking) => booking.status === "pending"),
+    [bookings]
+  );
+
+  async function loadAmenities() {
+    const data = await apiRequest("/amenities", { token });
+    setAmenities(data.items || []);
+  }
+
+  async function loadBookings() {
+    const data = await apiRequest("/amenities/bookings", { token });
+    setBookings(data.items || []);
+  }
+
+  async function loadAll() {
     setError("");
     try {
-      const data = await apiRequest("/amenities/bookings", { token });
-      setItems(data.items || []);
+      await Promise.all([loadAmenities(), loadBookings()]);
     } catch (err) {
       setError(err.message);
     }
   }
 
-  async function handleCreate(event) {
+  async function handleCreateAmenity(event) {
     event.preventDefault();
     setError("");
+
+    try {
+      const data = await apiRequest("/amenities", {
+        method: "POST",
+        token,
+        body: {
+          name,
+          description,
+          isAutoApprove,
+          capacity: Number(capacity),
+          photos: [],
+          operatingHours: buildOperatingHours(openTime, closeTime)
+        }
+      });
+
+      setAmenities((prev) => [...prev, data.item]);
+      setName("");
+      setDescription("");
+      setCapacity(1);
+      setIsAutoApprove(false);
+      setOpenTime("06:00");
+      setCloseTime("22:00");
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function handleCreateBooking(payload) {
+    setBookingError("");
+    setError("");
+    setIsBookingSubmitting(true);
 
     try {
       const data = await apiRequest("/amenities/bookings", {
         method: "POST",
         token,
-        body: { amenityName, date, startTime, endTime }
+        body: payload
       });
 
-      setItems((prev) => [...prev, data.item]);
-      setAmenityName("");
-      setDate("");
-      setStartTime("");
-      setEndTime("");
+      setBookings((prev) => [data.item, ...prev]);
+      setActiveAmenity(null);
     } catch (err) {
       setError(err.message);
+      setBookingError(err.message || "Failed to create booking");
+    } finally {
+      setIsBookingSubmitting(false);
     }
   }
 
@@ -63,58 +128,84 @@ export function AmenitiesPage() {
         body: { status }
       });
 
-      setItems((prev) => prev.map((item) => (item._id === bookingId ? data.item : item)));
+      setBookings((prev) => prev.map((item) => (item._id === bookingId ? data.item : item)));
     } catch (err) {
       setError(err.message);
     }
   }
 
   useEffect(() => {
-    loadItems();
+    loadAll();
   }, []);
 
   return (
-    <section className="panel space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xl font-bold">Amenities</h2>
-        <button className="btn-muted" onClick={loadItems}>Refresh</button>
+    <section className="space-y-5">
+      <div className="panel flex items-center justify-between gap-3">
+        <h2 className="text-xl font-bold">Amenity Management</h2>
+        <button className="btn-muted" onClick={loadAll}>Refresh</button>
       </div>
 
       {error ? <p className="rounded-lg bg-rose-100 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
 
-      <form onSubmit={handleCreate} className="space-y-2 rounded-xl border border-slate-200 p-4">
-        <input className="field" placeholder="Amenity name (Gym, Pool...)" value={amenityName} onChange={(e) => setAmenityName(e.target.value)} />
-        <input className="field" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        <input className="field" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-        <input className="field" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
-        <button className="btn-primary" type="submit">Book amenity</button>
-      </form>
+      {canManage ? (
+        <form className="panel space-y-3" onSubmit={handleCreateAmenity}>
+          <h3 className="text-lg font-semibold">Create Amenity (Admin)</h3>
+          <input className="field" placeholder="Amenity name" value={name} onChange={(e) => setName(e.target.value)} required />
+          <textarea className="field min-h-24" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+          <div className="grid gap-3 md:grid-cols-2">
+            <input className="field" type="number" min="1" value={capacity} onChange={(e) => setCapacity(e.target.value)} />
+            <label className="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-700">
+              <input checked={isAutoApprove} onChange={(e) => setIsAutoApprove(e.target.checked)} type="checkbox" />
+              Auto-approve bookings
+            </label>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <input className="field" type="time" value={openTime} onChange={(e) => setOpenTime(e.target.value)} />
+            <input className="field" type="time" value={closeTime} onChange={(e) => setCloseTime(e.target.value)} />
+          </div>
+          <button className="btn-primary" type="submit">Create Amenity</button>
+        </form>
+      ) : null}
 
-      <div className="space-y-3">
-        {!items.length ? <p className="text-sm text-slate-500">No bookings found.</p> : null}
-        {items.map((item) => {
-          const isRequester = resolveId(item.requestedBy) === (user?.id || user?._id);
-          return (
-            <article key={item._id} className="rounded-xl border border-slate-200 p-4">
-              <h3 className="font-semibold">{item.amenityName}</h3>
-              <p className="mt-1 text-sm text-slate-700">{item.date} • {item.startTime} to {item.endTime}</p>
-              <p className="mt-2 text-xs text-slate-500">Status: {item.status}</p>
+      <section className="panel space-y-3">
+        <h3 className="text-lg font-semibold">Amenities</h3>
+        <AmenityGrid amenities={amenities} onBook={setActiveAmenity} />
+      </section>
 
-              <div className="mt-3 flex flex-wrap gap-2">
-                {isApprover ? APPROVER_STATUSES.map((status) => (
-                  <button key={status} className="btn-muted" type="button" onClick={() => handleStatusUpdate(item._id, status)}>
-                    Set {status}
-                  </button>
-                )) : null}
+      <section className="panel space-y-3">
+        <h3 className="text-lg font-semibold">My Society Bookings</h3>
+        {!bookings.length ? <p className="text-sm text-slate-500">No bookings yet.</p> : null}
+        {bookings.map((item) => (
+          <article key={item._id} className="rounded-xl border border-slate-200 p-4">
+            <h4 className="font-semibold text-slate-900">{item.amenityId?.name || item.amenityName}</h4>
+            <p className="mt-1 text-sm text-slate-600">
+              {item.date} • {item.startTime}-{item.endTime}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Status: {item.status} • Resident: {item.residentId?.fullName || item.requestedBy?.fullName || "Resident"}
+            </p>
+          </article>
+        ))}
+      </section>
 
-                {!isApprover && isRequester && item.status !== "cancelled" ? (
-                  <button className="btn-danger" type="button" onClick={() => handleStatusUpdate(item._id, "cancelled")}>Cancel</button>
-                ) : null}
-              </div>
-            </article>
-          );
-        })}
-      </div>
+      {canManage ? (
+        <section className="panel space-y-3">
+          <h3 className="text-lg font-semibold">Pending Approval Queue</h3>
+          <AdminManager items={pendingBookings} onStatusUpdate={handleStatusUpdate} />
+        </section>
+      ) : null}
+
+      <BookingForm
+        amenity={activeAmenity}
+        isOpen={Boolean(activeAmenity)}
+        errorMessage={bookingError}
+        isSubmitting={isBookingSubmitting}
+        onClose={() => {
+          setActiveAmenity(null);
+          setBookingError("");
+        }}
+        onSubmit={handleCreateBooking}
+      />
     </section>
   );
 }

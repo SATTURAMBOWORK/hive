@@ -1,24 +1,137 @@
 import { StatusCodes } from "http-status-codes";
 import mongoose from "mongoose";
+import { Amenity } from "../models/amenity.model.js";
 import { AmenityBooking } from "../models/amenity-booking.model.js";
 import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
+import { hasAmenityBookingConflict } from "../utils/booking-conflict.js";
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const ALLOWED_STATUS_UPDATES = ["approved", "rejected", "cancelled"];
+const DAY_KEYS = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday"
+];
 
 function sanitizeText(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function normalizePhotos(photos) {
+  if (!Array.isArray(photos)) return [];
+  return photos
+    .map((item) => sanitizeText(item))
+    .filter(Boolean)
+    .slice(0, 10);
+}
+
+function normalizeOperatingHours(rawHours) {
+  const result = {};
+
+  for (const day of DAY_KEYS) {
+    const open = sanitizeText(rawHours?.[day]?.open) || "06:00";
+    const close = sanitizeText(rawHours?.[day]?.close) || "22:00";
+
+    if (!TIME_REGEX.test(open) || !TIME_REGEX.test(close)) {
+      throw new AppError(`Invalid operating hour format for ${day}`, StatusCodes.BAD_REQUEST);
+    }
+
+    if (close <= open) {
+      throw new AppError(`close must be after open for ${day}`, StatusCodes.BAD_REQUEST);
+    }
+
+    result[day] = { open, close };
+  }
+
+  return result;
+}
+
+function getDayKeyForDate(dateString) {
+  const date = new Date(`${dateString}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    throw new AppError("Invalid booking date", StatusCodes.BAD_REQUEST);
+  }
+
+  return DAY_KEYS[date.getDay()];
+}
+
+function ensureWithinOperatingHours(amenity, date, startTime, endTime) {
+  const dayKey = getDayKeyForDate(date);
+  const dayHours = amenity.operatingHours?.[dayKey] || { open: "06:00", close: "22:00" };
+
+  if (startTime < dayHours.open || endTime > dayHours.close) {
+    throw new AppError(
+      `Selected time is outside operating hours (${dayHours.open}-${dayHours.close}) for ${dayKey}`,
+      StatusCodes.BAD_REQUEST
+    );
+  }
+}
+
+export async function createAmenity(req, res, next) {
+  try {
+    const name = sanitizeText(req.body?.name);
+    const description = sanitizeText(req.body?.description);
+    const isAutoApprove = Boolean(req.body?.isAutoApprove);
+    const capacity = Number(req.body?.capacity || 1);
+    const photos = normalizePhotos(req.body?.photos);
+    const operatingHours = normalizeOperatingHours(req.body?.operatingHours || {});
+
+    if (!name) {
+      throw new AppError("name is required", StatusCodes.BAD_REQUEST);
+    }
+
+    if (!Number.isFinite(capacity) || capacity < 1) {
+      throw new AppError("capacity must be at least 1", StatusCodes.BAD_REQUEST);
+    }
+
+    const item = await Amenity.create({
+      societyId: req.tenantId,
+      name,
+      description,
+      photos,
+      isAutoApprove,
+      capacity,
+      operatingHours
+    });
+
+    const io = req.app.get("io");
+    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.AMENITY_CREATED, { item });
+
+    res.status(StatusCodes.CREATED).json({ item });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function listAmenities(req, res, next) {
+  try {
+    const items = await Amenity.find({ societyId: req.tenantId }).sort({ name: 1 });
+    res.json({ items });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function listAmenityBookings(req, res, next) {
   try {
-    const items = await AmenityBooking.find({ tenantId: req.tenantId })
+    const items = await AmenityBooking.find({ societyId: req.tenantId })
       .sort({ date: 1, startTime: 1, createdAt: -1 })
-      .populate("requestedBy", "fullName role");
+      .populate("residentId", "fullName role")
+      .populate("amenityId", "name isAutoApprove capacity");
 
-    res.json({ items });
+    const mapped = items.map((booking) => ({
+      ...booking.toObject(),
+      amenityName: booking.amenityId?.name || booking.amenityName,
+      requestedBy: booking.residentId
+    }));
+
+    res.json({ items: mapped });
   } catch (error) {
     next(error);
   }
@@ -26,16 +139,17 @@ export async function listAmenityBookings(req, res, next) {
 
 export async function createAmenityBooking(req, res, next) {
   try {
-    const amenityName = sanitizeText(req.body?.amenityName);
+    const amenityId = sanitizeText(req.body?.amenityId);
     const date = sanitizeText(req.body?.date);
     const startTime = sanitizeText(req.body?.startTime);
     const endTime = sanitizeText(req.body?.endTime);
 
-    if (!amenityName || !date || !startTime || !endTime) {
-      throw new AppError(
-        "amenityName, date, startTime and endTime are required",
-        StatusCodes.BAD_REQUEST
-      );
+    if (!amenityId || !date || !startTime || !endTime) {
+      throw new AppError("amenityId, date, startTime and endTime are required", StatusCodes.BAD_REQUEST);
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(amenityId)) {
+      throw new AppError("Invalid amenityId", StatusCodes.BAD_REQUEST);
     }
 
     if (!DATE_REGEX.test(date)) {
@@ -50,34 +164,56 @@ export async function createAmenityBooking(req, res, next) {
       throw new AppError("endTime must be after startTime", StatusCodes.BAD_REQUEST);
     }
 
-    const conflicting = await AmenityBooking.findOne({
-      tenantId: req.tenantId,
-      amenityName,
+    const amenity = await Amenity.findOne({ _id: amenityId, societyId: req.tenantId });
+    if (!amenity) {
+      throw new AppError("Amenity not found in your society", StatusCodes.NOT_FOUND);
+    }
+
+    ensureWithinOperatingHours(amenity, date, startTime, endTime);
+
+    const isConflicting = await hasAmenityBookingConflict({
+      societyId: req.tenantId,
+      amenityId,
       date,
-      status: { $in: ["pending", "approved"] },
-      startTime: { $lt: endTime },
-      endTime: { $gt: startTime }
+      startTime,
+      endTime
     });
 
-    if (conflicting) {
+    if (isConflicting) {
       throw new AppError("Amenity slot already booked for that time", StatusCodes.CONFLICT);
     }
 
+    const status = amenity.isAutoApprove ? "approved" : "pending";
+
     const booking = await AmenityBooking.create({
-      tenantId: req.tenantId,
-      amenityName,
+      societyId: req.tenantId,
+      amenityId,
+      residentId: req.user.userId,
       date,
       startTime,
       endTime,
+      status,
+      amenityName: amenity.name,
       requestedBy: req.user.userId
     });
 
+    const populatedBooking = await booking.populate([
+      { path: "residentId", select: "fullName role" },
+      { path: "amenityId", select: "name isAutoApprove capacity" }
+    ]);
+
+    const responseItem = {
+      ...populatedBooking.toObject(),
+      amenityName: populatedBooking.amenityId?.name || populatedBooking.amenityName,
+      requestedBy: populatedBooking.residentId
+    };
+
     const io = req.app.get("io");
     io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.AMENITY_BOOKING_CREATED, {
-      item: booking
+      item: responseItem
     });
 
-    res.status(StatusCodes.CREATED).json({ item: booking });
+    res.status(StatusCodes.CREATED).json({ item: responseItem });
   } catch (error) {
     next(error);
   }
@@ -99,13 +235,13 @@ export async function updateAmenityBookingStatus(req, res, next) {
       );
     }
 
-    const booking = await AmenityBooking.findOne({ _id: bookingId, tenantId: req.tenantId });
+    const booking = await AmenityBooking.findOne({ _id: bookingId, societyId: req.tenantId });
     if (!booking) {
       throw new AppError("Amenity booking not found", StatusCodes.NOT_FOUND);
     }
 
     const isApprover = ["committee", "super_admin"].includes(req.user.role);
-    const isRequester = booking.requestedBy.toString() === req.user.userId;
+    const isRequester = String(booking.residentId) === req.user.userId;
 
     if (status === "cancelled") {
       if (!isApprover && !isRequester) {
@@ -118,14 +254,23 @@ export async function updateAmenityBookingStatus(req, res, next) {
     booking.status = status;
     await booking.save();
 
-    const populatedBooking = await booking.populate("requestedBy", "fullName role");
+    const populatedBooking = await booking.populate([
+      { path: "residentId", select: "fullName role" },
+      { path: "amenityId", select: "name isAutoApprove capacity" }
+    ]);
+
+    const responseItem = {
+      ...populatedBooking.toObject(),
+      amenityName: populatedBooking.amenityId?.name || populatedBooking.amenityName,
+      requestedBy: populatedBooking.residentId
+    };
 
     const io = req.app.get("io");
     io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.AMENITY_BOOKING_STATUS_UPDATED, {
-      item: populatedBooking
+      item: responseItem
     });
 
-    res.json({ item: populatedBooking });
+    res.json({ item: responseItem });
   } catch (error) {
     next(error);
   }
