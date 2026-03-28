@@ -18,7 +18,17 @@ export function joinTenantRoom(tenantId) {
   getSocket().emit("tenant:join", String(tenantId));
 }
 
+export function joinUserRoom(userId) {
+  if (!userId) return;
+  getSocket().emit("user:join", String(userId));
+}
+
 export function leaveTenantRoom(tenantId) {
   if (!tenantId) return;
   getSocket().emit("tenant:leave", String(tenantId));
+}
+
+export function leaveUserRoom(userId) {
+  if (!userId) return;
+  getSocket().emit("user:leave", String(userId));
 }

@@ -1,8 +1,10 @@
+@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&display=swap");
 @import "tailwindcss";
 
 @layer base {
   body {
     @apply min-h-screen bg-slate-100 text-slate-900;
+    font-family: "Nunito", "Segoe UI", sans-serif;
     background-image:
       radial-gradient(circle at 10% 10%, rgba(153, 246, 228, 0.35) 0, transparent 35%),
       radial-gradient(circle at 90% 20%, rgba(253, 230, 138, 0.35) 0, transparent 28%);

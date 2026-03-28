@@ -6,5 +6,6 @@ export const SOCKET_EVENTS = {
   EVENT_UPDATED: "event:updated",
   EVENT_DELETED: "event:deleted",
   AMENITY_BOOKING_CREATED: "amenity:booking_created",
-  AMENITY_BOOKING_STATUS_UPDATED: "amenity:booking_status_updated"
+  AMENITY_BOOKING_STATUS_UPDATED: "amenity:booking_status_updated",
+  MEMBERSHIP_APPROVED: "membership:approved"
 };

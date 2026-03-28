@@ -17,7 +17,11 @@ const userSchema = new mongoose.Schema(
       default: "resident"
     },
     flatNumber: { type: String, default: "" },
-    phone: { type: String, default: "" }
+    phone: { type: String, default: "" },
+    isVerified: { type: Boolean, default: false },
+    verificationOtpHash: { type: String, default: "" },
+    verificationOtpExpiresAt: { type: Date, default: null },
+    verificationAttempts: { type: Number, default: 0 }
   },
   { timestamps: true }
 );

@@ -12,12 +12,18 @@ export function TopNav() {
 
   return (
     <header className="panel mt-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-black tracking-tight text-slate-900">AptHive</h1>
-        <p className="text-sm text-slate-600">Apartment community workspace</p>
-      </div>
       <nav className="flex flex-wrap items-center gap-2">
         <NavLink to="/" className={navClass}>Dashboard</NavLink>
+        {isLoggedIn ? <NavLink to="/announcements" className={navClass}>Announcements</NavLink> : null}
+        {isLoggedIn ? <NavLink to="/tickets" className={navClass}>Tickets</NavLink> : null}
+        {isLoggedIn ? <NavLink to="/events" className={navClass}>Events</NavLink> : null}
+        {isLoggedIn ? <NavLink to="/amenities" className={navClass}>Amenities</NavLink> : null}
+        {isLoggedIn && ["committee", "super_admin"].includes(user?.role) ? (
+          <NavLink to="/admin/approvals" className={navClass}>Approvals</NavLink>
+        ) : null}
+        {isLoggedIn && ["committee", "super_admin"].includes(user?.role) ? (
+          <NavLink to="/admin/society-setup" className={navClass}>Society Setup</NavLink>
+        ) : null}
         {!isLoggedIn ? <NavLink to="/login" className={navClass}>Login</NavLink> : null}
         {!isLoggedIn ? <NavLink to="/register" className={navClass}>Register</NavLink> : null}
         {isLoggedIn ? <button className="btn-muted" onClick={logout}>Logout</button> : null}

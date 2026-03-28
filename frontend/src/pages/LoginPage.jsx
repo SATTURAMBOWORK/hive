@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../components/AuthContext";
+import { Building2, KeyRound } from "lucide-react";
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -21,36 +22,115 @@ export function LoginPage() {
   }
 
   return (
-    <section className="mx-auto max-w-lg panel">
-      <div className="mb-4">
-        <h2 className="text-2xl font-bold">Login</h2>
-        <p className="mt-1 text-sm text-slate-600">Sign in with your tenant slug and account credentials.</p>
-      </div>
+    <div className="flex min-h-[85vh] items-center justify-center px-4 sm:px-6 lg:px-8">
+      <div className="flex w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-xl shadow-slate-200/50 ring-1 ring-slate-200">
+        
+        {/* Left Side: Apartment Canvas */}
+        <div className="relative hidden w-full bg-slate-50 md:block md:w-5/12 lg:w-1/2 overflow-hidden">
+          {/* Beautiful Apartment Image Background */}
+          <div className="absolute inset-0 bg-[url('/apartment.png')] bg-cover bg-center opacity-90" />
 
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <input
-          className="field"
-          placeholder="Tenant slug (example: green-heights)"
-          value={form.tenantSlug}
-          onChange={(e) => setForm((prev) => ({ ...prev, tenantSlug: e.target.value }))}
-        />
-        <input
-          className="field"
-          placeholder="Email"
-          type="email"
-          value={form.email}
-          onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-        />
-        <input
-          className="field"
-          placeholder="Password"
-          type="password"
-          value={form.password}
-          onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-        />
-        <button className="btn-primary w-full" type="submit">Login</button>
-      </form>
-      {error ? <p className="mt-3 rounded-lg bg-rose-100 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
-    </section>
+          {/* Soft gradient overlay to blend into the background and make text readable */}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-100 via-slate-50/60 to-transparent" />
+          <div className="absolute bottom-12 left-10 right-10">
+            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/30">
+              <Building2 className="h-7 w-7" />
+            </div>
+            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 font-[Nunito]">
+              Welcome Home.
+            </h2>
+            <p className="mt-3 text-base leading-relaxed text-slate-600 max-w-sm">
+              A simple, beautiful place to stay connected with your apartment community. 
+              Get notices, book amenities, and more.
+            </p>
+          </div>
+        </div>
+
+        {/* Right Side: Login Form */}
+        <div className="w-full p-8 sm:p-12 md:w-7/12 lg:w-1/2 flex flex-col justify-center">
+          <div className="md:hidden mb-8 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
+              <Building2 className="h-7 w-7" />
+            </div>
+            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
+              Welcome back
+            </h2>
+          </div>
+          <div className="hidden md:block">
+            <h3 className="text-2xl font-extrabold text-slate-900 font-[Nunito]">Sign in</h3>
+            <p className="mt-2 text-sm text-slate-600">Secure access to your society portal</p>
+          </div>
+
+          <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+            {error && (
+              <div className="rounded-lg bg-rose-50 p-4 text-sm text-rose-800 ring-1 ring-inset ring-rose-200/50">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 pb-1" htmlFor="tenantSlug">
+                  Society Code
+                </label>
+                <input
+                  id="tenantSlug"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:text-sm transition-colors"
+                  placeholder="green-heights"
+                  value={form.tenantSlug}
+                  onChange={(e) => setForm((prev) => ({ ...prev, tenantSlug: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 pb-1" htmlFor="email">
+                  Email Address
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:text-sm transition-colors"
+                  placeholder="you@example.com"
+                  value={form.email}
+                  onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 pb-1" htmlFor="password">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:text-sm transition-colors"
+                  placeholder="••••••••"
+                  value={form.password}
+                  onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
+                  required
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-3.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 transition-all"
+            >
+              <KeyRound className="h-4 w-4" />
+              Sign in
+            </button>
+          </form>
+
+          <div className="mt-8 border-t border-slate-100 pt-6 text-center md:text-left">
+            <p className="text-sm text-slate-600">
+              Don't have an account?{" "}
+              <Link to="/register" className="font-semibold text-emerald-700 hover:text-emerald-800 transition-colors">
+                Register here
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
