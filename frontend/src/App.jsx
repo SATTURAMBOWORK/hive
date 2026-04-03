@@ -5,6 +5,7 @@ import { AmenitiesPage } from "./pages/AmenitiesPage";
 import { AnnouncementsPage } from "./pages/AnnouncementsPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { EventsPage } from "./pages/EventsPage";
+import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { OnboardingPage } from "./pages/OnboardingPage";
 import { RegisterPage } from "./pages/RegisterPage";
@@ -16,7 +17,7 @@ function ProtectedDashboard() {
   const { isLoggedIn, user, isMembershipApproved, isMembershipLoading } = useAuth();
 
   if (!isLoggedIn) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   if (isMembershipLoading) {
@@ -34,7 +35,7 @@ function ProtectedOnboarding() {
   const { isLoggedIn, user, isMembershipApproved, isMembershipLoading } = useAuth();
 
   if (!isLoggedIn) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   if (isMembershipLoading) {
@@ -56,7 +57,7 @@ function ProtectedFeature({ children }) {
   const { isLoggedIn, user, isMembershipApproved, isMembershipLoading } = useAuth();
 
   if (!isLoggedIn) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   if (isMembershipLoading) {
@@ -73,6 +74,7 @@ function ProtectedFeature({ children }) {
 export function App() {
   return (
     <Routes>
+      <Route path="/home" element={<LandingPage />} />
       <Route element={<MainLayout />}>
         <Route path="/" element={<ProtectedDashboard />} />
         <Route path="/onboarding" element={<ProtectedOnboarding />} />
