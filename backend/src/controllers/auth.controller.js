@@ -299,7 +299,7 @@ export async function verifyRegistration(req, res, next) {
     user.verificationAttempts = 0;
     await user.save();
 
-    res.json({ message: "Account verified successfully. Please login." });
+    res.json(buildAuthResponse(user));
   } catch (error) {
     next(error);
   }

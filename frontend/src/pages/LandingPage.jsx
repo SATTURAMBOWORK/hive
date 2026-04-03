@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
   Building2,
@@ -6,290 +7,303 @@ import {
   Wrench,
   Ticket,
   ArrowRight,
-  CheckCircle2,
-  Users,
-  Shield,
+  ChevronLeft,
+  ChevronRight,
+  Star,
   Zap,
 } from "lucide-react";
 
+/* ── Carousel data ───────────────────────────────────────── */
+const slides = [
+  {
+    image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1920&q=80",
+    tag: "Modern Society Management",
+    headline: "Your community,\nbeautifully managed.",
+    sub: "One platform for every resident, committee member and staff — no app download required.",
+  },
+  {
+    image: "https://images.unsplash.com/photo-1574362848149-11496d93a7c7?auto=format&fit=crop&w=1920&q=80",
+    tag: "Amenity Booking",
+    headline: "Book the pool.\nNo calls needed.",
+    sub: "Reserve the gym, clubhouse or pool in seconds — conflict-free and instant.",
+  },
+  {
+    image: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1920&q=80",
+    tag: "Community Events",
+    headline: "Never miss what's\nhappening around you.",
+    sub: "Society events, festivals, AGMs — all in one organised calendar.",
+  },
+  {
+    image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&w=1920&q=80",
+    tag: "Maintenance Tickets",
+    headline: "Raise a complaint.\nTrack it to resolution.",
+    sub: "Full transparency from open to closed — no more chasing anyone.",
+  },
+];
+
+/* ── Feature cards ───────────────────────────────────────── */
 const features = [
-  {
-    icon: Bell,
-    title: "Instant Announcements",
-    desc: "Never miss a notice from your society committee. Important updates delivered straight to your dashboard.",
-    color: "bg-amber-50 text-amber-600 ring-amber-100",
-  },
-  {
-    icon: CalendarDays,
-    title: "Community Events",
-    desc: "Discover, RSVP and participate in events happening right in your community.",
-    color: "bg-violet-50 text-violet-600 ring-violet-100",
-  },
-  {
-    icon: Wrench,
-    title: "Amenity Booking",
-    desc: "Reserve the gym, clubhouse, or pool in seconds — no calls, no queues, no hassle.",
-    color: "bg-sky-50 text-sky-600 ring-sky-100",
-  },
-  {
-    icon: Ticket,
-    title: "Maintenance Tickets",
-    desc: "Raise and track complaints from start to resolution with full transparency.",
-    color: "bg-rose-50 text-rose-600 ring-rose-100",
-  },
+  { icon: Bell,        title: "Announcements",    desc: "Instant notices to every resident.", iconCls: "bg-amber-50 text-amber-500" },
+  { icon: CalendarDays,title: "Events",           desc: "Shared calendar for the community.",  iconCls: "bg-violet-50 text-violet-500" },
+  { icon: Wrench,      title: "Amenity Booking",  desc: "Reserve facilities in seconds.",       iconCls: "bg-sky-50 text-sky-500" },
+  { icon: Ticket,      title: "Maintenance",      desc: "Track complaints start to finish.",    iconCls: "bg-emerald-50 text-emerald-500" },
 ];
 
-const highlights = [
-  "No app download needed — works in any browser",
-  "Role-based access for residents, committee & admins",
-  "Multi-society support with individual portals",
-  "Secure, private data per community",
+/* ── Testimonials (duplicated for seamless marquee loop) ─── */
+const testimonialsSingle = [
+  { quote: "Finally, one place for everything. No more four separate WhatsApp groups.",         name: "Ananya R.",   role: "Secretary · Prestige Lakeside, Bangalore" },
+  { quote: "Booking the gym used to mean calling the guard. Now it takes ten seconds.",          name: "Rohan M.",   role: "Resident · Green Heights, Pune" },
+  { quote: "The committee saves at least two hours a week on announcements and approvals.",       name: "Priya K.",   role: "Committee Chair · Skyline Towers, Mumbai" },
+  { quote: "Maintenance tickets used to vanish into thin air. Now we track every single one.",   name: "Vikram S.",  role: "Resident · Brigade Orchards, Bangalore" },
+  { quote: "Our residents actually read notices now. The real-time updates make all the difference.", name: "Deepa N.", role: "Secretary · Sobha City, Chennai" },
+  { quote: "Setting up the society took fifteen minutes. The onboarding is incredibly smooth.",  name: "Kiran T.",   role: "Super Admin · Lodha Palava, Mumbai" },
 ];
+// Duplicate so the marquee scrolls seamlessly
+const testimonials = [...testimonialsSingle, ...testimonialsSingle];
 
+/* ═══════════════════════════════════════════════════════════
+   Carousel
+═══════════════════════════════════════════════════════════ */
+function Carousel() {
+  const [active, setActive] = useState(0);
+  const [fading, setFading] = useState(false);
+
+  const goTo = useCallback((index) => {
+    if (index === active) return;
+    setFading(true);
+    setTimeout(() => { setActive(index); setFading(false); }, 350);
+  }, [active]);
+
+  const prev = () => goTo((active - 1 + slides.length) % slides.length);
+  const next = useCallback(() => goTo((active + 1) % slides.length), [active, goTo]);
+
+  useEffect(() => {
+    const id = setInterval(next, 5000);
+    return () => clearInterval(id);
+  }, [next]);
+
+  const slide = slides[active];
+
+  return (
+    <div className="relative h-[88vh] min-h-[520px] w-full overflow-hidden bg-slate-900">
+      {/* Background image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center transition-opacity duration-500"
+        style={{ backgroundImage: `url(${slide.image})`, opacity: fading ? 0 : 1 }}
+      />
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-black/20" />
+
+      {/* Minimal top bar */}
+      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-8 py-6">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-lg">
+            <Building2 className="h-5 w-5" />
+          </div>
+          <span className="text-lg font-extrabold tracking-tight text-white drop-shadow">SocietyHub</span>
+        </div>
+        <Link
+          to="/login"
+          className="rounded-xl border border-white/25 bg-white/10 px-5 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20"
+        >
+          Sign in
+        </Link>
+      </div>
+
+      {/* Slide content */}
+      <div
+        className="absolute inset-0 z-10 flex flex-col items-center justify-center px-6 text-center transition-opacity duration-500"
+        style={{ opacity: fading ? 0 : 1 }}
+      >
+        <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/15 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-white backdrop-blur-sm">
+          <Zap className="h-3 w-3 text-emerald-300" />
+          {slide.tag}
+        </span>
+        <h1
+          className="max-w-3xl text-4xl font-black leading-tight tracking-tight text-white drop-shadow-lg sm:text-5xl lg:text-6xl"
+          style={{ whiteSpace: "pre-line" }}
+        >
+          {slide.headline}
+        </h1>
+        <p className="mx-auto mt-5 max-w-md text-base leading-relaxed text-white/75 sm:text-lg">
+          {slide.sub}
+        </p>
+        <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row">
+          <Link
+            to="/register"
+            className="group inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-8 py-3.5 text-sm font-extrabold text-white shadow-xl transition hover:bg-emerald-500 hover:-translate-y-0.5"
+          >
+            Get started — it's free
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </Link>
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-2 rounded-2xl border border-white/30 bg-white/10 px-8 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20 hover:-translate-y-0.5"
+          >
+            I already have an account
+          </Link>
+        </div>
+      </div>
+
+      {/* Arrows */}
+      <button onClick={prev} aria-label="Previous slide"
+        className="absolute left-5 top-1/2 z-20 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/25">
+        <ChevronLeft className="h-5 w-5" />
+      </button>
+      <button onClick={next} aria-label="Next slide"
+        className="absolute right-5 top-1/2 z-20 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/25">
+        <ChevronRight className="h-5 w-5" />
+      </button>
+
+      {/* Dot indicators */}
+      <div className="absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2">
+        {slides.map((_, i) => (
+          <button key={i} onClick={() => goTo(i)} aria-label={`Slide ${i + 1}`}
+            className="transition-all duration-300"
+            style={{
+              height: "8px", borderRadius: "9999px",
+              width: i === active ? "28px" : "8px",
+              background: i === active ? "#10b981" : "rgba(255,255,255,0.4)",
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Testimonial marquee (auto-scroll, no arrows)
+═══════════════════════════════════════════════════════════ */
+function TestimonialMarquee() {
+  return (
+    <section className="overflow-hidden bg-slate-50 py-16">
+      <div className="mb-10 text-center">
+        <p className="text-xs font-bold uppercase tracking-widest text-emerald-600">What residents say</p>
+        <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-900">
+          Loved by communities across India
+        </h2>
+      </div>
+
+      {/* Fade edges */}
+      <div className="relative">
+        <div className="pointer-events-none absolute left-0 top-0 bottom-0 z-10 w-24 bg-gradient-to-r from-slate-50 to-transparent" />
+        <div className="pointer-events-none absolute right-0 top-0 bottom-0 z-10 w-24 bg-gradient-to-l from-slate-50 to-transparent" />
+
+        {/* Scrolling track */}
+        <div
+          className="flex gap-5"
+          style={{
+            width: "max-content",
+            animation: "marquee 40s linear infinite",
+          }}
+        >
+          {testimonials.map((t, i) => (
+            <div
+              key={i}
+              className="w-80 shrink-0 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+            >
+              <div className="mb-3 flex gap-0.5">
+                {[...Array(5)].map((_, s) => (
+                  <Star key={s} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <p className="text-sm leading-relaxed text-slate-600 italic">"{t.quote}"</p>
+              <div className="mt-4 border-t border-slate-100 pt-4">
+                <p className="text-sm font-bold text-slate-900">{t.name}</p>
+                <p className="text-xs text-slate-400">{t.role}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes marquee {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
+    </section>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Landing page
+═══════════════════════════════════════════════════════════ */
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-white font-[Nunito] overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden bg-white" style={{ fontFamily: "'Nunito','Segoe UI',sans-serif" }}>
 
-      {/* ── Navbar ── */}
-      <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-white shadow shadow-emerald-300">
-              <Building2 className="h-5 w-5" />
+      {/* Carousel */}
+      <Carousel />
+
+      {/* Stats strip */}
+      <section className="border-b border-slate-100 bg-white py-10">
+        <div className="mx-auto grid max-w-4xl grid-cols-2 gap-6 px-6 sm:grid-cols-4">
+          {[
+            { value: "500+",   label: "Residents" },
+            { value: "30+",    label: "Societies" },
+            { value: "1,200+", label: "Tickets resolved" },
+            { value: "100%",   label: "Browser-based" },
+          ].map(({ value, label }) => (
+            <div key={label} className="text-center">
+              <p className="text-3xl font-black text-slate-900">{value}</p>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</p>
             </div>
-            <span className="text-lg font-extrabold tracking-tight text-slate-900">SocietyHub</span>
+          ))}
+        </div>
+      </section>
+
+      {/* Features — compact 4-column grid */}
+      <section className="bg-white px-6 py-16">
+        <div className="mx-auto max-w-5xl">
+          <p className="mb-2 text-center text-xs font-bold uppercase tracking-widest text-emerald-600">Features</p>
+          <h2 className="mb-10 text-center text-3xl font-black tracking-tight text-slate-900">
+            Everything your society needs
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {features.map(({ icon: Icon, title, desc, iconCls }) => (
+              <div
+                key={title}
+                className="rounded-2xl border border-slate-100 p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+              >
+                <div className={`mb-3 inline-flex h-11 w-11 items-center justify-center rounded-xl ${iconCls}`}>
+                  <Icon className="h-5 w-5" />
+                </div>
+                <p className="font-extrabold text-slate-900">{title}</p>
+                <p className="mt-1 text-sm text-slate-500">{desc}</p>
+              </div>
+            ))}
           </div>
+        </div>
+      </section>
+
+      {/* Testimonial marquee */}
+      <TestimonialMarquee />
+
+      {/* Footer with inline CTA */}
+      <footer className="border-t border-slate-100 bg-white px-6 py-10">
+        <div className="mx-auto flex max-w-5xl flex-col items-center gap-6 sm:flex-row sm:justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-600 text-white">
+              <Building2 className="h-4 w-4" />
+            </div>
+            <span className="text-base font-extrabold text-slate-800">SocietyHub</span>
+          </div>
+          <p className="text-xs text-slate-400">© {new Date().getFullYear()} SocietyHub. All rights reserved.</p>
           <div className="flex items-center gap-3">
-            <Link
-              to="/login"
-              className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-            >
+            <Link to="/login" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition">
               Sign in
             </Link>
             <Link
               to="/register"
-              className="rounded-xl bg-emerald-600 px-5 py-2 text-sm font-bold text-white shadow shadow-emerald-200 transition hover:bg-emerald-700 hover:shadow-md"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700"
             >
-              Get Started
+              Get started <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
         </div>
-      </header>
-
-      {/* ── Hero ── */}
-      <section className="relative isolate overflow-hidden bg-white px-6 pt-20 pb-28 text-center">
-        {/* Decorative blobs */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-32 left-1/2 -z-10 -translate-x-1/2 h-[600px] w-[900px] rounded-full bg-emerald-100 opacity-40 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute top-40 right-0 -z-10 h-72 w-72 rounded-full bg-amber-100 opacity-50 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute top-20 left-0 -z-10 h-56 w-56 rounded-full bg-violet-100 opacity-40 blur-3xl"
-        />
-
-        <div className="mx-auto max-w-3xl">
-          <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-emerald-700 ring-1 ring-emerald-200 mb-6">
-            <Zap className="h-3.5 w-3.5" /> Modern Society Management
-          </span>
-
-          <h1 className="text-5xl font-black leading-tight tracking-tight text-slate-900 sm:text-6xl lg:text-7xl">
-            Your apartment.{" "}
-            <span className="relative inline-block">
-              <span className="relative z-10 text-emerald-600">Simplified.</span>
-              <span
-                aria-hidden
-                className="absolute inset-x-0 bottom-1 -z-0 h-3 rounded bg-emerald-100"
-              />
-            </span>
-          </h1>
-
-          <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-slate-500 sm:text-xl">
-            One platform for announcements, events, amenity booking and maintenance
-            tickets — built for residents who value their time.
-          </p>
-
-          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link
-              to="/register"
-              className="group inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-8 py-4 text-base font-extrabold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700 hover:shadow-emerald-300 hover:-translate-y-0.5"
-            >
-              Create your community
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Link>
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-8 py-4 text-base font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-0.5"
-            >
-              I already have an account
-            </Link>
-          </div>
-        </div>
-
-        {/* Mock UI preview card */}
-        <div className="mx-auto mt-16 max-w-4xl">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 shadow-2xl shadow-slate-200/60 ring-1 ring-slate-100">
-            <div className="rounded-xl bg-white p-6 text-left shadow-inner">
-              <div className="flex items-center gap-3 border-b border-slate-100 pb-4 mb-5">
-                <div className="h-8 w-8 rounded-lg bg-emerald-600 flex items-center justify-center">
-                  <Building2 className="h-4 w-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-900">Green Heights Society</p>
-                  <p className="text-xs text-slate-400">Dashboard</p>
-                </div>
-                <span className="ml-auto rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
-                  Rahul Sharma
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {[
-                  { label: "Announcements", val: "3 new", color: "bg-amber-50 text-amber-700" },
-                  { label: "Upcoming Events", val: "2 this week", color: "bg-violet-50 text-violet-700" },
-                  { label: "Amenity Slots", val: "Pool open", color: "bg-sky-50 text-sky-700" },
-                  { label: "My Tickets", val: "1 pending", color: "bg-rose-50 text-rose-700" },
-                ].map((item) => (
-                  <div key={item.label} className={`rounded-xl p-4 ${item.color}`}>
-                    <p className="text-xs font-semibold opacity-70">{item.label}</p>
-                    <p className="mt-1 text-sm font-extrabold">{item.val}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Features ── */}
-      <section className="bg-slate-50 px-6 py-24">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-14 text-center">
-            <h2 className="text-4xl font-black tracking-tight text-slate-900">
-              Everything your community needs
-            </h2>
-            <p className="mt-3 text-base text-slate-500">
-              Four powerful features, one clean dashboard.
-            </p>
-          </div>
-
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {features.map(({ icon: Icon, title, desc, color }) => (
-              <div
-                key={title}
-                className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/60"
-              >
-                <div
-                  className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl ring-1 ${color}`}
-                >
-                  <Icon className="h-6 w-6" />
-                </div>
-                <h3 className="text-base font-extrabold text-slate-900">{title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-500">{desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Why SocietyHub ── */}
-      <section className="px-6 py-24 bg-white">
-        <div className="mx-auto max-w-6xl grid gap-16 lg:grid-cols-2 lg:items-center">
-          <div>
-            <span className="inline-block rounded-full bg-violet-50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-violet-700 ring-1 ring-violet-100 mb-5">
-              Why us
-            </span>
-            <h2 className="text-4xl font-black leading-tight tracking-tight text-slate-900">
-              Built for real apartment living
-            </h2>
-            <p className="mt-4 text-base leading-relaxed text-slate-500">
-              We know managing a housing society is messy — WhatsApp groups, printed
-              notices, verbal complaints. SocietyHub replaces all of that with a clean,
-              accessible portal every resident actually uses.
-            </p>
-            <ul className="mt-8 space-y-3">
-              {highlights.map((h) => (
-                <li key={h} className="flex items-start gap-3 text-sm text-slate-700">
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
-                  {h}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-10">
-              <Link
-                to="/register"
-                className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-7 py-3.5 text-sm font-extrabold text-white shadow transition hover:bg-slate-700 hover:-translate-y-0.5"
-              >
-                Start for free <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-
-          {/* Stats / social proof */}
-          <div className="grid grid-cols-2 gap-5">
-            {[
-              { icon: Users, stat: "500+", label: "Residents onboarded", bg: "bg-emerald-600" },
-              { icon: Building2, stat: "30+", label: "Societies managed", bg: "bg-violet-600" },
-              { icon: Ticket, stat: "1 200+", label: "Tickets resolved", bg: "bg-amber-500" },
-              { icon: Shield, stat: "100%", label: "Private & secure", bg: "bg-sky-600" },
-            ].map(({ icon: Icon, stat, label, bg }) => (
-              <div
-                key={label}
-                className="rounded-2xl border border-slate-100 bg-slate-50 p-6 text-center shadow-sm"
-              >
-                <div
-                  className={`mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl ${bg} text-white shadow`}
-                >
-                  <Icon className="h-5 w-5" />
-                </div>
-                <p className="text-3xl font-black text-slate-900">{stat}</p>
-                <p className="mt-1 text-xs font-semibold text-slate-500">{label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA Banner ── */}
-      <section className="relative isolate overflow-hidden bg-emerald-600 px-6 py-20 text-center">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-20 left-1/2 -z-10 -translate-x-1/2 h-72 w-[700px] rounded-full bg-emerald-400 opacity-30 blur-3xl"
-        />
-        <h2 className="text-4xl font-black tracking-tight text-white sm:text-5xl">
-          Ready to upgrade your society?
-        </h2>
-        <p className="mt-4 text-base text-emerald-100">
-          Join hundreds of communities already using SocietyHub.
-        </p>
-        <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <Link
-            to="/register"
-            className="rounded-2xl bg-white px-8 py-4 text-base font-extrabold text-emerald-700 shadow-lg transition hover:bg-emerald-50 hover:-translate-y-0.5"
-          >
-            Create your community — it's free
-          </Link>
-          <Link
-            to="/login"
-            className="rounded-2xl border border-emerald-400 px-8 py-4 text-base font-bold text-white transition hover:bg-emerald-700 hover:-translate-y-0.5"
-          >
-            Sign in
-          </Link>
-        </div>
-      </section>
-
-      {/* ── Footer ── */}
-      <footer className="border-t border-slate-100 bg-white px-6 py-8 text-center text-xs text-slate-400">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-600 text-white">
-            <Building2 className="h-3.5 w-3.5" />
-          </div>
-          <span className="font-bold text-slate-600">SocietyHub</span>
-        </div>
-        <p>© {new Date().getFullYear()} SocietyHub. All rights reserved.</p>
       </footer>
     </div>
   );

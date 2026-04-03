@@ -71,7 +71,13 @@ export function AuthProvider({ children }) {
   }
 
   async function verifyRegistration(payload) {
-    return apiRequest("/auth/verify-registration", { method: "POST", body: payload });
+    const data = await apiRequest("/auth/verify-registration", { method: "POST", body: payload });
+    if (data?.token && data?.user) {
+      const next = { token: data.token, user: data.user };
+      persistAuth(next);
+      await refreshMembership(next.token);
+    }
+    return data;
   }
 
   async function resendRegistrationOtp(payload) {

@@ -13,7 +13,7 @@ export function TopNav() {
   return (
     <header className="panel mt-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <nav className="flex flex-wrap items-center gap-2">
-        <NavLink to="/" className={navClass}>Dashboard</NavLink>
+        {isLoggedIn ? <NavLink to="/" className={navClass}>Dashboard</NavLink> : null}
         {isLoggedIn ? <NavLink to="/announcements" className={navClass}>Announcements</NavLink> : null}
         {isLoggedIn ? <NavLink to="/tickets" className={navClass}>Tickets</NavLink> : null}
         {isLoggedIn ? <NavLink to="/events" className={navClass}>Events</NavLink> : null}
