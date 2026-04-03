@@ -4,6 +4,7 @@ import { Membership } from "../models/membership.model.js";
 import { User } from "../models/user.model.js";
 import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
+import { createNotification } from "../utils/create-notification.js";
 
 function sanitizeText(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -74,11 +75,16 @@ export async function approveResident(req, res, next) {
     ]);
 
     const io = req.app.get("io");
-    io.to(`user:${membership.userId}`).emit(SOCKET_EVENTS.MEMBERSHIP_APPROVED, {
-      item: populated
-    });
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.MEMBERSHIP_APPROVED, {
-      item: populated
+    io.to(`user:${membership.userId}`).emit(SOCKET_EVENTS.MEMBERSHIP_APPROVED, { item: populated });
+    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.MEMBERSHIP_APPROVED, { item: populated });
+
+    await createNotification(io, {
+      tenantId: req.tenantId,
+      userId: membership.userId,
+      type: "membership_approved",
+      title: "Membership Approved",
+      message: "Your membership request has been approved. Welcome to the community!",
+      data: { membershipId: membership._id }
     });
 
     res.json({ item: populated });
@@ -124,8 +130,15 @@ export async function rejectResident(req, res, next) {
     ]);
 
     const io = req.app.get("io");
-    io.to(`user:${membership.userId}`).emit(SOCKET_EVENTS.MEMBERSHIP_REJECTED, {
-      item: populated
+    io.to(`user:${membership.userId}`).emit(SOCKET_EVENTS.MEMBERSHIP_REJECTED, { item: populated });
+
+    await createNotification(io, {
+      tenantId: req.tenantId,
+      userId: membership.userId,
+      type: "membership_rejected",
+      title: "Membership Request Rejected",
+      message: `Your membership request was rejected. Reason: ${rejectedReason}`,
+      data: { membershipId: membership._id, reason: rejectedReason }
     });
 
     res.json({ item: populated });

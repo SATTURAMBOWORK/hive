@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useAuth } from "./AuthContext";
+import { NotificationBell } from "./NotificationBell";
 
 function navClass({ isActive }) {
   return isActive
@@ -28,11 +29,15 @@ export function TopNav() {
         {!isLoggedIn ? <NavLink to="/register" className={navClass}>Register</NavLink> : null}
         {isLoggedIn ? <button className="btn-muted" onClick={logout}>Logout</button> : null}
       </nav>
-      {isLoggedIn ? (
-        <p className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-900">
-          {user?.fullName}
-        </p>
-      ) : null}
+
+      {isLoggedIn && (
+        <div className="flex items-center gap-3">
+          <NotificationBell />
+          <p className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-900">
+            {user?.fullName}
+          </p>
+        </div>
+      )}
     </header>
   );
 }
