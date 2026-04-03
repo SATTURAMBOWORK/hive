@@ -8,7 +8,10 @@ export const env = {
   jwtSecret: process.env.JWT_SECRET || "",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
   clientOrigin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
-  superAdminSignupKey: process.env.SUPER_ADMIN_SIGNUP_KEY || ""
+  superAdminSignupKey: process.env.SUPER_ADMIN_SIGNUP_KEY || "",
+  emailUser: process.env.EMAIL_USER || "",
+  emailPass: process.env.EMAIL_PASS || "",
+  emailFrom: process.env.EMAIL_FROM || "",
 };
 
 if (!env.mongoUri) {

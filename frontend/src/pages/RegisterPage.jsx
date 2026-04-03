@@ -1,21 +1,27 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../components/AuthContext";
-import { Building2, UserPlus, ShieldCheck, Mail } from "lucide-react";
+import { Building2, UserPlus, ShieldCheck, Mail, Eye, EyeOff } from "lucide-react";
 
 const inputCls =
   "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:text-sm transition-colors";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function RegisterPage() {
   const { register, verifyRegistration, resendRegistrationOtp } = useAuth();
   const navigate = useNavigate();
 
-  const [isSuperAdmin, setIsSuperAdmin]       = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin]         = useState(false);
   const [verificationStep, setVerificationStep] = useState(false);
-  const [otpCode, setOtpCode]                 = useState("");
-  const [devOtp, setDevOtp]                   = useState("");
-  const [error, setError]                     = useState("");
-  const [success, setSuccess]                 = useState("");
+  const [otpCode, setOtpCode]                   = useState("");
+  const [error, setError]                       = useState("");
+  const [success, setSuccess]                   = useState("");
+  const [emailError, setEmailError]             = useState("");
+  const [confirmPassword, setConfirmPassword]   = useState("");
+  const [confirmError, setConfirmError]         = useState("");
+  const [showPassword, setShowPassword]         = useState(false);
+  const [showConfirm, setShowConfirm]           = useState(false);
   const [form, setForm] = useState({
     fullName: "", email: "", password: "",
     tenantSlug: "", flatNumber: "", phone: "",
@@ -26,15 +32,35 @@ export function RegisterPage() {
     return (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
   }
 
+  function handleEmailChange(e) {
+    const val = e.target.value;
+    setForm((prev) => ({ ...prev, email: val }));
+    if (val && !EMAIL_REGEX.test(val)) {
+      setEmailError("Please enter a valid email address.");
+    } else {
+      setEmailError("");
+    }
+  }
+
+  function handleConfirmChange(e) {
+    const val = e.target.value;
+    setConfirmPassword(val);
+    setConfirmError(val && val !== form.password ? "Passwords do not match." : "");
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
+    if (emailError) return;
+    if (form.password !== confirmPassword) {
+      setConfirmError("Passwords do not match.");
+      return;
+    }
     setError(""); setSuccess("");
     try {
       const data = await register({ ...form, desiredRole: isSuperAdmin ? "super_admin" : "resident" });
       if (isSuperAdmin && data?.token) { navigate("/"); return; }
       setVerificationStep(true);
       setSuccess(data?.message || "Check your email for the OTP.");
-      setDevOtp(data?.devOtp || "");
     } catch (err) { setError(err.message); }
   }
 
@@ -52,7 +78,6 @@ export function RegisterPage() {
     try {
       const data = await resendRegistrationOtp({ email: form.email, tenantSlug: form.tenantSlug });
       setSuccess(data?.message || "OTP resent.");
-      setDevOtp(data?.devOtp || "");
     } catch (err) { setError(err.message); }
   }
 
@@ -138,8 +163,48 @@ export function RegisterPage() {
                   </>
                 )}
 
-                <input className={inputCls} placeholder="Email address" type="email" value={form.email} onChange={field("email")} required />
-                <input className={inputCls} placeholder="Password" type="password" value={form.password} onChange={field("password")} required />
+                <div>
+                  <input
+                    className={`${inputCls} ${emailError ? "border-rose-400 focus:border-rose-400 focus:ring-rose-400" : ""}`}
+                    placeholder="Email address"
+                    type="email"
+                    value={form.email}
+                    onChange={handleEmailChange}
+                    required
+                  />
+                  {emailError && <p className="mt-1.5 text-xs text-rose-600">{emailError}</p>}
+                </div>
+                <div className="relative">
+                  <input
+                    className={`${inputCls} pr-11`}
+                    placeholder="Password"
+                    type={showPassword ? "text" : "password"}
+                    value={form.password}
+                    onChange={field("password")}
+                    required
+                  />
+                  <button type="button" tabIndex={-1} onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <div>
+                  <div className="relative">
+                    <input
+                      className={`${inputCls} pr-11 ${confirmError ? "border-rose-400 focus:border-rose-400 focus:ring-rose-400" : ""}`}
+                      placeholder="Confirm password"
+                      type={showConfirm ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={handleConfirmChange}
+                      required
+                    />
+                    <button type="button" tabIndex={-1} onClick={() => setShowConfirm((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                      {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {confirmError && <p className="mt-1.5 text-xs text-rose-600">{confirmError}</p>}
+                </div>
 
                 <button
                   type="submit"
@@ -166,11 +231,6 @@ export function RegisterPage() {
               <form onSubmit={handleVerify} className="space-y-3.5">
                 {error   && <div className="rounded-lg bg-rose-50 p-3 text-sm text-rose-800 ring-1 ring-rose-200/50">{error}</div>}
                 {success && <div className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800 ring-1 ring-emerald-200/50">{success}</div>}
-                {devOtp  && (
-                  <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 ring-1 ring-amber-200/50">
-                    <span className="font-semibold">Dev OTP:</span> {devOtp}
-                  </div>
-                )}
 
                 <input
                   className={`${inputCls} text-center text-xl tracking-[0.5em] font-bold`}

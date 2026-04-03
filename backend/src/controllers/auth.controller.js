@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import { Tenant } from "../models/tenant.model.js";
 import { AppError } from "../utils/app-error.js";
 import { signToken } from "../utils/jwt.js";
+import { sendOtpEmail } from "../utils/mailer.js";
 import { ROLES } from "../config/roles.js";
 import { env } from "../config/env.js";
 
@@ -177,18 +178,14 @@ export async function register(req, res, next) {
       return;
     }
 
-    const payload = {
-      message: "Registration created. Verify OTP to activate your account.",
+    await sendOtpEmail({ to: user.email, otp: otpState.otp, purpose: "verification" });
+
+    res.status(StatusCodes.CREATED).json({
+      message: "Registration created. Check your email for the OTP.",
       verificationRequired: true,
       email: user.email,
       tenantSlug
-    };
-
-    if (process.env.NODE_ENV !== "production") {
-      payload.devOtp = otpState.otp;
-    }
-
-    res.status(StatusCodes.CREATED).json(payload);
+    });
   } catch (error) {
     next(error);
   }
@@ -218,11 +215,7 @@ export async function login(req, res, next) {
     }
 
     const user = await User.findOne({ tenantId: tenant._id, email });
-    if (!user) {
-      throw new AppError("Invalid credentials", StatusCodes.UNAUTHORIZED);
-    }
-
-    if (user.tenantId.toString() !== tenant._id.toString()) {
+    if (!user || user.tenantId.toString() !== tenant._id.toString()) {
       throw new AppError("Invalid credentials", StatusCodes.UNAUTHORIZED);
     }
 
@@ -232,7 +225,7 @@ export async function login(req, res, next) {
     }
 
     if (!user.isVerified) {
-      throw new AppError("Account not verified. Please verify OTP before login.", StatusCodes.FORBIDDEN);
+      throw new AppError("Account not verified. Please verify your email before login.", StatusCodes.FORBIDDEN);
     }
 
     res.json(buildAuthResponse(user));
@@ -339,16 +332,9 @@ export async function resendRegistrationOtp(req, res, next) {
     user.verificationAttempts = 0;
     await user.save();
 
-    const payload = {
-      message: "A new OTP has been issued",
-      verificationRequired: true
-    };
+    await sendOtpEmail({ to: user.email, otp: otpState.otp, purpose: "verification" });
 
-    if (process.env.NODE_ENV !== "production") {
-      payload.devOtp = otpState.otp;
-    }
-
-    res.json(payload);
+    res.json({ message: "A new OTP has been sent to your email.", verificationRequired: true });
   } catch (error) {
     next(error);
   }
