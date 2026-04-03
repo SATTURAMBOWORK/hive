@@ -86,3 +86,50 @@ export async function approveResident(req, res, next) {
     next(error);
   }
 }
+
+export async function rejectResident(req, res, next) {
+  try {
+    const membershipId = sanitizeText(req.params?.id);
+    const rejectedReason = sanitizeText(req.body?.reason);
+
+    if (!mongoose.Types.ObjectId.isValid(membershipId)) {
+      throw new AppError("Invalid membership id", StatusCodes.BAD_REQUEST);
+    }
+
+    if (!rejectedReason) {
+      throw new AppError("A reason for rejection is required", StatusCodes.BAD_REQUEST);
+    }
+
+    const membership = await Membership.findOne({
+      _id: membershipId,
+      tenantId: req.tenantId
+    });
+
+    if (!membership) {
+      throw new AppError("Membership request not found", StatusCodes.NOT_FOUND);
+    }
+
+    if (membership.status !== "pending") {
+      throw new AppError("Only pending memberships can be rejected", StatusCodes.BAD_REQUEST);
+    }
+
+    membership.status = "rejected";
+    membership.rejectedReason = rejectedReason;
+    await membership.save();
+
+    const populated = await membership.populate([
+      { path: "userId", select: "fullName email" },
+      { path: "wingId", select: "name code" },
+      { path: "unitId", select: "unitNumber floor" }
+    ]);
+
+    const io = req.app.get("io");
+    io.to(`user:${membership.userId}`).emit(SOCKET_EVENTS.MEMBERSHIP_REJECTED, {
+      item: populated
+    });
+
+    res.json({ item: populated });
+  } catch (error) {
+    next(error);
+  }
+}

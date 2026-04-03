@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { StatusCodes } from "http-status-codes";
 import { User } from "../models/user.model.js";
 import { Tenant } from "../models/tenant.model.js";
+import { PendingRegistration } from "../models/pending-registration.model.js";
 import { AppError } from "../utils/app-error.js";
 import { signToken } from "../utils/jwt.js";
 import { sendOtpEmail } from "../utils/mailer.js";
@@ -85,105 +86,85 @@ export async function register(req, res, next) {
     }
 
     if (password.length < MIN_PASSWORD_LENGTH) {
-      throw new AppError(
-        `Password must be at least ${MIN_PASSWORD_LENGTH} characters`,
-        StatusCodes.BAD_REQUEST
-      );
+      throw new AppError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`, StatusCodes.BAD_REQUEST);
     }
 
-    let tenant = await Tenant.findOne({ slug: tenantSlug });
     const isSuperAdminSignup = desiredRole === ROLES.SUPER_ADMIN;
 
+    // ── Super admin: validate key + create tenant immediately, then return token ──
     if (isSuperAdminSignup) {
       if (!env.superAdminSignupKey) {
-        throw new AppError(
-          "SUPER_ADMIN_SIGNUP_KEY is not configured on server",
-          StatusCodes.FORBIDDEN
-        );
+        throw new AppError("SUPER_ADMIN_SIGNUP_KEY is not configured on server", StatusCodes.FORBIDDEN);
       }
-
       if (superAdminSignupKey !== env.superAdminSignupKey) {
         throw new AppError("Invalid super admin signup key", StatusCodes.FORBIDDEN);
       }
 
+      let tenant = await Tenant.findOne({ slug: tenantSlug });
       if (!tenant) {
         if (!tenantName) {
-          throw new AppError(
-            "tenantName is required when creating a new society",
-            StatusCodes.BAD_REQUEST
-          );
+          throw new AppError("tenantName is required when creating a new society", StatusCodes.BAD_REQUEST);
         }
-
         tenant = await Tenant.create({ slug: tenantSlug, name: tenantName, city: tenantCity });
       }
+      if (!tenant.isActive) throw new AppError("Tenant is inactive", StatusCodes.FORBIDDEN);
 
-      if (!tenant.isActive) {
-        throw new AppError("Tenant is inactive", StatusCodes.FORBIDDEN);
+      const existingSuperAdmin = await User.findOne({ tenantId: tenant._id, role: ROLES.SUPER_ADMIN });
+      if (existingSuperAdmin) {
+        throw new AppError("Super admin already exists for this society", StatusCodes.CONFLICT);
       }
 
-      const existingSuperAdmin = await User.findOne({
-        tenantId: tenant._id,
-        role: ROLES.SUPER_ADMIN
+      const existing = await User.findOne({ tenantId: tenant._id, email });
+      if (existing) throw new AppError("User already exists", StatusCodes.CONFLICT);
+
+      const passwordHash = await bcrypt.hash(password, 10);
+      const user = await User.create({
+        tenantId: tenant._id, fullName, email, passwordHash,
+        role: ROLES.SUPER_ADMIN, isVerified: true,
+        verificationOtpHash: "", verificationOtpExpiresAt: null, verificationAttempts: 0
       });
 
-      if (existingSuperAdmin) {
-        throw new AppError(
-          "Super admin already exists for this society",
-          StatusCodes.CONFLICT
-        );
-      }
-    } else {
-      if (!tenant) {
-        throw new AppError("Invalid tenantSlug", StatusCodes.BAD_REQUEST);
-      }
-
-      if (!tenant.isActive) {
-        throw new AppError("Tenant is inactive", StatusCodes.FORBIDDEN);
-      }
-
-      if (!flatNumber || !phone) {
-        throw new AppError("flatNumber and phone are required for resident registration", StatusCodes.BAD_REQUEST);
-      }
-
-      if (phone.length < 10 || phone.length > 15) {
-        throw new AppError("phone must be between 10 and 15 digits", StatusCodes.BAD_REQUEST);
-      }
-    }
-
-    const existing = await User.findOne({ tenantId: tenant._id, email });
-    if (existing) {
-      throw new AppError("User already exists", StatusCodes.CONFLICT);
-    }
-
-    const passwordHash = await bcrypt.hash(password, 10);
-    const isVerified = isSuperAdminSignup;
-    const otpState = isSuperAdminSignup ? null : await buildOtpState();
-
-    const user = await User.create({
-      tenantId: tenant._id,
-      fullName,
-      email,
-      passwordHash,
-      role: isSuperAdminSignup ? ROLES.SUPER_ADMIN : ROLES.RESIDENT,
-      flatNumber,
-      phone,
-      isVerified,
-      verificationOtpHash: otpState?.verificationOtpHash || "",
-      verificationOtpExpiresAt: otpState?.verificationOtpExpiresAt || null,
-      verificationAttempts: 0
-    });
-
-    if (isSuperAdminSignup) {
       res.status(StatusCodes.CREATED).json(buildAuthResponse(user));
       return;
     }
 
-    await sendOtpEmail({ to: user.email, otp: otpState.otp, purpose: "verification" });
+    // ── Resident: validate tenant exists, then store pending registration ──
+    const tenant = await Tenant.findOne({ slug: tenantSlug });
+    if (!tenant) throw new AppError("Invalid society code", StatusCodes.BAD_REQUEST);
+    if (!tenant.isActive) throw new AppError("Tenant is inactive", StatusCodes.FORBIDDEN);
 
-    res.status(StatusCodes.CREATED).json({
-      message: "Registration created. Check your email for the OTP.",
-      verificationRequired: true,
-      email: user.email,
+    if (!flatNumber || !phone) {
+      throw new AppError("Flat number and phone are required", StatusCodes.BAD_REQUEST);
+    }
+    if (phone.length < 10 || phone.length > 15) {
+      throw new AppError("Phone must be between 10 and 15 digits", StatusCodes.BAD_REQUEST);
+    }
+
+    const existingUser = await User.findOne({ tenantId: tenant._id, email });
+    if (existingUser) throw new AppError("An account with this email already exists", StatusCodes.CONFLICT);
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const otpState = await buildOtpState();
+
+    // Upsert so resend also works cleanly
+    await PendingRegistration.findOneAndUpdate(
+      { tenantSlug, email },
+      {
+        fullName, passwordHash, desiredRole: ROLES.RESIDENT,
+        flatNumber, phone, tenantName, tenantCity,
+        otpHash: otpState.verificationOtpHash,
+        otpExpiresAt: otpState.verificationOtpExpiresAt,
+        otpAttempts: 0,
+        createdAt: new Date()
+      },
+      { upsert: true, new: true }
+    );
+
+    await sendOtpEmail({ to: email, otp: otpState.otp, purpose: "verification" });
+
+    res.status(StatusCodes.OK).json({
+      message: "OTP sent to your email. Verify to complete registration.",
+      email,
       tenantSlug
     });
   } catch (error) {
@@ -244,55 +225,54 @@ export async function verifyRegistration(req, res, next) {
       throw new AppError("email, tenantSlug and otp are required", StatusCodes.BAD_REQUEST);
     }
 
-    if (!EMAIL_REGEX.test(email)) {
-      throw new AppError("Invalid email format", StatusCodes.BAD_REQUEST);
-    }
-
     if (!OTP_REGEX.test(otp)) {
-      throw new AppError("otp must be a 6 digit code", StatusCodes.BAD_REQUEST);
+      throw new AppError("OTP must be a 6 digit code", StatusCodes.BAD_REQUEST);
     }
 
-    const tenant = await Tenant.findOne({ slug: tenantSlug });
-    if (!tenant) {
-      throw new AppError("Invalid tenantSlug", StatusCodes.BAD_REQUEST);
+    const pending = await PendingRegistration.findOne({ tenantSlug, email });
+    if (!pending) {
+      throw new AppError("No pending registration found. Please register again.", StatusCodes.NOT_FOUND);
     }
 
-    const user = await User.findOne({ tenantId: tenant._id, email });
-    if (!user) {
-      throw new AppError("User not found", StatusCodes.NOT_FOUND);
+    if (pending.otpAttempts >= MAX_OTP_ATTEMPTS) {
+      throw new AppError("Too many invalid attempts. Please register again.", StatusCodes.TOO_MANY_REQUESTS);
     }
 
-    if (user.isVerified) {
-      res.json({ message: "Account already verified" });
-      return;
+    if (new Date(pending.otpExpiresAt).getTime() < Date.now()) {
+      throw new AppError("OTP expired. Please register again.", StatusCodes.BAD_REQUEST);
     }
 
-    if (!user.verificationOtpHash || !user.verificationOtpExpiresAt) {
-      throw new AppError("Verification code not found. Please request a new OTP.", StatusCodes.BAD_REQUEST);
-    }
-
-    if (user.verificationAttempts >= MAX_OTP_ATTEMPTS) {
-      throw new AppError("Too many invalid attempts. Please request a new OTP.", StatusCodes.TOO_MANY_REQUESTS);
-    }
-
-    if (new Date(user.verificationOtpExpiresAt).getTime() < Date.now()) {
-      throw new AppError("OTP expired. Please request a new OTP.", StatusCodes.BAD_REQUEST);
-    }
-
-    const isOtpMatch = await bcrypt.compare(otp, user.verificationOtpHash);
+    const isOtpMatch = await bcrypt.compare(otp, pending.otpHash);
     if (!isOtpMatch) {
-      user.verificationAttempts += 1;
-      await user.save();
+      pending.otpAttempts += 1;
+      await pending.save();
       throw new AppError("Invalid OTP", StatusCodes.BAD_REQUEST);
     }
 
-    user.isVerified = true;
-    user.verificationOtpHash = "";
-    user.verificationOtpExpiresAt = null;
-    user.verificationAttempts = 0;
-    await user.save();
+    // OTP correct — now create the actual user
+    const tenant = await Tenant.findOne({ slug: tenantSlug });
+    if (!tenant) throw new AppError("Society not found", StatusCodes.BAD_REQUEST);
 
-    res.json(buildAuthResponse(user));
+    const existingUser = await User.findOne({ tenantId: tenant._id, email });
+    if (existingUser) throw new AppError("An account with this email already exists", StatusCodes.CONFLICT);
+
+    const user = await User.create({
+      tenantId: tenant._id,
+      fullName: pending.fullName,
+      email: pending.email,
+      passwordHash: pending.passwordHash,
+      role: pending.desiredRole,
+      flatNumber: pending.flatNumber,
+      phone: pending.phone,
+      isVerified: true,
+      verificationOtpHash: "",
+      verificationOtpExpiresAt: null,
+      verificationAttempts: 0
+    });
+
+    await PendingRegistration.deleteOne({ _id: pending._id });
+
+    res.status(StatusCodes.CREATED).json(buildAuthResponse(user));
   } catch (error) {
     next(error);
   }
@@ -307,34 +287,21 @@ export async function resendRegistrationOtp(req, res, next) {
       throw new AppError("email and tenantSlug are required", StatusCodes.BAD_REQUEST);
     }
 
-    if (!EMAIL_REGEX.test(email)) {
-      throw new AppError("Invalid email format", StatusCodes.BAD_REQUEST);
-    }
-
-    const tenant = await Tenant.findOne({ slug: tenantSlug });
-    if (!tenant) {
-      throw new AppError("Invalid tenantSlug", StatusCodes.BAD_REQUEST);
-    }
-
-    const user = await User.findOne({ tenantId: tenant._id, email });
-    if (!user) {
-      throw new AppError("User not found", StatusCodes.NOT_FOUND);
-    }
-
-    if (user.isVerified) {
-      res.json({ message: "Account already verified" });
-      return;
+    const pending = await PendingRegistration.findOne({ tenantSlug, email });
+    if (!pending) {
+      throw new AppError("No pending registration found. Please register again.", StatusCodes.NOT_FOUND);
     }
 
     const otpState = await buildOtpState();
-    user.verificationOtpHash = otpState.verificationOtpHash;
-    user.verificationOtpExpiresAt = otpState.verificationOtpExpiresAt;
-    user.verificationAttempts = 0;
-    await user.save();
+    pending.otpHash = otpState.verificationOtpHash;
+    pending.otpExpiresAt = otpState.verificationOtpExpiresAt;
+    pending.otpAttempts = 0;
+    pending.createdAt = new Date();
+    await pending.save();
 
-    await sendOtpEmail({ to: user.email, otp: otpState.otp, purpose: "verification" });
+    await sendOtpEmail({ to: email, otp: otpState.otp, purpose: "verification" });
 
-    res.json({ message: "A new OTP has been sent to your email.", verificationRequired: true });
+    res.json({ message: "A new OTP has been sent to your email." });
   } catch (error) {
     next(error);
   }
