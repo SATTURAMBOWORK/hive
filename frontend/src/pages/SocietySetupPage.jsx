@@ -196,31 +196,31 @@ function SetupTab({ societyId, token, wings, units, onRefresh }) {
             <span className="font-semibold text-slate-700">{units.length}</span> flats registered across{" "}
             <span className="font-semibold text-slate-700">{wings.length}</span> towers
           </div>
-
-          {units.length > 0 && (
-            <div className="mt-5 space-y-2 border-t border-slate-100 pt-5">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Existing Flats</p>
-              <div className="max-h-48 space-y-1.5 overflow-y-auto pr-1">
-                {units.map((u) => (
-                  <div key={u._id} className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-2.5">
-                    <span className="font-semibold text-slate-800">
-                      {u.wing?.name || "—"}-{u.unitNumber}
-                      <span className="ml-2 text-xs font-normal text-slate-400">Floor {u.floor}</span>
-                    </span>
-                    <button
-                      onClick={() => handleDeleteUnit(u._id)}
-                      disabled={deletingId === u._id}
-                      className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-500 disabled:opacity-40"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
+
+      {units.length > 0 && (
+        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Existing Flats</p>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {units.map((u) => (
+              <div key={u._id} className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-2.5">
+                <span className="font-semibold text-slate-800">
+                  {u.wing?.name || "—"}-{u.unitNumber}
+                  <span className="ml-2 text-xs font-normal text-slate-400">Floor {u.floor}</span>
+                </span>
+                <button
+                  onClick={() => handleDeleteUnit(u._id)}
+                  disabled={deletingId === u._id}
+                  className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-500 disabled:opacity-40"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -448,7 +448,7 @@ export function SocietySetupPage() {
     try {
       const data = await apiRequest(`/societies/${societyId}/units`, { token });
       setWings(data.wings || []);
-      setUnits(data.items || []);
+      setUnits(data.allUnits || []);
     } catch (err) {
       setError(err.message);
     }

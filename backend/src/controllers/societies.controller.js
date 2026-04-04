@@ -75,25 +75,28 @@ export async function listSocietyUnits(req, res, next) {
         .map((m) => String(m.unitId))
     );
 
+    const mapUnit = (unit) => ({
+      _id: unit._id,
+      unitNumber: unit.unitNumber,
+      floor: unit.floor,
+      wing: unit.wingId
+        ? { _id: unit.wingId._id, name: unit.wingId.name, code: unit.wingId.code }
+        : null
+    });
+
+    // vacant only — used by onboarding flow
     const items = units
       .filter((unit) => !occupiedUnitIds.has(String(unit._id)))
-      .map((unit) => ({
-        _id: unit._id,
-        unitNumber: unit.unitNumber,
-        floor: unit.floor,
-        wing: unit.wingId
-          ? {
-              _id: unit.wingId._id,
-              name: unit.wingId.name,
-              code: unit.wingId.code
-            }
-          : null
-      }));
+      .map(mapUnit);
+
+    // all units — used by admin setup page
+    const allUnits = units.map(mapUnit);
 
     res.json({
       society,
       wings,
-      items
+      items,
+      allUnits
     });
   } catch (error) {
     next(error);
