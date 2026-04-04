@@ -97,7 +97,7 @@ export function AdminApprovalsPage() {
               {item.userId?.email || "-"} • {item.userId?.phone || "-"}
             </p>
             <p className="mt-1 text-sm text-slate-700">
-              Wing: {item.wingId?.name || "-"} • Flat: {item.unitId?.unitNumber || "-"}
+              Flat: {item.wingId?.name || "-"}-{item.unitId?.unitNumber || "-"}
             </p>
             <a
               className="mt-2 block text-sm text-emerald-700 underline"

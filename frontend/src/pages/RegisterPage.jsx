@@ -147,10 +147,7 @@ export function RegisterPage() {
                 <input className={inputCls} placeholder={isSuperAdmin ? "Choose a society code  (e.g. green-heights)" : "Society code  (e.g. green-heights)"} value={form.tenantSlug} onChange={field("tenantSlug")} required />
 
                 {!isSuperAdmin && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <input className={inputCls} placeholder="Flat no.  (e.g. A-402)" value={form.flatNumber} onChange={field("flatNumber")} />
-                    <input className={inputCls} placeholder="Phone" value={form.phone} onChange={field("phone")} />
-                  </div>
+                  <input className={inputCls} placeholder="Phone" value={form.phone} onChange={field("phone")} />
                 )}
 
                 {isSuperAdmin && (

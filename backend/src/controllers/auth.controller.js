@@ -133,8 +133,8 @@ export async function register(req, res, next) {
     if (!tenant) throw new AppError("Invalid society code", StatusCodes.BAD_REQUEST);
     if (!tenant.isActive) throw new AppError("Tenant is inactive", StatusCodes.FORBIDDEN);
 
-    if (!flatNumber || !phone) {
-      throw new AppError("Flat number and phone are required", StatusCodes.BAD_REQUEST);
+    if ( !phone) {
+      throw new AppError(" phone is required", StatusCodes.BAD_REQUEST);
     }
     if (phone.length < 10 || phone.length > 15) {
       throw new AppError("Phone must be between 10 and 15 digits", StatusCodes.BAD_REQUEST);

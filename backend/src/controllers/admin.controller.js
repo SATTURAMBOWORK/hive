@@ -10,6 +10,26 @@ function sanitizeText(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+export async function listResidents(req, res, next) {
+  try {
+    const memberships = await Membership.find({
+      tenantId: req.tenantId,
+      status: "approved"
+    })
+      .sort({ createdAt: -1 })
+      .populate("userId", "fullName email phone")
+      .populate("wingId", "name code")
+      .populate("unitId", "unitNumber floor");
+
+    // Exclude memberships where the user was deleted directly from DB
+    const items = memberships.filter((m) => m.userId != null);
+
+    res.json({ items });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function listPendingApprovals(req, res, next) {
   try {
     const items = await Membership.find({
@@ -52,10 +72,14 @@ export async function approveResident(req, res, next) {
       tenantId: req.tenantId,
       unitId: membership.unitId,
       status: "approved"
-    });
+    }).populate("userId", "_id");
 
     if (occupiedUnit) {
-      throw new AppError("Unit is already occupied", StatusCodes.CONFLICT);
+      if (occupiedUnit.userId != null) {
+        throw new AppError("Unit is already occupied", StatusCodes.CONFLICT);
+      }
+      // User was deleted directly from DB — clean up the orphaned membership
+      await occupiedUnit.deleteOne();
     }
 
     membership.status = "approved";

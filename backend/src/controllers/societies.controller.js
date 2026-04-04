@@ -66,9 +66,14 @@ export async function listSocietyUnits(req, res, next) {
       tenantId: society._id,
       status: "approved",
       unitId: { $in: units.map((unit) => unit._id) }
-    }).select("unitId");
+    }).select("unitId userId").populate("userId", "_id");
 
-    const occupiedUnitIds = new Set(approvedMemberships.map((membership) => String(membership.unitId)));
+    // Filter out memberships where the user was deleted directly from DB
+    const occupiedUnitIds = new Set(
+      approvedMemberships
+        .filter((m) => m.userId != null)
+        .map((m) => String(m.unitId))
+    );
 
     const items = units
       .filter((unit) => !occupiedUnitIds.has(String(unit._id)))
@@ -128,6 +133,35 @@ export async function createSocietyWing(req, res, next) {
   }
 }
 
+export async function deleteSocietyWing(req, res, next) {
+  try {
+    const societyId = sanitizeText(req.params?.id);
+    const wingId = sanitizeText(req.params?.wingId);
+
+    if (!mongoose.Types.ObjectId.isValid(societyId) || !mongoose.Types.ObjectId.isValid(wingId)) {
+      throw new AppError("Invalid id", StatusCodes.BAD_REQUEST);
+    }
+
+    assertManageScope(req, societyId);
+
+    const wing = await SocietyWing.findOne({ _id: wingId, tenantId: societyId });
+    if (!wing) throw new AppError("Tower not found", StatusCodes.NOT_FOUND);
+
+    const unitCount = await SocietyUnit.countDocuments({ wingId, tenantId: societyId });
+    if (unitCount > 0) {
+      throw new AppError(
+        `Cannot delete — this tower still has ${unitCount} flat(s). Delete the flats first.`,
+        StatusCodes.CONFLICT
+      );
+    }
+
+    await wing.deleteOne();
+    res.json({ message: "Tower deleted" });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function createSocietyUnit(req, res, next) {
   try {
     const societyId = sanitizeText(req.params?.id);
@@ -172,6 +206,35 @@ export async function createSocietyUnit(req, res, next) {
     });
 
     res.status(StatusCodes.CREATED).json({ item });
+  } catch (error) {
+    if (error.code === 11000) {
+      return next(new AppError(`Flat "${req.body?.unitNumber}" already exists in this tower.`, StatusCodes.CONFLICT));
+    }
+    next(error);
+  }
+}
+
+export async function deleteSocietyUnit(req, res, next) {
+  try {
+    const societyId = sanitizeText(req.params?.id);
+    const unitId = sanitizeText(req.params?.unitId);
+
+    if (!mongoose.Types.ObjectId.isValid(societyId) || !mongoose.Types.ObjectId.isValid(unitId)) {
+      throw new AppError("Invalid id", StatusCodes.BAD_REQUEST);
+    }
+
+    assertManageScope(req, societyId);
+
+    const unit = await SocietyUnit.findOne({ _id: unitId, tenantId: societyId });
+    if (!unit) throw new AppError("Flat not found", StatusCodes.NOT_FOUND);
+
+    const activeMembership = await Membership.findOne({ unitId, tenantId: societyId, status: "approved" });
+    if (activeMembership) {
+      throw new AppError("Cannot delete — this flat has an active resident.", StatusCodes.CONFLICT);
+    }
+
+    await unit.deleteOne();
+    res.json({ message: "Flat deleted" });
   } catch (error) {
     next(error);
   }

@@ -2,6 +2,8 @@ import { Router } from "express";
 import {
 	createSocietyUnit,
 	createSocietyWing,
+	deleteSocietyUnit,
+	deleteSocietyWing,
 	listSocietyUnits,
 	searchSocieties
 } from "../controllers/societies.controller.js";
@@ -24,6 +26,18 @@ societiesRouter.post(
 	requireTenantScope,
 	requireRoles("committee", "super_admin"),
 	createSocietyUnit
+);
+societiesRouter.delete(
+	"/:id/wings/:wingId",
+	requireTenantScope,
+	requireRoles("committee", "super_admin"),
+	deleteSocietyWing
+);
+societiesRouter.delete(
+	"/:id/units/:unitId",
+	requireTenantScope,
+	requireRoles("committee", "super_admin"),
+	deleteSocietyUnit
 );
 
 export { societiesRouter };

@@ -285,7 +285,7 @@ export function OnboardingPage() {
               <p>Status: <span className="font-semibold">{membership.status}</span></p>
               <p>Society: {membership.tenantId?.name || "-"}</p>
               <p>Wing: {membership.wingId?.name || "-"}</p>
-              <p>Flat: {membership.unitId?.unitNumber || "-"}</p>
+              <p>Flat: {membership.wingId?.name || "-"}-{membership.unitId?.unitNumber || "-"}</p>
             </div>
           ) : null}
 
