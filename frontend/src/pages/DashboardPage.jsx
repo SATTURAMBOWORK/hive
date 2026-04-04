@@ -1,421 +1,375 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import {
-  Bell,
-  Calendar,
-  Key,
-  LayoutDashboard,
-  LoaderCircle,
-  Search,
-  Ticket,
-  UserCircle
+  Bell, CalendarDays, Wrench, Key, Ticket,
+  ArrowRight, Clock, MapPin, AlertTriangle,
+  CheckCircle2, XCircle, Loader2, Users, RefreshCw
 } from "lucide-react";
 import { useAuth } from "../components/AuthContext";
 import { apiRequest } from "../components/api";
 
-const TAB_KEYS = {
-  overview: "overview",
-  announcements: "announcements",
-  tickets: "tickets",
-  amenities: "amenities",
-  events: "events"
+/* ── Helpers ─────────────────────────────────────────────── */
+function greeting(name) {
+  const h = new Date().getHours();
+  const salutation = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+  const first = name?.split(" ")[0] || "there";
+  return `${salutation}, ${first}.`;
+}
+
+function timeAgo(date) {
+  if (!date) return "";
+  const s = Math.floor((Date.now() - new Date(date)) / 1000);
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+function fmtDate(date) {
+  if (!date) return "-";
+  return new Date(date).toLocaleDateString("en-IN", {
+    day: "numeric", month: "short", year: "numeric"
+  });
+}
+
+function fmtTime(date) {
+  if (!date) return "";
+  return new Date(date).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+}
+
+const TICKET_BADGE = {
+  open:        "bg-sky-100 text-sky-700",
+  in_progress: "bg-amber-100 text-amber-700",
+  resolved:    "bg-emerald-100 text-emerald-700",
+  closed:      "bg-slate-100 text-slate-600",
 };
 
-const cardReveal = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0 }
+const BOOKING_BADGE = {
+  pending:  "bg-amber-100 text-amber-700",
+  approved: "bg-emerald-100 text-emerald-700",
+  rejected: "bg-rose-100 text-rose-700",
 };
 
-const NavItem = ({ icon: Icon, label, active, onClick }) => (
-  <button
-    onClick={onClick}
-    className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all ${
-      active ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" : "text-slate-500 hover:bg-slate-100"
-    }`}
-  >
-    <Icon size={20} />
-    <span className="font-semibold text-sm">{label}</span>
-  </button>
-);
-
-function displayDateTime(dateValue) {
-  if (!dateValue) return "-";
-  const date = new Date(dateValue);
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleString();
+/* ── Sub-components ──────────────────────────────────────── */
+function StatCard({ icon: Icon, label, value, iconCls, loading }) {
+  return (
+    <div className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${iconCls}`}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</p>
+        {loading
+          ? <div className="mt-1 h-7 w-10 animate-pulse rounded-lg bg-slate-100" />
+          : <p className="mt-0.5 text-2xl font-black text-slate-900">{value}</p>
+        }
+      </div>
+    </div>
+  );
 }
 
-function asDateValue(dateValue) {
-  const parsed = new Date(dateValue);
-  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+function SectionCard({ title, to, linkLabel = "View all", children, empty }) {
+  return (
+    <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="font-extrabold text-slate-900">{title}</h3>
+        {to && (
+          <Link to={to} className="flex items-center gap-1 text-xs font-semibold text-emerald-600 transition hover:text-emerald-700">
+            {linkLabel} <ArrowRight className="h-3 w-3" />
+          </Link>
+        )}
+      </div>
+      {empty
+        ? <p className="py-4 text-center text-sm text-slate-400">{empty}</p>
+        : children
+      }
+    </div>
+  );
 }
 
-function normalizeId(entity) {
-  if (!entity) return "";
-  return entity._id || entity.id || "";
+function Divider() {
+  return <div className="border-t border-slate-50" />;
 }
 
+/* ── Main Component ──────────────────────────────────────── */
 export function DashboardPage() {
   const { token, user } = useAuth();
-  const [activeTab, setActiveTab] = useState(TAB_KEYS.overview);
-  const [searchText, setSearchText] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [announcements, setAnnouncements] = useState([]);
-  const [tickets, setTickets] = useState([]);
-  const [events, setEvents] = useState([]);
-  const [bookings, setBookings] = useState([]);
+  const isAdmin = ["committee", "super_admin"].includes(user?.role);
 
-  const loadDashboardData = useCallback(async () => {
+  const [announcements, setAnnouncements]       = useState([]);
+  const [tickets, setTickets]                   = useState([]);
+  const [events, setEvents]                     = useState([]);
+  const [bookings, setBookings]                 = useState([]);
+  const [pendingApprovals, setPendingApprovals] = useState(0);
+  const [loading, setLoading]                   = useState(true);
+  const [error, setError]                       = useState("");
+
+  const load = useCallback(async () => {
     if (!token) return;
-
-    setIsLoading(true);
+    setLoading(true);
     setError("");
-
     try {
-      const [announcementData, ticketData, eventData, bookingData] = await Promise.all([
+      const calls = [
         apiRequest("/announcements", { token }),
         apiRequest("/tickets", { token }),
         apiRequest("/events", { token }),
-        apiRequest("/amenities/bookings", { token })
-      ]);
+        apiRequest("/amenities/bookings", { token }),
+      ];
+      if (isAdmin) calls.push(apiRequest("/admin/pending-approvals", { token }));
 
-      setAnnouncements(announcementData.items || []);
-      setTickets(ticketData.items || []);
-      setEvents(eventData.items || []);
-      setBookings(bookingData.items || []);
-    } catch (requestError) {
-      setError(requestError.message || "Failed to load dashboard data");
+      const results = await Promise.all(calls);
+      setAnnouncements(results[0].items || []);
+      setTickets(results[1].items || []);
+      setEvents(results[2].items || []);
+      setBookings(results[3].items || []);
+      if (isAdmin) setPendingApprovals((results[4].items || []).length);
+    } catch (err) {
+      setError(err.message);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }, [token]);
+  }, [token, isAdmin]);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
+  useEffect(() => { load(); }, [load]);
 
-  const userId = normalizeId(user);
+  const userId = user?._id || user?.id || "";
 
-  const metrics = useMemo(() => {
-    const now = Date.now();
+  const stats = useMemo(() => ({
+    announcements: announcements.length,
+    openTickets:   tickets.filter(t => !["resolved", "closed"].includes(t.status)).length,
+    upcomingEvents:events.filter(e => new Date(e.startAt) >= new Date()).length,
+    myBookings:    bookings.filter(b => (b.requestedBy?._id || b.requestedBy) === userId).length,
+  }), [announcements, tickets, events, bookings, userId]);
 
-    const openTickets = tickets.filter((ticket) => ticket.status !== "resolved" && ticket.status !== "closed").length;
-    const upcomingEvents = events.filter((event) => asDateValue(event.startAt) >= now).length;
-    const myBookings = bookings.filter((booking) => normalizeId(booking.requestedBy) === userId).length;
-
-    return {
-      announcements: announcements.length,
-      openTickets,
-      upcomingEvents,
-      myBookings
-    };
-  }, [announcements, bookings, events, tickets, userId]);
-
-  const recentActivity = useMemo(() => {
-    const activity = [
-      ...announcements.slice(0, 4).map((item) => ({
-        id: normalizeId(item),
-        type: "announcement",
-        title: item.title,
-        description: item.body,
-        when: item.createdAt
-      })),
-      ...tickets.slice(0, 4).map((item) => ({
-        id: normalizeId(item),
-        type: "ticket",
-        title: item.title,
-        description: `Status: ${item.status}`,
-        when: item.createdAt
-      })),
-      ...events.slice(0, 4).map((item) => ({
-        id: normalizeId(item),
-        type: "event",
-        title: item.title,
-        description: `Starts at ${displayDateTime(item.startAt)}`,
-        when: item.createdAt || item.startAt
-      })),
-      ...bookings.slice(0, 4).map((item) => ({
-        id: normalizeId(item),
-        type: "amenity",
-        title: item.amenityName,
-        description: `${item.date} ${item.startTime}-${item.endTime} (${item.status})`,
-        when: item.createdAt
-      }))
-    ];
-
-    return activity
-      .sort((a, b) => asDateValue(b.when) - asDateValue(a.when))
-      .slice(0, 8);
-  }, [announcements, bookings, events, tickets]);
-
-  const filteredAnnouncements = announcements.filter((item) => {
-    const q = searchText.trim().toLowerCase();
-    if (!q) return true;
-    return item.title?.toLowerCase().includes(q) || item.body?.toLowerCase().includes(q);
-  });
-
-  const filteredTickets = tickets.filter((item) => {
-    const q = searchText.trim().toLowerCase();
-    if (!q) return true;
-    return item.title?.toLowerCase().includes(q) || item.description?.toLowerCase().includes(q);
-  });
-
-  const filteredEvents = events.filter((item) => {
-    const q = searchText.trim().toLowerCase();
-    if (!q) return true;
-    return item.title?.toLowerCase().includes(q) || item.location?.toLowerCase().includes(q);
-  });
-
-  const filteredBookings = bookings.filter((item) => {
-    const q = searchText.trim().toLowerCase();
-    if (!q) return true;
-    return item.amenityName?.toLowerCase().includes(q) || item.status?.toLowerCase().includes(q);
-  });
+  const recentAnnouncements = announcements.slice(0, 4);
+  const openTickets         = tickets.filter(t => !["resolved", "closed"].includes(t.status)).slice(0, 4);
+  const upcomingEvents      = events
+    .filter(e => new Date(e.startAt) >= new Date())
+    .sort((a, b) => new Date(a.startAt) - new Date(b.startAt))
+    .slice(0, 3);
+  const myBookings          = bookings
+    .filter(b => (b.requestedBy?._id || b.requestedBy) === userId)
+    .slice(0, 3);
 
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC]">
-      <aside className="w-72 bg-white border-r border-slate-200 p-6 hidden lg:flex flex-col gap-8">
-        <div className="flex items-center gap-3 px-2">
-          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold">G</div>
-          <span className="text-xl font-bold tracking-tight text-slate-800">GateKeeper</span>
-        </div>
+    <div className="pb-12">
+      <div className="space-y-6 pt-4">
 
-        <nav className="flex-1 space-y-2">
-          <NavItem icon={LayoutDashboard} label="Overview" active={activeTab === TAB_KEYS.overview} onClick={() => setActiveTab(TAB_KEYS.overview)} />
-          <NavItem icon={Bell} label="Announcements" active={activeTab === TAB_KEYS.announcements} onClick={() => setActiveTab(TAB_KEYS.announcements)} />
-          <NavItem icon={Ticket} label="Help Desk" active={activeTab === TAB_KEYS.tickets} onClick={() => setActiveTab(TAB_KEYS.tickets)} />
-          <NavItem icon={Key} label="Amenities" active={activeTab === TAB_KEYS.amenities} onClick={() => setActiveTab(TAB_KEYS.amenities)} />
-          <NavItem icon={Calendar} label="Events" active={activeTab === TAB_KEYS.events} onClick={() => setActiveTab(TAB_KEYS.events)} />
-        </nav>
+        {/* Error */}
+        {error && (
+          <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200">
+            <XCircle className="h-4 w-4 shrink-0" /> {error}
+          </div>
+        )}
 
-        <div className="bg-slate-50 rounded-2xl p-4 mt-auto">
+        {/* Welcome banner */}
+        <div className="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-slate-900">
+              {greeting(user?.fullName)}
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+            </p>
+          </div>
           <div className="flex items-center gap-3">
-            <UserCircle className="text-slate-400" size={40} />
-            <div>
-              <p className="text-sm font-bold text-slate-800">{user?.fullName || "Resident"}</p>
-              <p className="text-xs text-slate-500 font-medium">{user?.flatNumber ? `Flat ${user.flatNumber}` : "Flat not set"}</p>
-            </div>
+            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700 capitalize">
+              {user?.role?.replace("_", " ")}
+            </span>
+            <button
+              onClick={load}
+              disabled={loading}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
           </div>
         </div>
-      </aside>
 
-      <main className="flex-1 overflow-y-auto">
-        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 py-4 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input
-              className="w-full bg-slate-100 border-none rounded-full py-2 pl-10 text-sm focus:ring-2 focus:ring-indigo-500/20"
-              placeholder="Search announcements, tickets, events..."
-              value={searchText}
-              onChange={(event) => setSearchText(event.target.value)}
-            />
-          </div>
-
-          <button
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-full shadow-lg transition-transform active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
-            onClick={loadDashboardData}
-            disabled={isLoading}
+        {/* Admin: pending approvals alert */}
+        {isAdmin && pendingApprovals > 0 && (
+          <Link
+            to="/admin/approvals"
+            className="flex items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4 transition hover:bg-amber-100"
           >
-            {isLoading ? "Loading..." : "Refresh"}
-          </button>
-        </header>
-
-        <div className="p-8 max-w-6xl mx-auto space-y-8">
-          {error ? (
-            <div className="rounded-2xl bg-rose-50 border border-rose-100 p-4 text-rose-700 text-sm">{error}</div>
-          ) : null}
-
-          {isLoading && !announcements.length && !tickets.length && !events.length && !bookings.length ? (
-            <div className="rounded-2xl bg-white border border-slate-200 p-8 flex items-center gap-3 text-slate-600">
-              <LoaderCircle className="animate-spin" size={18} />
-              <span>Loading dashboard data...</span>
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />
+              <div>
+                <p className="font-bold text-amber-900">
+                  {pendingApprovals} membership {pendingApprovals === 1 ? "request" : "requests"} awaiting your approval
+                </p>
+                <p className="text-sm text-amber-700">Residents are waiting to join the society</p>
+              </div>
             </div>
-          ) : null}
+            <ArrowRight className="h-4 w-4 shrink-0 text-amber-600" />
+          </Link>
+        )}
 
-          <motion.section
-            initial="hidden"
-            animate="visible"
-            variants={cardReveal}
-            transition={{ duration: 0.35 }}
-            className="relative overflow-hidden bg-indigo-900 rounded-[2rem] p-10 text-white shadow-2xl shadow-indigo-200"
-          >
-            <div className="relative z-10 max-w-2xl">
-              <h2 className="text-4xl font-bold leading-tight">Welcome back, {user?.fullName || "Resident"}.</h2>
-              <p className="mt-4 text-indigo-100 text-lg">
-                {metrics.announcements} announcements, {metrics.openTickets} active tickets, {metrics.upcomingEvents} upcoming events, and {metrics.myBookings} of your amenity bookings are available right now.
-              </p>
-            </div>
-            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500 rounded-full -mr-20 -mt-20 blur-3xl opacity-20"></div>
-            <div className="absolute bottom-0 right-20 w-40 h-40 bg-indigo-300 rounded-full blur-3xl opacity-10"></div>
-          </motion.section>
+        {/* Stats row */}
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <StatCard icon={Bell}        label="Announcements"  value={stats.announcements}  iconCls="bg-amber-50 text-amber-500"   loading={loading} />
+          <StatCard icon={Ticket}      label="Open Tickets"   value={stats.openTickets}    iconCls="bg-rose-50 text-rose-500"     loading={loading} />
+          <StatCard icon={CalendarDays}label="Upcoming Events"value={stats.upcomingEvents} iconCls="bg-violet-50 text-violet-500" loading={loading} />
+          <StatCard icon={Key}         label="My Bookings"    value={stats.myBookings}     iconCls="bg-sky-50 text-sky-500"       loading={loading} />
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-            <MetricCard label="Announcements" value={metrics.announcements} tone="indigo" />
-            <MetricCard label="Open Tickets" value={metrics.openTickets} tone="amber" />
-            <MetricCard label="Upcoming Events" value={metrics.upcomingEvents} tone="cyan" />
-            <MetricCard label="My Bookings" value={metrics.myBookings} tone="emerald" />
+        {/* Main content grid */}
+        <div className="grid gap-6 lg:grid-cols-5">
+
+          {/* Left col — Announcements + Tickets */}
+          <div className="space-y-6 lg:col-span-3">
+
+            <SectionCard
+              title="Recent Announcements"
+              to="/announcements"
+              empty={!loading && !recentAnnouncements.length ? "No announcements yet." : ""}
+            >
+              {loading
+                ? <LoadingRows n={3} />
+                : recentAnnouncements.map((a, i) => (
+                  <div key={a._id}>
+                    {i > 0 && <Divider />}
+                    <div className="py-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="font-semibold text-slate-800 leading-snug">{a.title}</p>
+                        <span className="shrink-0 text-xs text-slate-400">{timeAgo(a.createdAt)}</span>
+                      </div>
+                      <p className="mt-1 text-sm text-slate-500 line-clamp-2">{a.body}</p>
+                      <p className="mt-1.5 text-xs text-slate-400">
+                        By {a.createdBy?.fullName || "Committee"}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              }
+            </SectionCard>
+
+            <SectionCard
+              title="Open Tickets"
+              to="/tickets"
+              empty={!loading && !openTickets.length ? "No open tickets. All good!" : ""}
+            >
+              {loading
+                ? <LoadingRows n={3} />
+                : openTickets.map((t, i) => (
+                  <div key={t._id}>
+                    {i > 0 && <Divider />}
+                    <div className="flex items-center justify-between gap-3 py-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-800 truncate">{t.title}</p>
+                        <p className="mt-0.5 text-xs text-slate-400 capitalize">{t.category || "General"}</p>
+                      </div>
+                      <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${TICKET_BADGE[t.status] || "bg-slate-100 text-slate-600"}`}>
+                        {t.status?.replace("_", " ")}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              }
+            </SectionCard>
           </div>
 
-          {activeTab === TAB_KEYS.overview ? (
-            <section className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm">
-              <div className="flex justify-between items-center mb-8">
-                <h3 className="text-xl font-bold text-slate-800">Recent Activity</h3>
+          {/* Right col — Events + Bookings */}
+          <div className="space-y-6 lg:col-span-2">
+
+            <SectionCard
+              title="Upcoming Events"
+              to="/events"
+              empty={!loading && !upcomingEvents.length ? "No upcoming events." : ""}
+            >
+              {loading
+                ? <LoadingRows n={2} />
+                : upcomingEvents.map((e, i) => (
+                  <div key={e._id}>
+                    {i > 0 && <Divider />}
+                    <div className="py-3">
+                      <p className="font-semibold text-slate-800 leading-snug">{e.title}</p>
+                      <div className="mt-2 space-y-1">
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                          <Clock className="h-3.5 w-3.5" />
+                          {fmtDate(e.startAt)} · {fmtTime(e.startAt)}
+                        </div>
+                        {e.location && (
+                          <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                            <MapPin className="h-3.5 w-3.5" />
+                            {e.location}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              }
+            </SectionCard>
+
+            <SectionCard
+              title="My Bookings"
+              to="/amenities"
+              empty={!loading && !myBookings.length ? "No bookings yet." : ""}
+            >
+              {loading
+                ? <LoadingRows n={2} />
+                : myBookings.map((b, i) => (
+                  <div key={b._id}>
+                    {i > 0 && <Divider />}
+                    <div className="flex items-center justify-between gap-3 py-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-800 truncate">{b.amenityName || "Amenity"}</p>
+                        <p className="mt-0.5 text-xs text-slate-400">{b.date} · {b.startTime}–{b.endTime}</p>
+                      </div>
+                      <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${BOOKING_BADGE[b.status] || "bg-slate-100 text-slate-600"}`}>
+                        {b.status}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              }
+            </SectionCard>
+
+            {/* Admin quick links */}
+            {isAdmin && (
+              <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+                <h3 className="mb-4 font-extrabold text-slate-900">Admin</h3>
+                <div className="space-y-2">
+                  <Link to="/admin/approvals"
+                    className="flex items-center justify-between rounded-xl border border-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                    <div className="flex items-center gap-2.5">
+                      <Users className="h-4 w-4 text-emerald-600" />
+                      Pending Approvals
+                    </div>
+                    {pendingApprovals > 0 && (
+                      <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-bold text-white">
+                        {pendingApprovals}
+                      </span>
+                    )}
+                  </Link>
+                  <Link to="/admin/society-setup"
+                    className="flex items-center gap-2.5 rounded-xl border border-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                    <Wrench className="h-4 w-4 text-emerald-600" />
+                    Society Setup
+                  </Link>
+                </div>
               </div>
-              <div className="space-y-6">
-                {recentActivity.length ? (
-                  recentActivity.map((item) => (
-                    <ActivityItem
-                      key={`${item.type}-${item.id}`}
-                      title={item.title}
-                      desc={item.description}
-                      time={displayDateTime(item.when)}
-                      status={item.type}
-                    />
-                  ))
-                ) : (
-                  <p className="text-slate-500 text-sm">No activity found for your tenant yet.</p>
-                )}
-              </div>
-            </section>
-          ) : null}
-
-          {activeTab === TAB_KEYS.announcements ? (
-            <section className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm space-y-4">
-              <h3 className="text-xl font-bold text-slate-800">Announcements</h3>
-              {filteredAnnouncements.length ? (
-                filteredAnnouncements.map((item) => (
-                  <ListCard
-                    key={normalizeId(item)}
-                    title={item.title}
-                    subtitle={`By ${item.createdBy?.fullName || "Community"}`}
-                    meta={displayDateTime(item.createdAt)}
-                    body={item.body}
-                  />
-                ))
-              ) : (
-                <p className="text-slate-500 text-sm">No announcements found.</p>
-              )}
-            </section>
-          ) : null}
-
-          {activeTab === TAB_KEYS.tickets ? (
-            <section className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm space-y-4">
-              <h3 className="text-xl font-bold text-slate-800">Tickets</h3>
-              {filteredTickets.length ? (
-                filteredTickets.map((item) => (
-                  <ListCard
-                    key={normalizeId(item)}
-                    title={item.title}
-                    subtitle={`Category: ${item.category || "general"}`}
-                    meta={`Status: ${item.status}`}
-                    body={item.description}
-                  />
-                ))
-              ) : (
-                <p className="text-slate-500 text-sm">No tickets found.</p>
-              )}
-            </section>
-          ) : null}
-
-          {activeTab === TAB_KEYS.events ? (
-            <section className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm space-y-4">
-              <h3 className="text-xl font-bold text-slate-800">Events</h3>
-              {filteredEvents.length ? (
-                filteredEvents.map((item) => (
-                  <ListCard
-                    key={normalizeId(item)}
-                    title={item.title}
-                    subtitle={item.location || "Community Area"}
-                    meta={`${displayDateTime(item.startAt)} to ${displayDateTime(item.endAt)}`}
-                    body={item.description || "No event description."}
-                  />
-                ))
-              ) : (
-                <p className="text-slate-500 text-sm">No events found.</p>
-              )}
-            </section>
-          ) : null}
-
-          {activeTab === TAB_KEYS.amenities ? (
-            <section className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm space-y-4">
-              <h3 className="text-xl font-bold text-slate-800">Amenity Bookings</h3>
-              {filteredBookings.length ? (
-                filteredBookings.map((item) => (
-                  <ListCard
-                    key={normalizeId(item)}
-                    title={item.amenityName}
-                    subtitle={`${item.date} • ${item.startTime}-${item.endTime}`}
-                    meta={`Status: ${item.status}`}
-                    body={`Requested by ${item.requestedBy?.fullName || "resident"}`}
-                  />
-                ))
-              ) : (
-                <p className="text-slate-500 text-sm">No amenity bookings found.</p>
-              )}
-            </section>
-          ) : null}
+            )}
+          </div>
         </div>
-      </main>
-    </div>
-  );
-}
-
-function ActivityItem({ title, time, desc, status }) {
-  const statusColor = {
-    announcement: "bg-indigo-500",
-    ticket: "bg-amber-500",
-    event: "bg-cyan-500",
-    amenity: "bg-emerald-500"
-  };
-
-  return (
-    <div className="flex gap-4 group">
-      <div className={`mt-1 w-3 h-3 rounded-full flex-shrink-0 ${statusColor[status] || "bg-slate-400"}`}></div>
-      <div className="flex-1 pb-6 border-b border-slate-100 group-last:border-0">
-        <div className="flex justify-between items-start gap-4">
-          <h4 className="font-bold text-slate-900">{title}</h4>
-          <span className="text-xs font-medium text-slate-400">{time}</span>
-        </div>
-        <p className="text-sm text-slate-500 mt-1">{desc}</p>
       </div>
     </div>
   );
 }
 
-function MetricCard({ label, value, tone }) {
-  const toneClass = {
-    indigo: "border-indigo-100 bg-indigo-50 text-indigo-800",
-    amber: "border-amber-100 bg-amber-50 text-amber-800",
-    cyan: "border-cyan-100 bg-cyan-50 text-cyan-800",
-    emerald: "border-emerald-100 bg-emerald-50 text-emerald-800"
-  };
-
+function LoadingRows({ n = 3 }) {
   return (
-    <motion.article
-      initial="hidden"
-      animate="visible"
-      variants={cardReveal}
-      transition={{ duration: 0.25 }}
-      className={`rounded-2xl border p-5 ${toneClass[tone] || "border-slate-200 bg-white text-slate-800"}`}
-    >
-      <p className="text-xs uppercase tracking-wide font-semibold opacity-80">{label}</p>
-      <p className="mt-3 text-3xl font-black">{value}</p>
-    </motion.article>
-  );
-}
-
-function ListCard({ title, subtitle, meta, body }) {
-  return (
-    <article className="rounded-2xl border border-slate-200 p-5">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h4 className="font-bold text-slate-900">{title}</h4>
-          <p className="text-sm text-slate-500">{subtitle}</p>
+    <div className="space-y-4">
+      {[...Array(n)].map((_, i) => (
+        <div key={i} className="space-y-2 py-1">
+          <div className="h-4 w-3/4 animate-pulse rounded-lg bg-slate-100" />
+          <div className="h-3 w-1/2 animate-pulse rounded-lg bg-slate-100" />
         </div>
-        <p className="text-xs text-slate-500">{meta}</p>
-      </div>
-      <p className="text-sm text-slate-700 mt-3 leading-relaxed">{body}</p>
-    </article>
+      ))}
+    </div>
   );
 }

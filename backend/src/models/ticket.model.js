@@ -8,7 +8,8 @@ const ticketSchema = new mongoose.Schema(
     category: { type: String, default: "general" },
     status: { type: String, enum: ["open", "in_progress", "resolved", "closed"], default: "open" },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null }
+    assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+    photos: { type: [String], default: [] }
   },
   { timestamps: true }
 );

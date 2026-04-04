@@ -37,6 +37,8 @@ export function AmenitiesPage() {
   const [isAutoApprove, setIsAutoApprove] = useState(false);
   const [openTime, setOpenTime] = useState("06:00");
   const [closeTime, setCloseTime] = useState("22:00");
+  const [photoFiles, setPhotoFiles] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const canManage = useMemo(
     () => ["committee", "super_admin"].includes(user?.role),
@@ -72,6 +74,21 @@ export function AmenitiesPage() {
     setError("");
 
     try {
+      let photos = [];
+
+      if (photoFiles.length > 0) {
+        setIsUploading(true);
+        const fd = new FormData();
+        photoFiles.forEach((file) => fd.append("photos", file));
+        const uploadData = await apiRequest("/amenities/upload-photos", {
+          method: "POST",
+          token,
+          formData: fd
+        });
+        photos = uploadData.urls || [];
+        setIsUploading(false);
+      }
+
       const data = await apiRequest("/amenities", {
         method: "POST",
         token,
@@ -80,7 +97,7 @@ export function AmenitiesPage() {
           description,
           isAutoApprove,
           capacity: Number(capacity),
-          photos: [],
+          photos,
           operatingHours: buildOperatingHours(openTime, closeTime)
         }
       });
@@ -92,7 +109,9 @@ export function AmenitiesPage() {
       setIsAutoApprove(false);
       setOpenTime("06:00");
       setCloseTime("22:00");
+      setPhotoFiles([]);
     } catch (err) {
+      setIsUploading(false);
       setError(err.message);
     }
   }
@@ -163,7 +182,24 @@ export function AmenitiesPage() {
             <input className="field" type="time" value={openTime} onChange={(e) => setOpenTime(e.target.value)} />
             <input className="field" type="time" value={closeTime} onChange={(e) => setCloseTime(e.target.value)} />
           </div>
-          <button className="btn-primary" type="submit">Create Amenity</button>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">
+              Photos <span className="text-slate-400 font-normal">(up to 5, max 5 MB each)</span>
+            </label>
+            <input
+              className="field"
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => setPhotoFiles(Array.from(e.target.files).slice(0, 5))}
+            />
+            {photoFiles.length > 0 && (
+              <p className="mt-1.5 text-xs text-slate-500">{photoFiles.length} file{photoFiles.length > 1 ? "s" : ""} selected</p>
+            )}
+          </div>
+          <button className="btn-primary" type="submit" disabled={isUploading}>
+            {isUploading ? "Uploading photos…" : "Create Amenity"}
+          </button>
         </form>
       ) : null}
 

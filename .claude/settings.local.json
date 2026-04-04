@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"import\\('cloudinary'\\).then\\(\\(\\)=>console.log\\('cloudinary ok'\\)\\).catch\\(e=>console.log\\('missing:',e.message\\)\\)\")"
+    ]
+  }
+}

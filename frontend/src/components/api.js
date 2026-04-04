@@ -1,13 +1,14 @@
 import { API_BASE_URL } from "./config";
 
-export async function apiRequest(path, { method = "GET", token, body } = {}) {
+export async function apiRequest(path, { method = "GET", token, body, formData } = {}) {
+  const isMultipart = formData instanceof FormData;
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
     headers: {
-      "Content-Type": "application/json",
+      ...(isMultipart ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     },
-    body: body ? JSON.stringify(body) : undefined
+    body: isMultipart ? formData : body ? JSON.stringify(body) : undefined
   });
 
   if (!response.ok) {

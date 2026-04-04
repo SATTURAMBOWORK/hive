@@ -5,6 +5,7 @@ import { AmenityBooking } from "../models/amenity-booking.model.js";
 import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
 import { hasAmenityBookingConflict } from "../utils/booking-conflict.js";
+import { uploadToCloudinary } from "../utils/cloudinary.js";
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -70,6 +71,26 @@ function ensureWithinOperatingHours(amenity, date, startTime, endTime) {
       `Selected time is outside operating hours (${dayHours.open}-${dayHours.close}) for ${dayKey}`,
       StatusCodes.BAD_REQUEST
     );
+  }
+}
+
+export async function uploadAmenityPhotos(req, res, next) {
+  try {
+    if (!req.files || req.files.length === 0) {
+      throw new AppError("No files uploaded", StatusCodes.BAD_REQUEST);
+    }
+
+    if (req.files.length > 5) {
+      throw new AppError("Maximum 5 photos allowed per upload", StatusCodes.BAD_REQUEST);
+    }
+
+    const urls = await Promise.all(
+      req.files.map((file) => uploadToCloudinary(file.buffer))
+    );
+
+    res.json({ urls });
+  } catch (error) {
+    next(error);
   }
 }
 
