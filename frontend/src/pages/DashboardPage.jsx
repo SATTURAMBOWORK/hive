@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../components/AuthContext";
 import { apiRequest } from "../components/api";
+import { SecurityDashboard } from "./SecurityDashboard";
 
 /* ── Google Fonts injected once ─────────────────────────────── */
 if (!document.getElementById("dash-fonts")) {
@@ -395,6 +396,10 @@ function Card({ children, style = {} }) {
 ══════════════════════════════════════════════════════════════ */
 export function DashboardPage() {
   const { token, user, membership } = useAuth();
+
+  // Route to role-specific dashboard
+  if (user?.role === "security") return <SecurityDashboard />;
+
   const isAdmin = ["committee", "super_admin"].includes(user?.role);
 
   const [announcements,   setAnnouncements]   = useState([]);

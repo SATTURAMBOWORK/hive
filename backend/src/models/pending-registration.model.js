@@ -8,6 +8,7 @@ const pendingRegistrationSchema = new mongoose.Schema({
   desiredRole:          { type: String, required: true },
   flatNumber:           { type: String, default: "" },
   phone:                { type: String, default: "" },
+  shift:                { type: String, default: "" },
   tenantName:           { type: String, default: "" },
   tenantCity:           { type: String, default: "Bangalore" },
   otpHash:              { type: String, required: true },

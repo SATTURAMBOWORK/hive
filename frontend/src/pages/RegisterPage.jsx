@@ -12,7 +12,8 @@ export function RegisterPage() {
   const { register, verifyRegistration, resendRegistrationOtp } = useAuth();
   const navigate = useNavigate();
 
-  const [isSuperAdmin, setIsSuperAdmin]         = useState(false);
+  const [roleStep, setRoleStep]                 = useState(true);
+  const [selectedRole, setSelectedRole]         = useState(null);
   const [verificationStep, setVerificationStep] = useState(false);
   const [otpCode, setOtpCode]                   = useState("");
   const [error, setError]                       = useState("");
@@ -26,6 +27,7 @@ export function RegisterPage() {
     fullName: "", email: "", password: "",
     tenantSlug: "", flatNumber: "", phone: "",
     tenantName: "", tenantCity: "Bangalore", superAdminSignupKey: "",
+    shift: "",
   });
 
   function field(key) {
@@ -55,10 +57,15 @@ export function RegisterPage() {
       setConfirmError("Passwords do not match.");
       return;
     }
+    if (selectedRole === "security" && !form.shift) {
+      setError("Please select a shift.");
+      return;
+    }
     setError(""); setSuccess("");
     try {
-      const data = await register({ ...form, desiredRole: isSuperAdmin ? "super_admin" : "resident" });
-      if (isSuperAdmin && data?.token) { navigate("/"); return; }
+      const roleMap = { resident: "resident", staff: "staff", security: "security", admin: "super_admin" };
+      const data = await register({ ...form, desiredRole: roleMap[selectedRole] });
+      if (selectedRole === "admin" && data?.token) { navigate("/"); return; }
       setVerificationStep(true);
       setSuccess(data?.message || "Check your email for the OTP.");
     } catch (err) { setError(err.message); }
@@ -113,44 +120,113 @@ export function RegisterPage() {
             <h2 className="text-2xl font-extrabold text-slate-900">Create account</h2>
           </div>
 
-          {!verificationStep ? (
+          {roleStep && !selectedRole ? (
             <>
               <div className="hidden md:block mb-6">
-                <h3 className="text-2xl font-extrabold text-slate-900">Create account</h3>
+                <h3 className="text-2xl font-extrabold text-slate-900">Choose your role</h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  {isSuperAdmin ? "Set up a new society on SocietyHub." : "Join your housing society portal."}
+                  Select the role that best describes you
                 </p>
               </div>
 
-              {/* Role toggle */}
-              <div
-                className="mb-5 flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 transition hover:bg-slate-100"
-                onClick={() => setIsSuperAdmin((v) => !v)}
-              >
-                <div
-                  className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${isSuperAdmin ? "bg-emerald-600" : "bg-slate-300"}`}
+              {/* ROLE SELECTOR CARDS */}
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {/* RESIDENT */}
+                <button
+                  onClick={() => { setSelectedRole("resident"); setRoleStep(false); }}
+                  className="p-4 rounded-xl border-2 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50 transition text-left"
                 >
-                  <span
-                    className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${isSuperAdmin ? "translate-x-4" : "translate-x-0.5"}`}
-                  />
-                </div>
-                <span>
-                  <span className="font-semibold text-slate-800">Register as Society Admin</span>
-                  <span className="ml-1 text-slate-400">(creates a new society)</span>
-                </span>
+                  <div className="text-3xl mb-2">🏠</div>
+                  <h3 className="font-semibold text-slate-900 text-sm">Resident</h3>
+                  <p className="text-xs text-slate-500 mt-1">I own/rent a flat</p>
+                </button>
+
+                {/* STAFF */}
+                <button
+                  onClick={() => { setSelectedRole("staff"); setRoleStep(false); }}
+                  className="p-4 rounded-xl border-2 border-slate-200 hover:border-green-500 hover:bg-green-50 transition text-left"
+                >
+                  <div className="text-3xl mb-2">🔧</div>
+                  <h3 className="font-semibold text-slate-900 text-sm">Maintenance Staff</h3>
+                  <p className="text-xs text-slate-500 mt-1">Maintenance work</p>
+                </button>
+
+                {/* SECURITY */}
+                <button
+                  onClick={() => { setSelectedRole("security"); setRoleStep(false); }}
+                  className="p-4 rounded-xl border-2 border-slate-200 hover:border-orange-500 hover:bg-orange-50 transition text-left"
+                >
+                  <div className="text-3xl mb-2">🛡️</div>
+                  <h3 className="font-semibold text-slate-900 text-sm">Security Guard</h3>
+                  <p className="text-xs text-slate-500 mt-1">Gate security</p>
+                </button>
+
+                {/* ADMIN */}
+                <button
+                  onClick={() => { setSelectedRole("admin"); setRoleStep(false); }}
+                  className="p-4 rounded-xl border-2 border-slate-200 hover:border-purple-500 hover:bg-purple-50 transition text-left"
+                >
+                  <div className="text-3xl mb-2">⚙️</div>
+                  <h3 className="font-semibold text-slate-900 text-sm">Society Admin</h3>
+                  <p className="text-xs text-slate-500 mt-1">Manage society</p>
+                </button>
+              </div>
+
+              <div className="mt-7 border-t border-slate-100 pt-5 text-center">
+                <p className="text-sm text-slate-600">
+                  Already have an account?{" "}
+                  <Link to="/login" className="font-semibold text-emerald-700 transition hover:text-emerald-800">
+                    Sign in
+                  </Link>
+                </p>
+              </div>
+            </>
+          ) : !verificationStep ? (
+            <>
+              <div className="hidden md:block mb-6 flex items-center gap-2">
+                <button onClick={() => { setSelectedRole(null); setRoleStep(true); }} className="text-emerald-700 hover:text-emerald-800 text-sm">← Change role</button>
+                <h3 className="text-2xl font-extrabold text-slate-900 ml-2">Create account</h3>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-3.5">
                 {error && <div className="rounded-lg bg-rose-50 p-3 text-sm text-rose-800 ring-1 ring-rose-200/50">{error}</div>}
 
                 <input className={inputCls} placeholder="Full name" value={form.fullName} onChange={field("fullName")} required />
-                <input className={inputCls} placeholder={isSuperAdmin ? "Choose a society code  (e.g. green-heights)" : "Society code  (e.g. green-heights)"} value={form.tenantSlug} onChange={field("tenantSlug")} required />
+                <input className={inputCls} placeholder={selectedRole === "admin" ? "Choose a society code  (e.g. green-heights)" : "Society code  (e.g. green-heights)"} value={form.tenantSlug} onChange={field("tenantSlug")} required />
 
-                {!isSuperAdmin && (
+                {selectedRole !== "admin" && selectedRole !== null && (
                   <input className={inputCls} placeholder="Phone" value={form.phone} onChange={field("phone")} />
                 )}
 
-                {isSuperAdmin && (
+                {selectedRole === "security" && (
+                  <div>
+                    <p className="mb-2 text-sm font-medium text-slate-700">Shift <span className="text-rose-500">*</span></p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { value: "morning", label: "Morning", time: "6am – 2pm", emoji: "🌅" },
+                        { value: "evening", label: "Evening", time: "2pm – 10pm", emoji: "🌆" },
+                        { value: "night",   label: "Night",   time: "10pm – 6am", emoji: "🌙" },
+                      ].map((s) => (
+                        <button
+                          key={s.value}
+                          type="button"
+                          onClick={() => setForm((prev) => ({ ...prev, shift: s.value }))}
+                          className={`flex flex-col items-center gap-1 rounded-xl border-2 p-3 text-center transition
+                            ${form.shift === s.value
+                              ? "border-orange-500 bg-orange-50 text-orange-700"
+                              : "border-slate-200 text-slate-600 hover:border-orange-300 hover:bg-orange-50"
+                            }`}
+                        >
+                          <span className="text-xl">{s.emoji}</span>
+                          <span className="text-xs font-semibold">{s.label}</span>
+                          <span className="text-[10px] text-slate-400">{s.time}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedRole === "admin" && (
                   <>
                     <div className="grid grid-cols-2 gap-3">
                       <input className={inputCls} placeholder="Society name" value={form.tenantName} onChange={field("tenantName")} required />
@@ -251,14 +327,16 @@ export function RegisterPage() {
             </>
           )}
 
-          <div className="mt-7 border-t border-slate-100 pt-5 text-center">
-            <p className="text-sm text-slate-600">
-              Already have an account?{" "}
-              <Link to="/login" className="font-semibold text-emerald-700 transition hover:text-emerald-800">
-                Sign in
-              </Link>
-            </p>
-          </div>
+          {!roleStep && !verificationStep && (
+            <div className="mt-7 border-t border-slate-100 pt-5 text-center">
+              <p className="text-sm text-slate-600">
+                Already have an account?{" "}
+                <Link to="/login" className="font-semibold text-emerald-700 transition hover:text-emerald-800">
+                  Sign in
+                </Link>
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

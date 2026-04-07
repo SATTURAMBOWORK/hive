@@ -18,6 +18,11 @@ const userSchema = new mongoose.Schema(
     },
     flatNumber: { type: String, default: "" },
     phone: { type: String, default: "" },
+    shift: {
+      type: String,
+      enum: ["morning", "evening", "night", ""],
+      default: ""
+    },
     isVerified: { type: Boolean, default: false },
   },
   { timestamps: true }

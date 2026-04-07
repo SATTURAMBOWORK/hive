@@ -76,6 +76,7 @@ export async function register(req, res, next) {
     const superAdminSignupKey = sanitizeText(req.body?.superAdminSignupKey);
     const flatNumber = sanitizeText(req.body?.flatNumber);
     const phone = sanitizeDigits(req.body?.phone);
+    const shift = sanitizeText(req.body?.shift).toLowerCase();
 
     if (!fullName || !email || !password || !tenantSlug) {
       throw new AppError("fullName, email, password, tenantSlug are required", StatusCodes.BAD_REQUEST);
@@ -128,16 +129,22 @@ export async function register(req, res, next) {
       return;
     }
 
-    // ── Resident: validate tenant exists, then store pending registration ──
+    // ── Resident, Staff, Security: validate tenant exists, then store pending registration ──
     const tenant = await Tenant.findOne({ slug: tenantSlug });
     if (!tenant) throw new AppError("Invalid society code", StatusCodes.BAD_REQUEST);
     if (!tenant.isActive) throw new AppError("Tenant is inactive", StatusCodes.FORBIDDEN);
 
-    if ( !phone) {
-      throw new AppError(" phone is required", StatusCodes.BAD_REQUEST);
+    if (!phone) {
+      throw new AppError("phone is required", StatusCodes.BAD_REQUEST);
     }
     if (phone.length < 10 || phone.length > 15) {
       throw new AppError("Phone must be between 10 and 15 digits", StatusCodes.BAD_REQUEST);
+    }
+
+    if (desiredRole === "security") {
+      if (!["morning", "evening", "night"].includes(shift)) {
+        throw new AppError("shift is required for security (morning, evening, or night)", StatusCodes.BAD_REQUEST);
+      }
     }
 
     const existingUser = await User.findOne({ tenantId: tenant._id, email });
@@ -150,8 +157,8 @@ export async function register(req, res, next) {
     await PendingRegistration.findOneAndUpdate(
       { tenantSlug, email },
       {
-        fullName, passwordHash, desiredRole: ROLES.RESIDENT,
-        flatNumber, phone, tenantName, tenantCity,
+        fullName, passwordHash, desiredRole,
+        flatNumber, phone, shift, tenantName, tenantCity,
         otpHash: otpState.verificationOtpHash,
         otpExpiresAt: otpState.verificationOtpExpiresAt,
         otpAttempts: 0,
@@ -264,6 +271,7 @@ export async function verifyRegistration(req, res, next) {
       role: pending.desiredRole,
       flatNumber: pending.flatNumber,
       phone: pending.phone,
+      shift: pending.shift,
       isVerified: true,
       verificationOtpHash: "",
       verificationOtpExpiresAt: null,
