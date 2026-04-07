@@ -33,9 +33,12 @@ export function TopNav() {
       {isLoggedIn && (
         <div className="flex items-center gap-3">
           <NotificationBell />
-          <p className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-900">
+          <NavLink
+            to="/profile"
+            className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-900 transition hover:bg-emerald-200"
+          >
             {user?.fullName}
-          </p>
+          </NavLink>
         </div>
       )}
     </header>

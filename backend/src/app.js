@@ -14,6 +14,7 @@ import { societiesRouter } from "./routes/societies.routes.js";
 import { membershipRouter } from "./routes/membership.routes.js";
 import { adminRouter } from "./routes/admin.routes.js";
 import { notificationRouter } from "./routes/notification.routes.js";
+import { userRouter } from "./routes/user.routes.js";
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use("/api/societies", societiesRouter);
 app.use("/api/membership", membershipRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/notifications", notificationRouter);
+app.use("/api/users", userRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

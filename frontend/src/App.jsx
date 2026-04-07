@@ -11,6 +11,7 @@ import { OnboardingPage } from "./pages/OnboardingPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { SocietySetupPage } from "./pages/SocietySetupPage";
 import { TicketsPage } from "./pages/TicketsPage";
+import { ProfilePage } from "./pages/ProfilePage";
 import { useAuth } from "./components/AuthContext";
 
 function ProtectedDashboard() {
@@ -84,6 +85,7 @@ export function App() {
         <Route path="/amenities" element={<ProtectedFeature><AmenitiesPage /></ProtectedFeature>} />
         <Route path="/admin/approvals" element={<ProtectedFeature><AdminApprovalsPage /></ProtectedFeature>} />
         <Route path="/admin/society-setup" element={<ProtectedFeature><SocietySetupPage /></ProtectedFeature>} />
+        <Route path="/profile" element={<ProtectedFeature><ProfilePage /></ProtectedFeature>} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
       </Route>
