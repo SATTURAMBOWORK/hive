@@ -1,21 +1,55 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Bell, CalendarDays, Wrench, Key, Ticket,
-  ArrowRight, Clock, MapPin, AlertTriangle,
-  CheckCircle2, XCircle, Loader2, Users, RefreshCw
+  Bell, CalendarDays, Ticket, ArrowRight, Clock,
+  MapPin, AlertTriangle, XCircle, Users, Wrench,
+  Megaphone, RefreshCw, Home, Plus, BookOpen,
+  ChevronRight, Activity, Zap
 } from "lucide-react";
 import { useAuth } from "../components/AuthContext";
 import { apiRequest } from "../components/api";
 
-/* ── Helpers ─────────────────────────────────────────────── */
-function greeting(name) {
-  const h = new Date().getHours();
-  const salutation = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
-  const first = name?.split(" ")[0] || "there";
-  return `${salutation}, ${first}.`;
+/* ── Google Fonts injected once ─────────────────────────────── */
+if (!document.getElementById("dash-fonts")) {
+  const l = document.createElement("link");
+  l.id = "dash-fonts";
+  l.rel = "stylesheet";
+  l.href =
+    "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap";
+  document.head.appendChild(l);
 }
 
+/* ── Design Tokens ──────────────────────────────────────────── */
+const tok = {
+  cream:         "#FDFCF9",
+  stone50:       "#F7F5F0",
+  stone100:      "#EDEBE4",
+  stone200:      "#D9D6CC",
+  stone400:      "#9E9B91",
+  stone600:      "#6B6860",
+  stone800:      "#2E2D29",
+  gold:          "#C9A84C",
+  goldLight:     "#F5EDD6",
+  indigo:        "#3D52A0",
+  indigoLight:   "#EEF1FA",
+  indigoBorder:  "#C7D0EE",
+  emerald:       "#1A7A5E",
+  emeraldLight:  "#E6F5F0",
+  emeraldBorder: "#B2DECE",
+  rose:          "#C0392B",
+  roseLight:     "#FBF0EE",
+  roseBorder:    "#F5C6C2",
+  amber:         "#B5620D",
+  amberLight:    "#FEF5E7",
+  amberBorder:   "#FDE68A",
+};
+
+/* ── Helpers ────────────────────────────────────────────────── */
+function greeting(name) {
+  const h = new Date().getHours();
+  const word = h < 12 ? "Morning" : h < 17 ? "Afternoon" : "Evening";
+  return { word, first: name?.split(" ")[0] || "there" };
+}
 function timeAgo(date) {
   if (!date) return "";
   const s = Math.floor((Date.now() - new Date(date)) / 1000);
@@ -26,99 +60,362 @@ function timeAgo(date) {
   if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
 }
+function fmtDate(d) {
+  if (!d) return "-";
+  return new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
+function fmtTime(d) {
+  if (!d) return "";
+  return new Date(d).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+}
+function fmtDay(d)   { return new Date(d).toLocaleDateString("en-IN", { day: "numeric" }); }
+function fmtMonth(d) { return new Date(d).toLocaleDateString("en-IN", { month: "short" }); }
 
-function fmtDate(date) {
-  if (!date) return "-";
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "numeric", month: "short", year: "numeric"
-  });
+/* ── Feed builder ───────────────────────────────────────────── */
+function buildFeed(announcements, tickets, events) {
+  const items = [];
+  announcements.slice(0, 5).forEach(a =>
+    items.push({ type: "announcement", date: a.createdAt, data: a }));
+  tickets
+    .filter(t => !["resolved", "closed"].includes(t.status))
+    .slice(0, 5)
+    .forEach(t => items.push({ type: "ticket", date: t.createdAt, data: t }));
+  events
+    .filter(e => new Date(e.startAt) >= new Date())
+    .slice(0, 3)
+    .forEach(e => items.push({ type: "event", date: e.startAt, data: e }));
+  return items.sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
-function fmtTime(date) {
-  if (!date) return "";
-  return new Date(date).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
-}
-
-const TICKET_BADGE = {
-  open:        "bg-sky-100 text-sky-700",
-  in_progress: "bg-amber-100 text-amber-700",
-  resolved:    "bg-emerald-100 text-emerald-700",
-  closed:      "bg-slate-100 text-slate-600",
-};
-
-const BOOKING_BADGE = {
-  pending:  "bg-amber-100 text-amber-700",
-  approved: "bg-emerald-100 text-emerald-700",
-  rejected: "bg-rose-100 text-rose-700",
-};
-
-/* ── Sub-components ──────────────────────────────────────── */
-function StatCard({ icon: Icon, label, value, iconCls, loading }) {
+/* ── Skeleton ───────────────────────────────────────────────── */
+function Sk({ style = {} }) {
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${iconCls}`}>
-        <Icon className="h-5 w-5" />
-      </div>
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</p>
-        {loading
-          ? <div className="mt-1 h-7 w-10 animate-pulse rounded-lg bg-slate-100" />
-          : <p className="mt-0.5 text-2xl font-black text-slate-900">{value}</p>
-        }
-      </div>
+    <div
+      style={{
+        borderRadius: 12,
+        background: tok.stone100,
+        animation: "pulse 1.5s ease-in-out infinite",
+        ...style,
+      }}
+    />
+  );
+}
+
+/* ── MiniStat ───────────────────────────────────────────────── */
+function MiniStat({ label, value, loading }) {
+  return (
+    <div style={{
+      display: "flex", flexDirection: "column", alignItems: "center",
+      justifyContent: "center",
+      background: tok.stone50, border: `1px solid ${tok.stone100}`,
+      borderRadius: 20, padding: "20px 28px", minWidth: 90,
+    }}>
+      {loading
+        ? <Sk style={{ width: 48, height: 40, marginBottom: 4 }} />
+        : <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 40, lineHeight: 1, color: tok.stone800 }}>{value}</span>
+      }
+      <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: tok.stone400, marginTop: 4 }}>
+        {label}
+      </span>
     </div>
   );
 }
 
-function SectionCard({ title, to, linkLabel = "View all", children, empty }) {
+/* ── Feed Item ──────────────────────────────────────────────── */
+const FEED_CFG = {
+  announcement: {
+    bg: tok.indigoLight, iconColor: tok.indigo,
+    chipBg: tok.indigoLight, chipColor: tok.indigo, chipBorder: tok.indigoBorder,
+    label: "Notice", emoji: "📢",
+  },
+  ticket: {
+    bg: tok.roseLight, iconColor: tok.rose,
+    chipBg: tok.roseLight, chipColor: tok.rose, chipBorder: tok.roseBorder,
+    label: "Ticket", emoji: "🎫",
+  },
+  event: {
+    bg: tok.emeraldLight, iconColor: tok.emerald,
+    chipBg: tok.emeraldLight, chipColor: tok.emerald, chipBorder: tok.emeraldBorder,
+    label: "Event", emoji: "📅",
+  },
+};
+
+const STATUS_STYLE = {
+  open:        { bg: tok.indigoLight, color: tok.indigo, border: tok.indigoBorder },
+  in_progress: { bg: tok.amberLight,  color: tok.amber,  border: tok.amberBorder  },
+  resolved:    { bg: tok.emeraldLight,color: tok.emerald,border: tok.emeraldBorder},
+  closed:      { bg: tok.stone50,     color: tok.stone600,border: tok.stone200    },
+};
+
+function FeedItem({ item, isLast }) {
+  const cfg = FEED_CFG[item.type];
+  const d   = item.data;
+  const [hov, setHov] = useState(false);
+
   return (
-    <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="font-extrabold text-slate-900">{title}</h3>
-        {to && (
-          <Link to={to} className="flex items-center gap-1 text-xs font-semibold text-emerald-600 transition hover:text-emerald-700">
-            {linkLabel} <ArrowRight className="h-3 w-3" />
-          </Link>
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex", gap: 16,
+        padding: "18px 0",
+        borderBottom: isLast ? "none" : `1px solid ${tok.stone100}`,
+        transition: "all .2s",
+      }}
+    >
+      {/* Icon */}
+      <div style={{
+        width: 44, height: 44, borderRadius: 14, flexShrink: 0,
+        background: cfg.bg, display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 18, transition: "transform .2s",
+        transform: hov ? "scale(1.08)" : "scale(1)",
+      }}>
+        {cfg.emoji}
+      </div>
+
+      {/* Body */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Chip + time */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 5 }}>
+          <span style={{
+            display: "inline-flex", alignItems: "center", padding: "3px 10px",
+            borderRadius: 100, fontSize: 10, fontWeight: 700,
+            letterSpacing: "0.07em", textTransform: "uppercase",
+            background: cfg.chipBg, color: cfg.chipColor, border: `1px solid ${cfg.chipBorder}`,
+          }}>
+            {cfg.label}
+          </span>
+          <span style={{ fontSize: 11, color: tok.stone400 }}>🕐 {timeAgo(item.date)}</span>
+        </div>
+
+        {/* Title */}
+        <p style={{
+          fontSize: 15, fontWeight: 500, color: hov ? tok.indigo : tok.stone800,
+          lineHeight: 1.3, transition: "color .2s",
+        }}>
+          {d.title || d.amenityName || "—"}
+        </p>
+
+        {/* Subtext */}
+        {item.type === "announcement" && d.body && (
+          <p style={{ fontSize: 13, color: tok.stone400, marginTop: 3, lineHeight: 1.45 }}>
+            {d.body}
+          </p>
+        )}
+
+        {item.type === "ticket" && (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 7 }}>
+            <MetaPill>{d.category}</MetaPill>
+            {d.status && (() => {
+              const ss = STATUS_STYLE[d.status] || STATUS_STYLE.open;
+              return (
+                <span style={{
+                  padding: "4px 10px", borderRadius: 100, fontSize: 10, fontWeight: 700,
+                  textTransform: "uppercase", letterSpacing: "0.06em",
+                  background: ss.bg, color: ss.color, border: `1px solid ${ss.border}`,
+                }}>
+                  {d.status.replace("_", " ")}
+                </span>
+              );
+            })()}
+          </div>
+        )}
+
+        {item.type === "event" && (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 7 }}>
+            <MetaPill>📅 {fmtDate(d.startAt)} · {fmtTime(d.startAt)}</MetaPill>
+            {d.location && <MetaPill>📍 {d.location}</MetaPill>}
+          </div>
         )}
       </div>
-      {empty
-        ? <p className="py-4 text-center text-sm text-slate-400">{empty}</p>
-        : children
-      }
     </div>
   );
 }
 
-function Divider() {
-  return <div className="border-t border-slate-50" />;
+function MetaPill({ children }) {
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 4,
+      padding: "4px 10px", borderRadius: 8,
+      background: tok.stone50, border: `1px solid ${tok.stone100}`,
+      fontSize: 11, fontWeight: 500, color: tok.stone600,
+    }}>
+      {children}
+    </span>
+  );
 }
 
-/* ── Main Component ──────────────────────────────────────── */
+/* ── Quick Action ───────────────────────────────────────────── */
+function QuickAction({ to, emoji, label, hoverColor, hoverBg, hoverBorder }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <Link
+      to={to}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex", flexDirection: "column", alignItems: "center",
+        justifyContent: "center", gap: 10,
+        padding: "20px 12px", borderRadius: 16,
+        border: `1px solid ${hov ? hoverBorder : tok.stone100}`,
+        background: hov ? hoverBg : "#fff",
+        fontSize: 12, fontWeight: 600,
+        color: hov ? hoverColor : tok.stone600,
+        textDecoration: "none",
+        transform: hov ? "translateY(-2px)" : "none",
+        transition: "all .2s",
+      }}
+    >
+      <div style={{
+        width: 44, height: 44, borderRadius: 14, fontSize: 20,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: hov ? "#fff" : tok.stone50,
+        border: `1px solid ${hov ? hoverBorder : tok.stone100}`,
+        transition: "all .2s",
+      }}>
+        {emoji}
+      </div>
+      {label}
+    </Link>
+  );
+}
+
+/* ── Upcoming Event Row ─────────────────────────────────────── */
+function EventRow({ event }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex", alignItems: "center", gap: 14,
+        padding: "13px 14px", borderRadius: 14,
+        border: `1px solid ${hov ? tok.stone200 : tok.stone100}`,
+        background: hov ? "#fff" : tok.stone50,
+        marginBottom: 8, cursor: "pointer",
+        transform: hov ? "translateX(3px)" : "none",
+        transition: "all .2s",
+      }}
+    >
+      <div style={{
+        display: "flex", flexDirection: "column", alignItems: "center",
+        justifyContent: "center", width: 44, height: 44, borderRadius: 12,
+        background: tok.indigoLight, flexShrink: 0,
+      }}>
+        <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, lineHeight: 1, color: tok.indigo, fontWeight: 700 }}>
+          {fmtDay(event.startAt)}
+        </span>
+        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: tok.indigo }}>
+          {fmtMonth(event.startAt)}
+        </span>
+      </div>
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 500, color: tok.stone800 }}>{event.title}</div>
+        <div style={{ fontSize: 11, color: tok.stone400, marginTop: 2 }}>
+          {event.location ? `📍 ${event.location} · ` : ""}{fmtTime(event.startAt)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Booking Row ────────────────────────────────────────────── */
+const BK_STATUS = {
+  approved: { bg: tok.emeraldLight, color: tok.emerald, border: tok.emeraldBorder },
+  pending:  { bg: tok.amberLight,   color: tok.amber,   border: tok.amberBorder   },
+  rejected: { bg: tok.roseLight,    color: tok.rose,    border: tok.roseBorder    },
+};
+function BookingRow({ b }) {
+  const ss = BK_STATUS[b.status] || BK_STATUS.pending;
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+      padding: "12px 14px", borderRadius: 14,
+      border: `1px solid ${tok.stone100}`, background: tok.stone50, marginBottom: 8,
+    }}>
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 500, color: tok.stone800 }}>{b.amenityName}</div>
+        <div style={{ fontSize: 11, color: tok.stone400, marginTop: 2 }}>
+          {b.date} · {b.startTime}–{b.endTime}
+        </div>
+      </div>
+      <span style={{
+        padding: "4px 10px", borderRadius: 100, fontSize: 10, fontWeight: 700,
+        letterSpacing: "0.06em", textTransform: "uppercase",
+        background: ss.bg, color: ss.color, border: `1px solid ${ss.border}`,
+        flexShrink: 0,
+      }}>
+        {b.status}
+      </span>
+    </div>
+  );
+}
+
+/* ── Section Header ─────────────────────────────────────────── */
+function SectionHeader({ eyebrow, title, linkTo, linkLabel }) {
+  return (
+    <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 22 }}>
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: tok.stone400, marginBottom: 2 }}>
+          {eyebrow}
+        </div>
+        <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: tok.stone800 }}>
+          {title}
+        </div>
+      </div>
+      {linkTo && (
+        <Link to={linkTo} style={{
+          fontSize: 12, fontWeight: 600, color: tok.stone400, textDecoration: "none",
+          letterSpacing: "0.04em", textTransform: "uppercase",
+          padding: "6px 14px", borderRadius: 100,
+          border: `1px solid ${tok.stone100}`, background: tok.stone50,
+        }}>
+          {linkLabel || "View all"}
+        </Link>
+      )}
+    </div>
+  );
+}
+
+/* ── Card ───────────────────────────────────────────────────── */
+function Card({ children, style = {} }) {
+  return (
+    <div style={{
+      background: "#fff", border: `1px solid ${tok.stone100}`,
+      borderRadius: 24, padding: "28px",
+      ...style,
+    }}>
+      {children}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MAIN DASHBOARD
+══════════════════════════════════════════════════════════════ */
 export function DashboardPage() {
-  const { token, user } = useAuth();
+  const { token, user, membership } = useAuth();
   const isAdmin = ["committee", "super_admin"].includes(user?.role);
 
-  const [announcements, setAnnouncements]       = useState([]);
-  const [tickets, setTickets]                   = useState([]);
-  const [events, setEvents]                     = useState([]);
-  const [bookings, setBookings]                 = useState([]);
-  const [pendingApprovals, setPendingApprovals] = useState(0);
-  const [loading, setLoading]                   = useState(true);
-  const [error, setError]                       = useState("");
+  const [announcements,   setAnnouncements]   = useState([]);
+  const [tickets,         setTickets]         = useState([]);
+  const [events,          setEvents]          = useState([]);
+  const [bookings,        setBookings]        = useState([]);
+  const [pendingApprovals,setPendingApprovals]= useState(0);
+  const [loading,         setLoading]         = useState(true);
+  const [error,           setError]           = useState("");
 
   const load = useCallback(async () => {
     if (!token) return;
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
     try {
       const calls = [
-        apiRequest("/announcements", { token }),
-        apiRequest("/tickets", { token }),
-        apiRequest("/events", { token }),
-        apiRequest("/amenities/bookings", { token }),
+        apiRequest("/announcements",     { token }),
+        apiRequest("/tickets",           { token }),
+        apiRequest("/events",            { token }),
+        apiRequest("/amenities/bookings",{ token }),
       ];
       if (isAdmin) calls.push(apiRequest("/admin/pending-approvals", { token }));
-
       const results = await Promise.all(calls);
       setAnnouncements(results[0].items || []);
       setTickets(results[1].items || []);
@@ -134,242 +431,298 @@ export function DashboardPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const userId = user?._id || user?.id || "";
+  const userId        = user?._id || user?.id || "";
+  const { word, first }= greeting(user?.fullName);
+  const openTickets   = useMemo(() => tickets.filter(t => !["resolved","closed"].includes(t.status)), [tickets]);
+  const upcomingEvents= useMemo(() =>
+    events.filter(e => new Date(e.startAt) >= new Date())
+          .sort((a,b) => new Date(a.startAt)-new Date(b.startAt)),
+    [events]);
+  const myBookings    = useMemo(() =>
+    bookings.filter(b=>(b.requestedBy?._id||b.requestedBy)===userId).slice(0,3),
+    [bookings, userId]);
+  const feed          = useMemo(() => buildFeed(announcements, tickets, events), [announcements,tickets,events]);
 
-  const stats = useMemo(() => ({
-    announcements: announcements.length,
-    openTickets:   tickets.filter(t => !["resolved", "closed"].includes(t.status)).length,
-    upcomingEvents:events.filter(e => new Date(e.startAt) >= new Date()).length,
-    myBookings:    bookings.filter(b => (b.requestedBy?._id || b.requestedBy) === userId).length,
-  }), [announcements, tickets, events, bookings, userId]);
+  const flatLabel = membership?.wingId?.name && membership?.unitId?.unitNumber
+    ? `${membership.wingId.name}-${membership.unitId.unitNumber}` : null;
 
-  const recentAnnouncements = announcements.slice(0, 4);
-  const openTickets         = tickets.filter(t => !["resolved", "closed"].includes(t.status)).slice(0, 4);
-  const upcomingEvents      = events
-    .filter(e => new Date(e.startAt) >= new Date())
-    .sort((a, b) => new Date(a.startAt) - new Date(b.startAt))
-    .slice(0, 3);
-  const myBookings          = bookings
-    .filter(b => (b.requestedBy?._id || b.requestedBy) === userId)
-    .slice(0, 3);
+  const today = new Date().toLocaleDateString("en-IN", { weekday:"long", day:"numeric", month:"short" });
 
   return (
-    <div className="pb-12">
-      <div className="space-y-6 pt-4">
+    <div style={{
+      fontFamily: "'DM Sans', sans-serif",
+      background: tok.cream,
+      minHeight: "calc(100vh - 90px)",
+      padding: "32px 24px 64px",
+      margin: "-16px -24px",
+    }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
 
-        {/* Error */}
+        {/* ── Error ─────────────────────────────────── */}
         {error && (
-          <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200">
-            <XCircle className="h-4 w-4 shrink-0" /> {error}
+          <div style={{
+            display:"flex", alignItems:"center", gap:12,
+            background:"#FBF0EE", border:`1px solid ${tok.roseBorder}`,
+            borderRadius:16, padding:"14px 20px",
+            fontSize:14, fontWeight:500, color:tok.rose, marginBottom:20,
+          }}>
+            <XCircle size={18} /> {error}
           </div>
         )}
 
-        {/* Welcome banner */}
-        <div className="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">
-              {greeting(user?.fullName)}
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-            </p>
+        {/* ── HERO ──────────────────────────────────── */}
+        <div style={{
+          background:"#fff", border:`1px solid ${tok.stone100}`,
+          borderRadius: 32, padding:"36px 40px",
+          display:"flex", alignItems:"flex-end", justifyContent:"space-between",
+          gap:24, position:"relative", overflow:"hidden", marginBottom:20,
+        }}>
+          {/* Decorative blob */}
+          <div style={{
+            position:"absolute", top:-60, right:-60,
+            width:280, height:280, borderRadius:"50%",
+            background:tok.goldLight, opacity:0.55,
+            pointerEvents:"none",
+          }} />
+
+          {/* Greeting */}
+          <div style={{ position:"relative", zIndex:1 }}>
+            <div style={{ fontSize:13, fontWeight:500, color:tok.stone400, letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:6 }}>
+              Good {word} · {today}
+            </div>
+            <div style={{ fontFamily:"'DM Serif Display', serif", fontSize:48, lineHeight:1, color:tok.stone800, marginBottom:18 }}>
+              Welcome back,{" "}
+              <em style={{ fontStyle:"italic", color:tok.gold }}>{first}.</em>
+            </div>
+            <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+              <span style={{
+                display:"inline-flex", alignItems:"center", gap:6,
+                padding:"6px 14px", borderRadius:100, fontSize:12, fontWeight:500,
+                border:`1px solid ${tok.stone100}`, background:tok.stone50, color:tok.stone600,
+              }}>
+                <span style={{ width:6, height:6, borderRadius:"50%", background:tok.gold, display:"inline-block" }} />
+                {user?.role?.replace("_"," ")}
+              </span>
+              {flatLabel && (
+                <span style={{
+                  display:"inline-flex", alignItems:"center", gap:6,
+                  padding:"6px 14px", borderRadius:100, fontSize:12, fontWeight:500,
+                  border:`1px solid ${tok.stone100}`, background:tok.stone50, color:tok.stone600,
+                }}>
+                  🏠 {flatLabel}
+                </span>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700 capitalize">
-              {user?.role?.replace("_", " ")}
-            </span>
-            <button
-              onClick={load}
-              disabled={loading}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-              Refresh
-            </button>
+
+          {/* Stats */}
+          <div style={{ display:"flex", gap:12, position:"relative", zIndex:1, flexShrink:0 }}>
+            <MiniStat label="Notices" value={announcements.length} loading={loading} />
+            <MiniStat label="Tickets" value={openTickets.length}   loading={loading} />
+            <MiniStat label="Events"  value={upcomingEvents.length}loading={loading} />
           </div>
+
+          {/* Sync button */}
+          <button
+            onClick={load}
+            disabled={loading}
+            style={{
+              position:"absolute", top:28, right:32,
+              display:"flex", alignItems:"center", gap:6,
+              fontSize:12, fontWeight:500, color:tok.stone400,
+              background:tok.stone50, border:`1px solid ${tok.stone100}`,
+              padding:"7px 14px", borderRadius:100, cursor:"pointer",
+              transition:"all .2s", zIndex:2,
+            }}
+          >
+            <RefreshCw size={13} style={{ animation: loading ? "spin 1s linear infinite" : "none" }} />
+            Sync
+          </button>
         </div>
 
-        {/* Admin: pending approvals alert */}
+        {/* ── Admin Alert ────────────────────────────── */}
         {isAdmin && pendingApprovals > 0 && (
           <Link
             to="/admin/approvals"
-            className="flex items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4 transition hover:bg-amber-100"
+            style={{
+              display:"flex", alignItems:"center", justifyContent:"space-between", gap:16,
+              background:tok.amberLight, border:`1px solid #FBBF24`,
+              borderRadius:16, padding:"16px 22px", marginBottom:20,
+              textDecoration:"none",
+            }}
           >
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />
+            <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+              <div style={{
+                width:36, height:36, borderRadius:10, background:"#FDE68A",
+                display:"flex", alignItems:"center", justifyContent:"center", fontSize:16,
+              }}>⚠️</div>
               <div>
-                <p className="font-bold text-amber-900">
-                  {pendingApprovals} membership {pendingApprovals === 1 ? "request" : "requests"} awaiting your approval
+                <p style={{ fontSize:14, fontWeight:600, color:"#92400E" }}>
+                  {pendingApprovals} membership {pendingApprovals===1?"request":"requests"} pending
                 </p>
-                <p className="text-sm text-amber-700">Residents are waiting to join the society</p>
+                <span style={{ fontSize:12, color:"#B45309" }}>Action required to approve new residents</span>
               </div>
             </div>
-            <ArrowRight className="h-4 w-4 shrink-0 text-amber-600" />
+            <ArrowRight size={18} color="#D97706" />
           </Link>
         )}
 
-        {/* Stats row */}
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard icon={Bell}        label="Announcements"  value={stats.announcements}  iconCls="bg-amber-50 text-amber-500"   loading={loading} />
-          <StatCard icon={Ticket}      label="Open Tickets"   value={stats.openTickets}    iconCls="bg-rose-50 text-rose-500"     loading={loading} />
-          <StatCard icon={CalendarDays}label="Upcoming Events"value={stats.upcomingEvents} iconCls="bg-violet-50 text-violet-500" loading={loading} />
-          <StatCard icon={Key}         label="My Bookings"    value={stats.myBookings}     iconCls="bg-sky-50 text-sky-500"       loading={loading} />
-        </div>
+        {/* ── BENTO GRID ─────────────────────────────── */}
+        <div style={{
+          display:"grid",
+          gridTemplateColumns:"1fr 360px",
+          gap:20,
+        }}>
+          {/* LEFT: Feed */}
+          <Card>
+            <SectionHeader
+              eyebrow="Live Updates"
+              title="Recent Activity"
+              linkTo="/announcements"
+              linkLabel="View all"
+            />
 
-        {/* Main content grid */}
-        <div className="grid gap-6 lg:grid-cols-5">
-
-          {/* Left col — Announcements + Tickets */}
-          <div className="space-y-6 lg:col-span-3">
-
-            <SectionCard
-              title="Recent Announcements"
-              to="/announcements"
-              empty={!loading && !recentAnnouncements.length ? "No announcements yet." : ""}
-            >
-              {loading
-                ? <LoadingRows n={3} />
-                : recentAnnouncements.map((a, i) => (
-                  <div key={a._id}>
-                    {i > 0 && <Divider />}
-                    <div className="py-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="font-semibold text-slate-800 leading-snug">{a.title}</p>
-                        <span className="shrink-0 text-xs text-slate-400">{timeAgo(a.createdAt)}</span>
-                      </div>
-                      <p className="mt-1 text-sm text-slate-500 line-clamp-2">{a.body}</p>
-                      <p className="mt-1.5 text-xs text-slate-400">
-                        By {a.createdBy?.fullName || "Committee"}
-                      </p>
+            {loading ? (
+              <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+                {[...Array(4)].map((_,i) => (
+                  <div key={i} style={{ display:"flex", gap:16 }}>
+                    <Sk style={{ width:44, height:44, flexShrink:0 }} />
+                    <div style={{ flex:1, display:"flex", flexDirection:"column", gap:8 }}>
+                      <Sk style={{ height:16, width:"30%" }} />
+                      <Sk style={{ height:14, width:"70%" }} />
                     </div>
                   </div>
-                ))
-              }
-            </SectionCard>
+                ))}
+              </div>
+            ) : feed.length === 0 ? (
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"48px 0", textAlign:"center" }}>
+                <div style={{ width:56, height:56, borderRadius:16, background:tok.stone50, border:`1px solid ${tok.stone100}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, marginBottom:12 }}>
+                  🔔
+                </div>
+                <p style={{ fontSize:15, fontWeight:500, color:tok.stone800 }}>All caught up</p>
+                <p style={{ fontSize:13, color:tok.stone400, marginTop:4 }}>No new activity in your community.</p>
+              </div>
+            ) : (
+              feed.map((item, i) => (
+                <FeedItem
+                  key={`${item.type}-${item.data._id}-${i}`}
+                  item={item}
+                  isLast={i === feed.length - 1}
+                />
+              ))
+            )}
+          </Card>
 
-            <SectionCard
-              title="Open Tickets"
-              to="/tickets"
-              empty={!loading && !openTickets.length ? "No open tickets. All good!" : ""}
-            >
-              {loading
-                ? <LoadingRows n={3} />
-                : openTickets.map((t, i) => (
-                  <div key={t._id}>
-                    {i > 0 && <Divider />}
-                    <div className="flex items-center justify-between gap-3 py-3">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-slate-800 truncate">{t.title}</p>
-                        <p className="mt-0.5 text-xs text-slate-400 capitalize">{t.category || "General"}</p>
-                      </div>
-                      <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${TICKET_BADGE[t.status] || "bg-slate-100 text-slate-600"}`}>
-                        {t.status?.replace("_", " ")}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              }
-            </SectionCard>
-          </div>
+          {/* RIGHT column */}
+          <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
 
-          {/* Right col — Events + Bookings */}
-          <div className="space-y-6 lg:col-span-2">
+            {/* Quick Actions */}
+            <Card style={{ padding:24 }}>
+              <SectionHeader eyebrow="Shortcuts" title="Quick Actions" />
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                <QuickAction to="/tickets"       emoji="➕" label="Raise Ticket"  hoverColor={tok.indigo}  hoverBg={tok.indigoLight}  hoverBorder={tok.indigoBorder}  />
+                <QuickAction to="/amenities"     emoji="📋" label="Book Amenity"  hoverColor={tok.emerald} hoverBg={tok.emeraldLight} hoverBorder={tok.emeraldBorder} />
+                <QuickAction to="/announcements" emoji="🔔" label="Notices"       hoverColor={tok.amber}   hoverBg={tok.amberLight}   hoverBorder={tok.amberBorder}   />
+                <QuickAction to="/events"        emoji="🗓" label="Events"        hoverColor={tok.rose}    hoverBg={tok.roseLight}    hoverBorder={tok.roseBorder}    />
+              </div>
+            </Card>
 
-            <SectionCard
-              title="Upcoming Events"
-              to="/events"
-              empty={!loading && !upcomingEvents.length ? "No upcoming events." : ""}
-            >
-              {loading
-                ? <LoadingRows n={2} />
-                : upcomingEvents.map((e, i) => (
-                  <div key={e._id}>
-                    {i > 0 && <Divider />}
-                    <div className="py-3">
-                      <p className="font-semibold text-slate-800 leading-snug">{e.title}</p>
-                      <div className="mt-2 space-y-1">
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                          <Clock className="h-3.5 w-3.5" />
-                          {fmtDate(e.startAt)} · {fmtTime(e.startAt)}
-                        </div>
-                        {e.location && (
-                          <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                            <MapPin className="h-3.5 w-3.5" />
-                            {e.location}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              }
-            </SectionCard>
+            {/* Upcoming Events */}
+            <Card style={{ padding:24 }}>
+              <SectionHeader eyebrow="Schedule" title="Upcoming" linkTo="/events" linkLabel="See all" />
+              {loading ? (
+                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                  <Sk style={{ height:68 }} />
+                  <Sk style={{ height:68 }} />
+                </div>
+              ) : upcomingEvents.length === 0 ? (
+                <div style={{
+                  borderRadius:14, border:`1px dashed ${tok.stone200}`,
+                  background:tok.stone50, padding:24, textAlign:"center",
+                  fontSize:13, color:tok.stone400, fontWeight:500,
+                }}>
+                  No upcoming events yet.
+                </div>
+              ) : (
+                upcomingEvents.slice(0,3).map(e => <EventRow key={e._id} event={e} />)
+              )}
+            </Card>
 
-            <SectionCard
-              title="My Bookings"
-              to="/amenities"
-              empty={!loading && !myBookings.length ? "No bookings yet." : ""}
-            >
-              {loading
-                ? <LoadingRows n={2} />
-                : myBookings.map((b, i) => (
-                  <div key={b._id}>
-                    {i > 0 && <Divider />}
-                    <div className="flex items-center justify-between gap-3 py-3">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-slate-800 truncate">{b.amenityName || "Amenity"}</p>
-                        <p className="mt-0.5 text-xs text-slate-400">{b.date} · {b.startTime}–{b.endTime}</p>
-                      </div>
-                      <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${BOOKING_BADGE[b.status] || "bg-slate-100 text-slate-600"}`}>
-                        {b.status}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              }
-            </SectionCard>
+            {/* My Bookings */}
+            {!loading && myBookings.length > 0 && (
+              <Card style={{ padding:24 }}>
+                <SectionHeader eyebrow="Reservations" title="My Bookings" linkTo="/amenities" linkLabel="Manage" />
+                {myBookings.map(b => <BookingRow key={b._id} b={b} />)}
+              </Card>
+            )}
 
-            {/* Admin quick links */}
+            {/* Admin Workspace */}
             {isAdmin && (
-              <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-                <h3 className="mb-4 font-extrabold text-slate-900">Admin</h3>
-                <div className="space-y-2">
-                  <Link to="/admin/approvals"
-                    className="flex items-center justify-between rounded-xl border border-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-                    <div className="flex items-center gap-2.5">
-                      <Users className="h-4 w-4 text-emerald-600" />
-                      Pending Approvals
-                    </div>
-                    {pendingApprovals > 0 && (
-                      <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-bold text-white">
-                        {pendingApprovals}
-                      </span>
-                    )}
-                  </Link>
-                  <Link to="/admin/society-setup"
-                    className="flex items-center gap-2.5 rounded-xl border border-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-                    <Wrench className="h-4 w-4 text-emerald-600" />
-                    Society Setup
-                  </Link>
+              <div style={{
+                background:tok.stone800, borderRadius:24, padding:24,
+                position:"relative", overflow:"hidden",
+              }}>
+                {/* Decorative blob */}
+                <div style={{
+                  position:"absolute", top:-40, right:-40,
+                  width:160, height:160, borderRadius:"50%",
+                  background:"rgba(201,168,76,0.12)", pointerEvents:"none",
+                }} />
+                <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase", color:tok.stone400, marginBottom:4 }}>
+                  Admin
+                </div>
+                <div style={{ fontFamily:"'DM Serif Display', serif", fontSize:22, color:"#fff", marginBottom:18 }}>
+                  Workspace
+                </div>
+                <div style={{ position:"relative", zIndex:1 }}>
+                  {[
+                    { to:"/admin/approvals",    emoji:"👥", label:"Pending Approvals", badge: pendingApprovals > 0 ? pendingApprovals : null },
+                    { to:"/admin/society-setup",emoji:"⚙️", label:"Society Setup"       },
+                    { to:"/admin/reports",      emoji:"📊", label:"Maintenance Reports" },
+                  ].map(({ to, emoji, label, badge }) => (
+                    <Link
+                      key={to}
+                      to={to}
+                      style={{
+                        display:"flex", alignItems:"center", justifyContent:"space-between",
+                        padding:"12px 16px", borderRadius:12,
+                        background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.08)",
+                        marginBottom:8, textDecoration:"none", transition:"all .2s",
+                      }}
+                      onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.1)"}
+                      onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,0.06)"}
+                    >
+                      <div style={{ display:"flex", alignItems:"center", gap:10, fontSize:13, fontWeight:500, color:"rgba(255,255,255,0.8)" }}>
+                        <span style={{ fontSize:15 }}>{emoji}</span> {label}
+                      </div>
+                      {badge ? (
+                        <span style={{
+                          background:tok.gold, color:tok.stone800,
+                          padding:"2px 9px", borderRadius:100, fontSize:11, fontWeight:700,
+                        }}>
+                          {badge}
+                        </span>
+                      ) : (
+                        <ChevronRight size={15} color="rgba(255,255,255,0.3)" />
+                      )}
+                    </Link>
+                  ))}
                 </div>
               </div>
             )}
+
           </div>
         </div>
       </div>
-    </div>
-  );
-}
 
-function LoadingRows({ n = 3 }) {
-  return (
-    <div className="space-y-4">
-      {[...Array(n)].map((_, i) => (
-        <div key={i} className="space-y-2 py-1">
-          <div className="h-4 w-3/4 animate-pulse rounded-lg bg-slate-100" />
-          <div className="h-3 w-1/2 animate-pulse rounded-lg bg-slate-100" />
-        </div>
-      ))}
+      {/* Keyframes */}
+      <style>{`
+        @keyframes spin  { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+        @media(max-width:860px){
+          .dash-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   );
 }

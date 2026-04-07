@@ -1,48 +1,51 @@
 import { useEffect, useState } from "react";
-import { User, Phone, Mail, Home, ShieldCheck, BadgeCheck, Pencil, X, Check } from "lucide-react";
 import { apiRequest } from "../components/api";
 import { useAuth } from "../components/AuthContext";
+import { tok, fonts, card, fieldStyle, btn } from "../lib/tokens";
 
-const ROLE_BADGE = {
-  resident:    "bg-sky-100 text-sky-700",
-  committee:   "bg-violet-100 text-violet-700",
-  staff:       "bg-amber-100 text-amber-700",
-  security:    "bg-orange-100 text-orange-700",
-  super_admin: "bg-emerald-100 text-emerald-700",
+const ROLE_COLOR = {
+  resident:    { bg: tok.indigoLight, color: tok.indigo, border: tok.indigoBorder },
+  committee:   { bg: tok.violetLight, color: tok.violet, border: tok.violetBorder },
+  staff:       { bg: tok.amberLight,  color: tok.amber,  border: tok.amberBorder  },
+  security:    { bg: tok.roseLight,   color: tok.rose,   border: tok.roseBorder   },
+  super_admin: { bg: tok.emeraldLight,color: tok.emerald,border: tok.emeraldBorder},
+};
+const MEMBERSHIP_COLOR = {
+  approved: { bg: tok.emeraldLight, color: tok.emerald, border: tok.emeraldBorder },
+  pending:  { bg: tok.amberLight,   color: tok.amber,   border: tok.amberBorder   },
+  rejected: { bg: tok.roseLight,    color: tok.rose,    border: tok.roseBorder    },
+};
+const RESIDENT_ROLE_COLOR = {
+  owner:  { bg: tok.violetLight, color: tok.violet, border: tok.violetBorder },
+  tenant: { bg: tok.indigoLight, color: tok.indigo, border: tok.indigoBorder },
 };
 
-const MEMBERSHIP_BADGE = {
-  approved: "bg-emerald-100 text-emerald-700",
-  pending:  "bg-amber-100 text-amber-700",
-  rejected: "bg-rose-100 text-rose-700",
-};
-
-const RESIDENT_ROLE_BADGE = {
-  owner:  "bg-violet-100 text-violet-700",
-  tenant: "bg-sky-100 text-sky-700",
-};
-
-function InfoRow({ icon: Icon, label, value }) {
+function Chip({ label, style: s }) {
   return (
-    <div className="flex items-center gap-3 py-3 border-b border-slate-100 last:border-0">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100">
-        <Icon className="h-4 w-4 text-slate-500" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</p>
-        <p className="mt-0.5 font-semibold text-slate-900 truncate">{value || "—"}</p>
+    <span style={{ padding: "4px 12px", borderRadius: 100, fontSize: 12, fontWeight: 700, letterSpacing: "0.04em", textTransform: "capitalize", border: "1px solid", ...s }}>
+      {label}
+    </span>
+  );
+}
+
+function InfoRow({ emoji, label, value }) {
+  return (
+    <div style={{ display: "flex", gap: 14, alignItems: "flex-start", padding: "14px 0", borderBottom: `1px solid ${tok.stone100}` }}>
+      <span style={{ fontSize: 20, flexShrink: 0, width: 32, textAlign: "center" }}>{emoji}</span>
+      <div>
+        <p style={{ fontSize: 11, fontWeight: 700, color: tok.stone400, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 3 }}>{label}</p>
+        <p style={{ fontSize: 15, fontWeight: 500, color: tok.stone800 }}>{value || "—"}</p>
       </div>
     </div>
   );
 }
 
 export function ProfilePage() {
-  const { token, user: authUser } = useAuth();
+  const { token } = useAuth();
   const [profile, setProfile]     = useState(null);
   const [membership, setMembership] = useState(null);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState("");
-
   const [editing, setEditing]     = useState(false);
   const [fullName, setFullName]   = useState("");
   const [phone, setPhone]         = useState("");
@@ -50,37 +53,25 @@ export function ProfilePage() {
   const [saveError, setSaveError] = useState("");
 
   async function loadProfile() {
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
     try {
       const data = await apiRequest("/users/me", { token });
       setProfile(data.user);
       setMembership(data.membership);
       setFullName(data.user.fullName);
       setPhone(data.user.phone || "");
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
   }
 
   async function handleSave() {
-    setSaveError("");
-    setSaving(true);
+    setSaving(true); setSaveError("");
     try {
-      const data = await apiRequest("/users/me", {
-        method: "PATCH",
-        token,
-        body: { fullName, phone }
-      });
+      const data = await apiRequest("/users/me", { method: "PATCH", token, body: { fullName, phone } });
       setProfile(data.user);
       setEditing(false);
-    } catch (err) {
-      setSaveError(err.message);
-    } finally {
-      setSaving(false);
-    }
+    } catch (err) { setSaveError(err.message); }
+    finally { setSaving(false); }
   }
 
   function handleCancel() {
@@ -94,131 +85,110 @@ export function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="space-y-4 pb-12">
-        <div className="h-40 animate-pulse rounded-2xl bg-slate-100" />
-        <div className="h-64 animate-pulse rounded-2xl bg-slate-100" />
+      <div style={{ fontFamily: fonts.sans, maxWidth: 600, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
+        {[180, 120, 160].map((h, i) => (
+          <div key={i} style={{ height: h, borderRadius: 20, background: tok.stone100, animation: "pulse 1.5s ease-in-out infinite" }} />
+        ))}
       </div>
     );
   }
 
   if (error) {
-    return <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>;
+    return (
+      <div style={{ ...card, fontFamily: fonts.sans, maxWidth: 600, margin: "0 auto", color: tok.rose }}>{error}</div>
+    );
   }
 
-  const initials = profile?.fullName
-    ?.split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase() || "?";
+  const initials = profile?.fullName?.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase() || "?";
+  const roleStyle = ROLE_COLOR[profile?.role] || { bg: tok.stone100, color: tok.stone600, border: tok.stone200 };
+  const memberStyle = membership ? MEMBERSHIP_COLOR[membership.status] : null;
 
   return (
-    <div className="space-y-5 pb-12 max-w-2xl mx-auto">
+    <div style={{ fontFamily: fonts.sans, maxWidth: 600, margin: "0 auto", paddingBottom: 64 }}>
 
-      {/* Avatar + name card */}
-      <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-        <div className="flex items-center gap-5">
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-2xl font-black text-white shadow-lg shadow-emerald-600/20">
+      {/* Header */}
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontFamily: fonts.display, fontSize: 32, fontWeight: 400, color: tok.stone800, margin: 0 }}>My Profile</h1>
+        <p style={{ fontSize: 14, color: tok.stone400, marginTop: 4 }}>Your account details and society membership</p>
+      </div>
+
+      {/* Avatar + identity card */}
+      <div style={{ ...card, marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 20 }}>
+          {/* Avatar */}
+          <div style={{
+            width: 72, height: 72, borderRadius: 20, flexShrink: 0,
+            background: tok.emeraldLight, border: `2px solid ${tok.emeraldBorder}`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontFamily: fonts.display, fontSize: 26, color: tok.emerald,
+          }}>
             {initials}
           </div>
-          <div className="flex-1 min-w-0">
+
+          <div style={{ flex: 1, minWidth: 0 }}>
             {editing ? (
-              <input
-                className="field text-lg font-bold"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Full name"
-              />
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <input style={fieldStyle} value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Full name" autoFocus />
+                <input style={fieldStyle} value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone number" />
+                {saveError && <p style={{ fontSize: 12, color: tok.rose }}>{saveError}</p>}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button style={{ ...btn.primary, padding: "8px 16px", fontSize: 13 }} onClick={handleSave} disabled={saving}>
+                    {saving ? "Saving…" : "✓ Save"}
+                  </button>
+                  <button style={{ ...btn.muted, padding: "8px 16px", fontSize: 13 }} onClick={handleCancel}>Cancel</button>
+                </div>
+              </div>
             ) : (
-              <h2 className="text-2xl font-black text-slate-900 truncate">{profile?.fullName}</h2>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                  <h2 style={{ fontSize: 22, fontWeight: 600, color: tok.stone800, margin: 0 }}>{profile.fullName}</h2>
+                  <button
+                    style={{ ...btn.muted, padding: "4px 12px", fontSize: 12 }}
+                    onClick={() => setEditing(true)}
+                  >
+                    ✎ Edit
+                  </button>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  <Chip label={profile.role?.replace("_", " ")} style={{ background: roleStyle.bg, color: roleStyle.color, borderColor: roleStyle.border }} />
+                  {memberStyle && (
+                    <Chip label={membership.status} style={{ background: memberStyle.bg, color: memberStyle.color, borderColor: memberStyle.border }} />
+                  )}
+                </div>
+              </div>
             )}
-            <div className="mt-2 flex flex-wrap gap-2">
-              <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${ROLE_BADGE[profile?.role] || "bg-slate-100 text-slate-600"}`}>
-                {profile?.role?.replace("_", " ")}
-              </span>
-              {membership && (
-                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${MEMBERSHIP_BADGE[membership.status] || "bg-slate-100 text-slate-600"}`}>
-                  {membership.status}
-                </span>
-              )}
-            </div>
           </div>
-          {!editing ? (
-            <button
-              onClick={() => setEditing(true)}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-            >
-              <Pencil className="h-3.5 w-3.5" /> Edit
-            </button>
-          ) : (
-            <div className="flex gap-2">
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
-              >
-                <Check className="h-3.5 w-3.5" /> {saving ? "Saving…" : "Save"}
-              </button>
-              <button
-                onClick={handleCancel}
-                className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-              >
-                <X className="h-3.5 w-3.5" /> Cancel
-              </button>
-            </div>
-          )}
         </div>
-        {saveError && (
-          <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{saveError}</p>
-        )}
       </div>
 
-      {/* Contact info */}
-      <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Contact</h3>
-        <InfoRow icon={Mail} label="Email" value={profile?.email} />
-        {editing ? (
-          <div className="flex items-center gap-3 py-3 border-b border-slate-100">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100">
-              <Phone className="h-4 w-4 text-slate-500" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Phone</p>
-              <input
-                className="field mt-0.5"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Phone number"
-              />
+      {/* Contact */}
+      <div style={{ ...card, marginBottom: 16 }}>
+        <h3 style={{ fontSize: 13, fontWeight: 700, color: tok.stone400, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 4px" }}>Contact</h3>
+        <InfoRow emoji="✉️" label="Email" value={profile?.email} />
+        <div style={{ borderBottom: "none" }}>
+          <InfoRow emoji="📞" label="Phone" value={profile?.phone || "Not provided"} />
+        </div>
+      </div>
+
+      {/* Membership */}
+      {membership && (
+        <div style={{ ...card, borderLeft: `4px solid ${tok.emerald}` }}>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: tok.stone400, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 4px" }}>Society</h3>
+          <InfoRow emoji="🏠" label="Flat" value={`${membership.wingId?.name || "—"}-${membership.unitId?.unitNumber || "—"} · Floor ${membership.unitId?.floor ?? "—"}`} />
+          <InfoRow emoji="🏢" label="Tower" value={membership.wingId?.name} />
+          <div style={{ padding: "14px 0 0", display: "flex", gap: 10, alignItems: "center" }}>
+            <span style={{ fontSize: 20, width: 32, textAlign: "center" }}>🪪</span>
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 700, color: tok.stone400, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Resident Type</p>
+              {membership.residentRole && (() => {
+                const rs = RESIDENT_ROLE_COLOR[membership.residentRole] || { bg: tok.stone100, color: tok.stone600, border: tok.stone200 };
+                return <Chip label={membership.residentRole} style={{ background: rs.bg, color: rs.color, borderColor: rs.border }} />;
+              })()}
             </div>
           </div>
-        ) : (
-          <InfoRow icon={Phone} label="Phone" value={profile?.phone} />
-        )}
-      </div>
-
-      {/* Membership / flat info */}
-      {membership && (
-        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Society</h3>
-          <InfoRow
-            icon={Home}
-            label="Flat"
-            value={`${membership.wingId?.name || "—"}-${membership.unitId?.unitNumber || "—"} · Floor ${membership.unitId?.floor ?? "—"}`}
-          />
-          <InfoRow
-            icon={BadgeCheck}
-            label="Resident Type"
-            value={
-              <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${RESIDENT_ROLE_BADGE[membership.residentRole] || ""}`}>
-                {membership.residentRole}
-              </span>
-            }
-          />
-          <InfoRow icon={ShieldCheck} label="Membership Status" value={membership.status} />
           {membership.status === "rejected" && membership.rejectedReason && (
-            <div className="mt-3 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              <span className="font-semibold">Rejection reason:</span> {membership.rejectedReason}
+            <div style={{ marginTop: 16, padding: "12px 16px", background: tok.roseLight, border: `1px solid ${tok.roseBorder}`, borderRadius: 12 }}>
+              <p style={{ fontSize: 13, color: tok.rose }}><strong>Rejection reason:</strong> {membership.rejectedReason}</p>
             </div>
           )}
         </div>

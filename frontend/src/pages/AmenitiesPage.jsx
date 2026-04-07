@@ -4,16 +4,9 @@ import { AmenityGrid } from "../components/AmenityGrid";
 import { apiRequest } from "../components/api";
 import { BookingForm } from "../components/BookingForm";
 import { useAuth } from "../components/AuthContext";
+import { tok, fonts, card, fieldStyle, btn } from "../lib/tokens";
 
-const DAY_KEYS = [
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-  "sunday"
-];
+const DAY_KEYS = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
 
 function buildOperatingHours(open, close) {
   return DAY_KEYS.reduce((acc, day) => {
@@ -22,21 +15,28 @@ function buildOperatingHours(open, close) {
   }, {});
 }
 
+const BOOKING_STATUS_CFG = {
+  pending:   { bg: tok.amberLight,   color: tok.amber,   border: tok.amberBorder,   emoji: "🟡" },
+  approved:  { bg: tok.emeraldLight, color: tok.emerald, border: tok.emeraldBorder, emoji: "🟢" },
+  rejected:  { bg: tok.roseLight,    color: tok.rose,    border: tok.roseBorder,    emoji: "🔴" },
+  cancelled: { bg: tok.stone100,     color: tok.stone600, border: tok.stone200,     emoji: "⚪" },
+};
+
 export function AmenitiesPage() {
   const { token, user } = useAuth();
-  const [amenities, setAmenities] = useState([]);
-  const [bookings, setBookings] = useState([]);
-  const [activeAmenity, setActiveAmenity] = useState(null);
+  const [amenities, setAmenities]           = useState([]);
+  const [bookings, setBookings]             = useState([]);
+  const [activeAmenity, setActiveAmenity]   = useState(null);
   const [isBookingSubmitting, setIsBookingSubmitting] = useState(false);
-  const [bookingError, setBookingError] = useState("");
-  const [error, setError] = useState("");
+  const [bookingError, setBookingError]     = useState("");
+  const [error, setError]                   = useState("");
 
-  const [name, setName] = useState("");
+  const [name, setName]             = useState("");
   const [description, setDescription] = useState("");
-  const [capacity, setCapacity] = useState(1);
+  const [capacity, setCapacity]     = useState(1);
   const [isAutoApprove, setIsAutoApprove] = useState(false);
-  const [openTime, setOpenTime] = useState("06:00");
-  const [closeTime, setCloseTime] = useState("22:00");
+  const [openTime, setOpenTime]     = useState("06:00");
+  const [closeTime, setCloseTime]   = useState("22:00");
   const [photoFiles, setPhotoFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -46,7 +46,7 @@ export function AmenitiesPage() {
   );
 
   const pendingBookings = useMemo(
-    () => bookings.filter((booking) => booking.status === "pending"),
+    () => bookings.filter(b => b.status === "pending"),
     [bookings]
   );
 
@@ -72,44 +72,23 @@ export function AmenitiesPage() {
   async function handleCreateAmenity(event) {
     event.preventDefault();
     setError("");
-
     try {
       let photos = [];
-
       if (photoFiles.length > 0) {
         setIsUploading(true);
         const fd = new FormData();
-        photoFiles.forEach((file) => fd.append("photos", file));
-        const uploadData = await apiRequest("/amenities/upload-photos", {
-          method: "POST",
-          token,
-          formData: fd
-        });
+        photoFiles.forEach(file => fd.append("photos", file));
+        const uploadData = await apiRequest("/amenities/upload-photos", { method: "POST", token, formData: fd });
         photos = uploadData.urls || [];
         setIsUploading(false);
       }
-
       const data = await apiRequest("/amenities", {
-        method: "POST",
-        token,
-        body: {
-          name,
-          description,
-          isAutoApprove,
-          capacity: Number(capacity),
-          photos,
-          operatingHours: buildOperatingHours(openTime, closeTime)
-        }
+        method: "POST", token,
+        body: { name, description, isAutoApprove, capacity: Number(capacity), photos, operatingHours: buildOperatingHours(openTime, closeTime) }
       });
-
-      setAmenities((prev) => [...prev, data.item]);
-      setName("");
-      setDescription("");
-      setCapacity(1);
-      setIsAutoApprove(false);
-      setOpenTime("06:00");
-      setCloseTime("22:00");
-      setPhotoFiles([]);
+      setAmenities(prev => [...prev, data.item]);
+      setName(""); setDescription(""); setCapacity(1); setIsAutoApprove(false);
+      setOpenTime("06:00"); setCloseTime("22:00"); setPhotoFiles([]);
     } catch (err) {
       setIsUploading(false);
       setError(err.message);
@@ -117,18 +96,10 @@ export function AmenitiesPage() {
   }
 
   async function handleCreateBooking(payload) {
-    setBookingError("");
-    setError("");
-    setIsBookingSubmitting(true);
-
+    setBookingError(""); setError(""); setIsBookingSubmitting(true);
     try {
-      const data = await apiRequest("/amenities/bookings", {
-        method: "POST",
-        token,
-        body: payload
-      });
-
-      setBookings((prev) => [data.item, ...prev]);
+      const data = await apiRequest("/amenities/bookings", { method: "POST", token, body: payload });
+      setBookings(prev => [data.item, ...prev]);
       setActiveAmenity(null);
     } catch (err) {
       setError(err.message);
@@ -141,107 +112,165 @@ export function AmenitiesPage() {
   async function handleStatusUpdate(bookingId, status) {
     setError("");
     try {
-      const data = await apiRequest(`/amenities/bookings/${bookingId}/status`, {
-        method: "PATCH",
-        token,
-        body: { status }
-      });
-
-      setBookings((prev) => prev.map((item) => (item._id === bookingId ? data.item : item)));
+      const data = await apiRequest(`/amenities/bookings/${bookingId}/status`, { method: "PATCH", token, body: { status } });
+      setBookings(prev => prev.map(item => item._id === bookingId ? data.item : item));
     } catch (err) {
       setError(err.message);
     }
   }
 
-  useEffect(() => {
-    loadAll();
-  }, []);
+  useEffect(() => { loadAll(); }, []);
 
   return (
-    <section className="space-y-5">
-      <div className="panel flex items-center justify-between gap-3">
-        <h2 className="text-xl font-bold">Amenity Management</h2>
-        <button className="btn-muted" onClick={loadAll}>Refresh</button>
+    <div style={{ fontFamily: fonts.sans, maxWidth: 900, margin: "0 auto", paddingBottom: 64 }}>
+
+      {/* Header */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div>
+            <h1 style={{ fontFamily: fonts.display, fontSize: 32, fontWeight: 400, color: tok.stone800, margin: 0 }}>Amenities</h1>
+            <p style={{ fontSize: 14, color: tok.stone400, marginTop: 4 }}>Book shared facilities in your society</p>
+          </div>
+          <button style={btn.muted} onClick={loadAll}>↻ Refresh</button>
+        </div>
+        {error && (
+          <div style={{ marginTop: 16, padding: "12px 16px", background: tok.roseLight, border: `1px solid ${tok.roseBorder}`, borderRadius: 12, fontSize: 14, color: tok.rose }}>
+            {error}
+          </div>
+        )}
       </div>
 
-      {error ? <p className="rounded-lg bg-rose-100 px-3 py-2 text-sm text-rose-800">{error}</p> : null}
+      {/* Create form — admin only */}
+      {canManage && (
+        <div style={{ ...card, marginBottom: 28 }}>
+          <h2 style={{ fontFamily: fonts.display, fontSize: 20, fontWeight: 400, color: tok.stone800, margin: "0 0 16px" }}>
+            Add Amenity
+          </h2>
+          <form onSubmit={handleCreateAmenity} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <input style={fieldStyle} placeholder="Amenity name (e.g. Swimming Pool)" value={name} onChange={e => setName(e.target.value)} required />
+            <textarea style={{ ...fieldStyle, minHeight: 80, resize: "vertical" }} placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
 
-      {canManage ? (
-        <form className="panel space-y-3" onSubmit={handleCreateAmenity}>
-          <h3 className="text-lg font-semibold">Create Amenity (Admin)</h3>
-          <input className="field" placeholder="Amenity name" value={name} onChange={(e) => setName(e.target.value)} required />
-          <textarea className="field min-h-24" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
-          <div className="grid gap-3 md:grid-cols-2">
-            <input className="field" type="number" min="1" value={capacity} onChange={(e) => setCapacity(e.target.value)} />
-            <label className="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-700">
-              <input checked={isAutoApprove} onChange={(e) => setIsAutoApprove(e.target.checked)} type="checkbox" />
-              Auto-approve bookings
-            </label>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <input className="field" type="time" value={openTime} onChange={(e) => setOpenTime(e.target.value)} />
-            <input className="field" type="time" value={closeTime} onChange={(e) => setCloseTime(e.target.value)} />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              Photos <span className="text-slate-400 font-normal">(up to 5, max 5 MB each)</span>
-            </label>
-            <input
-              className="field"
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(e) => setPhotoFiles(Array.from(e.target.files).slice(0, 5))}
-            />
-            {photoFiles.length > 0 && (
-              <p className="mt-1.5 text-xs text-slate-500">{photoFiles.length} file{photoFiles.length > 1 ? "s" : ""} selected</p>
-            )}
-          </div>
-          <button className="btn-primary" type="submit" disabled={isUploading}>
-            {isUploading ? "Uploading photos…" : "Create Amenity"}
-          </button>
-        </form>
-      ) : null}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: tok.stone400, letterSpacing: "0.07em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>
+                  Capacity
+                </label>
+                <input style={fieldStyle} type="number" min="1" value={capacity} onChange={e => setCapacity(e.target.value)} />
+              </div>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <label style={{
+                  display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
+                  padding: "10px 14px", background: isAutoApprove ? tok.emeraldLight : tok.stone50,
+                  border: `1px solid ${isAutoApprove ? tok.emeraldBorder : tok.stone200}`,
+                  borderRadius: 12, fontSize: 14, color: isAutoApprove ? tok.emerald : tok.stone600,
+                  fontWeight: 500, width: "100%", marginTop: 22,
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={isAutoApprove}
+                    onChange={e => setIsAutoApprove(e.target.checked)}
+                    style={{ width: 16, height: 16, accentColor: tok.emerald }}
+                  />
+                  ⚡ Auto-approve bookings
+                </label>
+              </div>
+            </div>
 
-      <section className="panel space-y-3">
-        <h3 className="text-lg font-semibold">Amenities</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: tok.stone400, letterSpacing: "0.07em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Opens</label>
+                <input style={fieldStyle} type="time" value={openTime} onChange={e => setOpenTime(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: tok.stone400, letterSpacing: "0.07em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Closes</label>
+                <input style={fieldStyle} type="time" value={closeTime} onChange={e => setCloseTime(e.target.value)} />
+              </div>
+            </div>
+
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 700, color: tok.stone400, letterSpacing: "0.07em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>
+                Photos (up to 5, max 5 MB each)
+              </label>
+              <input
+                style={{ ...fieldStyle, cursor: "pointer" }}
+                type="file" accept="image/*" multiple
+                onChange={e => setPhotoFiles(Array.from(e.target.files).slice(0, 5))}
+              />
+              {photoFiles.length > 0 && (
+                <p style={{ fontSize: 12, color: tok.stone400, marginTop: 6 }}>
+                  {photoFiles.length} file{photoFiles.length > 1 ? "s" : ""} selected
+                </p>
+              )}
+            </div>
+
+            <div>
+              <button style={btn.primary} type="submit" disabled={isUploading}>
+                {isUploading ? "Uploading photos…" : "🏊 Add Amenity"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Amenity grid */}
+      <div style={{ marginBottom: 32 }}>
+        <h2 style={{ fontSize: 13, fontWeight: 700, color: tok.stone400, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16 }}>
+          Available Facilities
+        </h2>
         <AmenityGrid amenities={amenities} onBook={setActiveAmenity} />
-      </section>
+      </div>
 
-      <section className="panel space-y-3">
-        <h3 className="text-lg font-semibold">My Society Bookings</h3>
-        {!bookings.length ? <p className="text-sm text-slate-500">No bookings yet.</p> : null}
-        {bookings.map((item) => (
-          <article key={item._id} className="rounded-xl border border-slate-200 p-4">
-            <h4 className="font-semibold text-slate-900">{item.amenityId?.name || item.amenityName}</h4>
-            <p className="mt-1 text-sm text-slate-600">
-              {item.date} • {item.startTime}-{item.endTime}
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              Status: {item.status} • Resident: {item.residentId?.fullName || item.requestedBy?.fullName || "Resident"}
-            </p>
-          </article>
-        ))}
-      </section>
+      {/* Bookings list */}
+      {bookings.length > 0 && (
+        <div style={{ marginBottom: 32 }}>
+          <h2 style={{ fontSize: 13, fontWeight: 700, color: tok.stone400, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16 }}>
+            My Bookings
+          </h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {bookings.map(item => {
+              const cfg = BOOKING_STATUS_CFG[item.status] || BOOKING_STATUS_CFG.pending;
+              return (
+                <article key={item._id} style={{ ...card, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "16px 20px" }}>
+                  <div>
+                    <p style={{ fontSize: 15, fontWeight: 600, color: tok.stone800, margin: "0 0 4px" }}>
+                      {item.amenityId?.name || item.amenityName}
+                    </p>
+                    <p style={{ fontSize: 13, color: tok.stone600, margin: 0 }}>
+                      📅 {item.date} · {item.startTime}–{item.endTime}
+                    </p>
+                  </div>
+                  <span style={{
+                    flexShrink: 0, padding: "4px 12px", borderRadius: 100, fontSize: 11, fontWeight: 700,
+                    background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`,
+                    textTransform: "capitalize", whiteSpace: "nowrap",
+                  }}>
+                    {cfg.emoji} {item.status}
+                  </span>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-      {canManage ? (
-        <section className="panel space-y-3">
-          <h3 className="text-lg font-semibold">Pending Approval Queue</h3>
+      {/* Admin approval queue */}
+      {canManage && pendingBookings.length > 0 && (
+        <div>
+          <h2 style={{ fontSize: 13, fontWeight: 700, color: tok.stone400, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16 }}>
+            Pending Approvals ({pendingBookings.length})
+          </h2>
           <AdminManager items={pendingBookings} onStatusUpdate={handleStatusUpdate} />
-        </section>
-      ) : null}
+        </div>
+      )}
 
       <BookingForm
         amenity={activeAmenity}
         isOpen={Boolean(activeAmenity)}
         errorMessage={bookingError}
         isSubmitting={isBookingSubmitting}
-        onClose={() => {
-          setActiveAmenity(null);
-          setBookingError("");
-        }}
+        onClose={() => { setActiveAmenity(null); setBookingError(""); }}
         onSubmit={handleCreateBooking}
       />
-    </section>
+    </div>
   );
 }

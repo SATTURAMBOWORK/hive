@@ -3,9 +3,9 @@ import { TopNav } from "../components/TopNav";
 
 export function MainLayout() {
   return (
-    <div className="mx-auto max-w-7xl px-4 pb-12 md:px-6">
+    <div className="min-h-screen">
       <TopNav />
-      <main className="mt-5">
+      <main className="mx-auto max-w-7xl px-4 pb-16 pt-6 md:px-6">
         <Outlet />
       </main>
     </div>

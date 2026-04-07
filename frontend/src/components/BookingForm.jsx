@@ -1,14 +1,7 @@
 import { useMemo, useState } from "react";
+import { tok, fonts, card, fieldStyle, btn } from "../lib/tokens";
 
-const DAY_KEYS = [
-  "sunday",
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday"
-];
+const DAY_KEYS = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
 
 function getDayKey(dateValue) {
   const date = new Date(`${dateValue}T00:00:00`);
@@ -45,9 +38,7 @@ export function BookingForm({ amenity, isOpen, onClose, onSubmit, isSubmitting, 
     return startTime < dayHours.open || endTime > dayHours.close;
   }, [dayHours, endTime, startTime]);
 
-  if (!isOpen || !amenity) {
-    return null;
-  }
+  if (!isOpen || !amenity) return null;
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -55,48 +46,80 @@ export function BookingForm({ amenity, isOpen, onClose, onSubmit, isSubmitting, 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <form className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl" onSubmit={handleSubmit}>
-        <div className="mb-4 flex items-start justify-between gap-3">
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 50, display: "flex",
+        alignItems: "center", justifyContent: "center", padding: 16,
+        background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)",
+      }}
+    >
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          ...card,
+          width: "100%", maxWidth: 480,
+          fontFamily: fonts.sans,
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 20 }}>
           <div>
-            <h3 className="text-lg font-bold text-slate-900">Book {amenity.name}</h3>
-            <p className="text-xs text-slate-500">
-              {amenity.isAutoApprove ? "Auto-approval is enabled" : "Requires admin approval"}
+            <h3 style={{ fontSize: 20, fontWeight: 600, color: tok.stone800, margin: "0 0 4px" }}>
+              Book {amenity.name}
+            </h3>
+            <p style={{ fontSize: 12, color: tok.stone400, margin: 0 }}>
+              {amenity.isAutoApprove ? "⚡ Auto-approval enabled" : "Requires committee approval"}
             </p>
           </div>
-          <button className="btn-muted" type="button" onClick={onClose}>Close</button>
+          <button type="button" onClick={onClose} style={{ ...btn.muted, padding: "6px 14px", fontSize: 13 }}>
+            ✕ Close
+          </button>
         </div>
 
-        <div className="space-y-3">
-          <input className="field" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <input className="field" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} required />
-            <input className="field" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} required />
+        {/* Fields */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 700, color: tok.stone400, letterSpacing: "0.07em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Date</label>
+            <input style={fieldStyle} type="date" value={date} onChange={e => setDate(e.target.value)} required />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 700, color: tok.stone400, letterSpacing: "0.07em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Start</label>
+              <input style={fieldStyle} type="time" value={startTime} onChange={e => setStartTime(e.target.value)} required />
+            </div>
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 700, color: tok.stone400, letterSpacing: "0.07em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>End</label>
+              <input style={fieldStyle} type="time" value={endTime} onChange={e => setEndTime(e.target.value)} required />
+            </div>
           </div>
 
-          {dayHours ? (
-            <p className="text-xs text-slate-500">
-              Operating hours for {dayKey}: {dayHours.open} - {dayHours.close}
+          {dayHours && (
+            <p style={{ fontSize: 12, color: tok.stone400 }}>
+              🕐 Operating hours ({dayKey}): {dayHours.open} – {dayHours.close}
             </p>
-          ) : null}
+          )}
+          {durationMinutes > 0 && (
+            <p style={{ fontSize: 12, color: tok.stone400 }}>⏱ Duration: {durationMinutes} min</p>
+          )}
 
-          <p className="text-xs text-slate-500">Duration: {durationMinutes} minutes</p>
-
-          {outsideHours ? (
-            <p className="rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">
+          {outsideHours && (
+            <div style={{ padding: "10px 14px", background: tok.amberLight, border: `1px solid ${tok.amberBorder}`, borderRadius: 10, fontSize: 13, color: tok.amber }}>
               Selected time is outside operating hours.
-            </p>
-          ) : null}
-
-          {errorMessage ? (
-            <p className="rounded-lg bg-rose-100 px-3 py-2 text-sm text-rose-900">
+            </div>
+          )}
+          {errorMessage && (
+            <div style={{ padding: "10px 14px", background: tok.roseLight, border: `1px solid ${tok.roseBorder}`, borderRadius: 10, fontSize: 13, color: tok.rose }}>
               {errorMessage}
-            </p>
-          ) : null}
+            </div>
+          )}
         </div>
 
-        <button className="btn-primary mt-4 w-full" disabled={isSubmitting || outsideHours} type="submit">
-          {isSubmitting ? "Submitting..." : "Confirm Booking"}
+        <button
+          style={{ ...btn.primary, width: "100%", marginTop: 20 }}
+          disabled={isSubmitting || outsideHours}
+          type="submit"
+        >
+          {isSubmitting ? "Submitting…" : "✓ Confirm Booking"}
         </button>
       </form>
     </div>

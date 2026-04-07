@@ -1,48 +1,58 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, ImageOff, Users, Zap } from "lucide-react";
+import { tok, fonts, card, btn } from "../lib/tokens";
 
 function PhotoCarousel({ photos }) {
   const [idx, setIdx] = useState(0);
 
   if (!photos || photos.length === 0) {
     return (
-      <div className="flex h-44 items-center justify-center rounded-xl bg-slate-100">
-        <div className="flex flex-col items-center gap-1.5 text-slate-400">
-          <ImageOff className="h-7 w-7" />
-          <span className="text-xs">No photos</span>
-        </div>
+      <div style={{
+        height: 180, display: "flex", flexDirection: "column", alignItems: "center",
+        justifyContent: "center", background: tok.stone100, gap: 8,
+      }}>
+        <span style={{ fontSize: 32 }}>🖼</span>
+        <span style={{ fontSize: 12, color: tok.stone400 }}>No photos</span>
       </div>
     );
   }
 
   return (
-    <div className="relative h-44 overflow-hidden rounded-xl bg-slate-100">
+    <div style={{ position: "relative", height: 180, overflow: "hidden", background: tok.stone100 }}>
       <img
         src={photos[idx]}
         alt={`Photo ${idx + 1}`}
-        className="h-full w-full object-cover"
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
       />
-
       {photos.length > 1 && (
         <>
           <button
-            onClick={() => setIdx((i) => (i - 1 + photos.length) % photos.length)}
-            className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-1 text-white backdrop-blur-sm transition hover:bg-black/60"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
+            onClick={() => setIdx(i => (i - 1 + photos.length) % photos.length)}
+            style={{
+              position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)",
+              width: 28, height: 28, borderRadius: "50%", border: "none", cursor: "pointer",
+              background: "rgba(0,0,0,0.45)", color: "#fff", fontSize: 14,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >‹</button>
           <button
-            onClick={() => setIdx((i) => (i + 1) % photos.length)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-1 text-white backdrop-blur-sm transition hover:bg-black/60"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-          <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1">
+            onClick={() => setIdx(i => (i + 1) % photos.length)}
+            style={{
+              position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+              width: 28, height: 28, borderRadius: "50%", border: "none", cursor: "pointer",
+              background: "rgba(0,0,0,0.45)", color: "#fff", fontSize: 14,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >›</button>
+          <div style={{ position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 4 }}>
             {photos.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setIdx(i)}
-                className={`h-1.5 rounded-full transition-all ${i === idx ? "w-4 bg-white" : "w-1.5 bg-white/50"}`}
+                style={{
+                  height: 5, width: i === idx ? 16 : 5, borderRadius: 3,
+                  background: i === idx ? "#fff" : "rgba(255,255,255,0.5)",
+                  border: "none", cursor: "pointer", padding: 0, transition: "all .2s",
+                }}
               />
             ))}
           </div>
@@ -54,38 +64,58 @@ function PhotoCarousel({ photos }) {
 
 export function AmenityGrid({ amenities, onBook }) {
   if (!amenities.length) {
-    return <p className="text-sm text-slate-500">No amenities configured yet.</p>;
+    return (
+      <div style={{ ...card, textAlign: "center", padding: 48 }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>🏊</div>
+        <p style={{ fontSize: 14, color: tok.stone400 }}>No amenities configured yet.</p>
+      </div>
+    );
   }
 
   return (
-    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-      {amenities.map((amenity) => (
-        <article key={amenity._id} className="flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
+      {amenities.map(amenity => (
+        <article
+          key={amenity._id}
+          style={{
+            ...card,
+            padding: 0,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           <PhotoCarousel photos={amenity.photos} />
 
-          <div className="flex flex-1 flex-col p-4">
-            <h3 className="font-bold text-slate-900 text-base leading-snug">{amenity.name}</h3>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: 18 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: tok.stone800, margin: "0 0 6px", fontFamily: fonts.sans }}>
+              {amenity.name}
+            </h3>
             {amenity.description && (
-              <p className="mt-1 text-sm text-slate-500 line-clamp-2">{amenity.description}</p>
+              <p style={{ fontSize: 13, color: tok.stone600, lineHeight: 1.5, margin: "0 0 10px",
+                overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                {amenity.description}
+              </p>
             )}
 
-            <div className="mt-3 flex items-center gap-3 text-xs text-slate-500">
-              <span className="flex items-center gap-1">
-                <Users className="h-3.5 w-3.5" />
-                Capacity: {amenity.capacity}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14, marginTop: "auto" }}>
+              <span style={{
+                padding: "3px 10px", borderRadius: 100, fontSize: 11, fontWeight: 600,
+                background: tok.stone100, color: tok.stone600, border: `1px solid ${tok.stone200}`,
+              }}>
+                👥 Cap. {amenity.capacity}
               </span>
               {amenity.isAutoApprove && (
-                <span className="flex items-center gap-1 text-emerald-600 font-medium">
-                  <Zap className="h-3.5 w-3.5" />
-                  Instant Approval
+                <span style={{
+                  padding: "3px 10px", borderRadius: 100, fontSize: 11, fontWeight: 600,
+                  background: tok.emeraldLight, color: tok.emerald, border: `1px solid ${tok.emeraldBorder}`,
+                }}>
+                  ⚡ Instant
                 </span>
               )}
             </div>
 
-            <button
-              className="btn-primary mt-4 w-full"
-              onClick={() => onBook(amenity)}
-            >
+            <button style={{ ...btn.primary, width: "100%" }} onClick={() => onBook(amenity)}>
               Book Now
             </button>
           </div>
