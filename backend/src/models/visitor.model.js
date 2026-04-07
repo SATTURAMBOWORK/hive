@@ -20,11 +20,28 @@ const visitorSchema = new mongoose.Schema(
     vehicleNumber: { type: String, default: "", trim: true },
     entryTime:     { type: Date, default: Date.now },
     exitTime:      { type: Date, default: null },
+
+    // Who the request was sent to (looked up from flat number via membership)
+    residentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null
+    },
+
+    // Resident's decision on the request
+    approvalStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending"
+    },
+
+    // Physical presence — pending_entry until approved, inside after entry, exited after leaving
     status: {
       type: String,
-      enum: ["inside", "exited"],
-      default: "inside"
+      enum: ["pending_entry", "inside", "exited"],
+      default: "pending_entry"
     },
+
     loggedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -34,7 +51,6 @@ const visitorSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Index for efficiently fetching today's visitors for a tenant
 visitorSchema.index({ tenantId: 1, entryTime: -1 });
 
 export const Visitor = mongoose.model("Visitor", visitorSchema);

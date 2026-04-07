@@ -12,7 +12,8 @@ const notificationSchema = new mongoose.Schema(
         "announcement_created",
         "ticket_status_updated",
         "event_created",
-        "amenity_booking_status_updated"
+        "amenity_booking_status_updated",
+        "visitor_request_incoming"
       ],
       required: true
     },
