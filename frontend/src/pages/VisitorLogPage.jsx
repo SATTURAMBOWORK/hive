@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { LogIn, LogOut, RefreshCw, UserPlus, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { LogIn, LogOut, RefreshCw, UserPlus, X, ChevronDown, Search } from "lucide-react";
 import { useAuth } from "../components/AuthContext";
 import { apiRequest } from "../components/api";
 import { getSocket } from "../components/socket";
@@ -12,9 +12,9 @@ const PURPOSE_OPTIONS = [
 ];
 
 const APPROVAL_STYLE = {
-  pending:  { label: "Waiting…",  cls: "bg-amber-100 text-amber-700"   },
-  approved: { label: "Approved",  cls: "bg-emerald-100 text-emerald-700" },
-  rejected: { label: "Rejected",  cls: "bg-rose-100 text-rose-700"     },
+  pending:  { label: "Waiting…", cls: "bg-amber-100 text-amber-700"    },
+  approved: { label: "Approved", cls: "bg-emerald-100 text-emerald-700" },
+  rejected: { label: "Rejected", cls: "bg-rose-100 text-rose-700"      },
 };
 
 const inputCls =
@@ -43,17 +43,90 @@ function StatCard({ emoji, label, value, color }) {
   );
 }
 
+/* ── Searchable flat dropdown ───────────────────────────────────
+   Shows a text input. As the guard types, the list filters.
+   On selection, auto-fills flatNumber + residentName.
+──────────────────────────────────────────────────────────────── */
+function FlatDropdown({ flats, value, onChange }) {
+  const [query,  setQuery]  = useState(value || "");
+  const [open,   setOpen]   = useState(false);
+  const ref = useRef(null);
+
+  // Filter flats by query
+  const filtered = flats.filter(f =>
+    f.flatNumber.toLowerCase().includes(query.toLowerCase()) ||
+    f.residentName.toLowerCase().includes(query.toLowerCase())
+  );
+
+  // Close on outside click
+  useEffect(() => {
+    function handler(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Keep text in sync if parent clears the value
+  useEffect(() => { setQuery(value || ""); }, [value]);
+
+  function select(flat) {
+    setQuery(flat.flatNumber);
+    setOpen(false);
+    onChange(flat); // pass the whole flat object up
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <div className="relative">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+        <input
+          className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-10 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-sm transition-colors"
+          placeholder="Search flat or resident…"
+          value={query}
+          onChange={e => { setQuery(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+        />
+        <ChevronDown size={14} className={`absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none transition-transform ${open ? "rotate-180" : ""}`} />
+      </div>
+
+      {open && (
+        <div className="absolute z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-lg max-h-52 overflow-y-auto">
+          {filtered.length === 0 ? (
+            <p className="px-4 py-3 text-sm text-slate-400">No flats found</p>
+          ) : (
+            filtered.map(f => (
+              <button
+                key={f.flatNumber}
+                type="button"
+                onMouseDown={() => select(f)} // mousedown fires before blur
+                className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm hover:bg-slate-50 transition-colors"
+              >
+                <span className="font-semibold text-slate-800">Flat {f.flatNumber}</span>
+                <span className="text-slate-400">{f.residentName}</span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MAIN PAGE
+══════════════════════════════════════════════════════════════ */
 export function VisitorLogPage() {
   const { token } = useAuth();
 
-  const [visitors,   setVisitors]   = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState("");
-  const [formError,  setFormError]  = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [exitingId,  setExitingId]  = useState(null);
-  const [showForm,   setShowForm]   = useState(false);
-  // Toast shown when a response comes back in real-time
+  const [visitors,      setVisitors]      = useState([]);
+  const [flats,         setFlats]         = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState("");
+  const [formError,     setFormError]     = useState("");
+  const [submitting,    setSubmitting]    = useState(false);
+  const [exitingId,     setExitingId]     = useState(null);
+  const [showForm,      setShowForm]      = useState(false);
   const [responseToast, setResponseToast] = useState(null);
 
   const [form, setForm] = useState({
@@ -62,15 +135,29 @@ export function VisitorLogPage() {
   });
 
   function field(key) {
-    return (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
+    return (e) => setForm(prev => ({ ...prev, [key]: e.target.value }));
   }
 
+  // When a flat is selected from the dropdown, auto-fill flatNumber + residentName
+  function handleFlatSelect(flat) {
+    setForm(prev => ({
+      ...prev,
+      flatNumber:   flat.flatNumber,
+      residentName: flat.residentName,
+    }));
+  }
+
+  // Load today's visitors + the flat list in parallel
   const load = useCallback(async () => {
     if (!token) return;
     setLoading(true); setError("");
     try {
-      const data = await apiRequest("/visitors", { token });
-      setVisitors(data.items || []);
+      const [visitorData, flatData] = await Promise.all([
+        apiRequest("/visitors",       { token }),
+        apiRequest("/visitors/flats", { token }),
+      ]);
+      setVisitors(visitorData.items || []);
+      setFlats(flatData.items || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -80,36 +167,34 @@ export function VisitorLogPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Listen for real-time response from resident
+  // Real-time: resident responded → update that row + show toast
   useEffect(() => {
     const socket = getSocket();
-
     function onResponded({ visitor, decision }) {
-      // Update that specific visitor row in state — no page refresh needed
       setVisitors(prev => prev.map(v => v._id === visitor._id ? visitor : v));
-
-      // Show a temporary toast to the guard
       const msg = decision === "approved"
         ? `✅ ${visitor.visitorName} approved by resident`
         : `❌ ${visitor.visitorName} rejected by resident`;
       setResponseToast(msg);
       setTimeout(() => setResponseToast(null), 5000);
     }
-
     socket.on("visitor:request_responded", onResponded);
     return () => socket.off("visitor:request_responded", onResponded);
   }, []);
 
+  function resetForm() {
+    setForm({ visitorName: "", visitorPhone: "", flatNumber: "", residentName: "", purpose: "guest", vehicleNumber: "" });
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.visitorName.trim()) { setFormError("Visitor name is required."); return; }
-    if (!form.flatNumber.trim())  { setFormError("Flat number is required.");  return; }
+    if (!form.flatNumber.trim())  { setFormError("Please select a flat.");     return; }
     setFormError(""); setSubmitting(true);
     try {
       const data = await apiRequest("/visitors", { token, method: "POST", body: form });
-      // Add the new visitor to the top of the list immediately
       setVisitors(prev => [data.item, ...prev]);
-      setForm({ visitorName: "", visitorPhone: "", flatNumber: "", residentName: "", purpose: "guest", vehicleNumber: "" });
+      resetForm();
       setShowForm(false);
     } catch (err) {
       setFormError(err.message);
@@ -141,7 +226,7 @@ export function VisitorLogPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-6">
 
-      {/* ── Real-time response toast ── */}
+      {/* ── Real-time toast ── */}
       {responseToast && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl bg-slate-900 px-5 py-3.5 text-sm font-semibold text-white shadow-xl">
           {responseToast}
@@ -155,18 +240,13 @@ export function VisitorLogPage() {
           <p className="mt-0.5 text-sm text-slate-500">{today}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={load}
-            disabled={loading}
-            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-          >
+          <button onClick={load} disabled={loading}
+            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
             Sync
           </button>
-          <button
-            onClick={() => setShowForm((v) => !v)}
-            className="flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-orange-700"
-          >
+          <button onClick={() => { setShowForm(v => !v); setFormError(""); }}
+            className="flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-orange-700">
             <UserPlus size={15} />
             Request Entry
           </button>
@@ -181,60 +261,78 @@ export function VisitorLogPage() {
 
       {/* ── Stats ── */}
       <div className="grid grid-cols-4 gap-4">
-        <StatCard emoji="👥" label="Total Today"  value={visitors.length} color="slate"   />
-        <StatCard emoji="⏳" label="Pending"      value={pendingCount}    color="amber"   />
-        <StatCard emoji="🟢" label="Inside"       value={insideCount}     color="orange"  />
-        <StatCard emoji="✅" label="Exited"       value={exitedCount}     color="emerald" />
+        <StatCard emoji="👥" label="Total Today" value={visitors.length} color="slate"   />
+        <StatCard emoji="⏳" label="Pending"     value={pendingCount}    color="amber"   />
+        <StatCard emoji="🟢" label="Inside"      value={insideCount}     color="orange"  />
+        <StatCard emoji="✅" label="Exited"      value={exitedCount}     color="emerald" />
       </div>
 
       {/* ── Request Entry Form ── */}
       {showForm && (
         <div className="rounded-2xl border border-orange-100 bg-orange-50 p-6">
-          <h2 className="mb-4 text-base font-bold text-slate-900">New Visitor Request</h2>
+          <h2 className="mb-1 text-base font-bold text-slate-900">New Visitor Request</h2>
           <p className="mb-4 text-xs text-slate-500">
-            The resident will receive an instant notification and must approve before the visitor enters.
+            The resident receives an instant notification and must approve before the visitor enters.
           </p>
-          <form onSubmit={handleSubmit} className="space-y-3">
+
+          <form onSubmit={handleSubmit} className="space-y-4">
             {formError && (
               <div className="rounded-lg bg-rose-50 px-4 py-2.5 text-sm text-rose-700 ring-1 ring-rose-200">
                 {formError}
               </div>
             )}
 
+            {/* Row 1: Visitor name + phone */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="mb-1 block text-xs font-semibold text-slate-600">
                   Visitor Name <span className="text-rose-500">*</span>
                 </label>
-                <input className={inputCls} placeholder="e.g. Raj Kumar" value={form.visitorName} onChange={field("visitorName")} />
+                <input className={inputCls} placeholder="e.g. Raj Kumar"
+                  value={form.visitorName} onChange={field("visitorName")} />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">Phone</label>
-                <input className={inputCls} placeholder="e.g. 9876543210" value={form.visitorPhone} onChange={field("visitorPhone")} />
+                <label className="mb-1 block text-xs font-semibold text-slate-600">
+                  Visitor Phone
+                </label>
+                <input className={inputCls} placeholder="e.g. 9876543210"
+                  value={form.visitorPhone} onChange={field("visitorPhone")} />
               </div>
             </div>
 
+            {/* Row 2: Flat dropdown (auto-fills resident name) */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="mb-1 block text-xs font-semibold text-slate-600">
                   Visiting Flat <span className="text-rose-500">*</span>
                 </label>
-                <input className={inputCls} placeholder="e.g. A-401" value={form.flatNumber} onChange={field("flatNumber")} />
+                <FlatDropdown
+                  flats={flats}
+                  value={form.flatNumber}
+                  onChange={handleFlatSelect}
+                />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">Resident Name</label>
-                <input className={inputCls} placeholder="Who they're visiting" value={form.residentName} onChange={field("residentName")} />
+                <label className="mb-1 block text-xs font-semibold text-slate-600">
+                  Resident Name
+                  <span className="ml-1 text-slate-400 font-normal">(auto-filled)</span>
+                </label>
+                <input
+                  className={`${inputCls} bg-slate-50 text-slate-500`}
+                  placeholder="Auto-filled when flat is selected"
+                  value={form.residentName}
+                  readOnly
+                />
               </div>
             </div>
 
+            {/* Purpose selector */}
             <div>
               <label className="mb-2 block text-xs font-semibold text-slate-600">Purpose</label>
               <div className="grid grid-cols-4 gap-2">
-                {PURPOSE_OPTIONS.map((p) => (
-                  <button
-                    key={p.value}
-                    type="button"
-                    onClick={() => setForm((prev) => ({ ...prev, purpose: p.value }))}
+                {PURPOSE_OPTIONS.map(p => (
+                  <button key={p.value} type="button"
+                    onClick={() => setForm(prev => ({ ...prev, purpose: p.value }))}
                     className={`flex flex-col items-center gap-1 rounded-xl border-2 py-2.5 text-center transition
                       ${form.purpose === p.value
                         ? "border-orange-500 bg-white text-orange-700"
@@ -247,25 +345,21 @@ export function VisitorLogPage() {
               </div>
             </div>
 
+            {/* Vehicle number */}
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-600">Vehicle Number</label>
-              <input className={inputCls} placeholder="e.g. KA01AB1234 (optional)" value={form.vehicleNumber} onChange={field("vehicleNumber")} />
+              <input className={inputCls} placeholder="e.g. KA01AB1234 (optional)"
+                value={form.vehicleNumber} onChange={field("vehicleNumber")} />
             </div>
 
             <div className="flex gap-3 pt-1">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-orange-700 disabled:opacity-60"
-              >
+              <button type="submit" disabled={submitting}
+                className="flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-orange-700 disabled:opacity-60">
                 <LogIn size={15} />
-                {submitting ? "Sending request…" : "Send Request"}
+                {submitting ? "Sending…" : "Send Request"}
               </button>
-              <button
-                type="button"
-                onClick={() => { setShowForm(false); setFormError(""); }}
-                className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-              >
+              <button type="button" onClick={() => { setShowForm(false); resetForm(); setFormError(""); }}
+                className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
                 Cancel
               </button>
             </div>
@@ -293,13 +387,12 @@ export function VisitorLogPage() {
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {visitors.map((v) => {
-              const approval = APPROVAL_STYLE[v.approvalStatus] || APPROVAL_STYLE.pending;
+            {visitors.map(v => {
+              const approval    = APPROVAL_STYLE[v.approvalStatus] || APPROVAL_STYLE.pending;
               const purposeEmoji = PURPOSE_OPTIONS.find(p => p.value === v.purpose)?.emoji || "👤";
 
               return (
                 <div key={v._id} className="flex items-center justify-between gap-4 px-6 py-4">
-                  {/* Left */}
                   <div className="flex items-center gap-4">
                     <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-lg
                       ${v.approvalStatus === "pending" ? "bg-amber-50" : v.approvalStatus === "approved" ? "bg-orange-50" : "bg-slate-50"}`}>
@@ -315,7 +408,6 @@ export function VisitorLogPage() {
                     </div>
                   </div>
 
-                  {/* Right */}
                   <div className="flex flex-shrink-0 items-center gap-3">
                     <div className="hidden text-right sm:block">
                       <p className="text-xs text-slate-500">
@@ -328,18 +420,13 @@ export function VisitorLogPage() {
                       )}
                     </div>
 
-                    {/* Approval status badge */}
                     <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${approval.cls}`}>
                       {approval.label}
                     </span>
 
-                    {/* Mark exit — only if visitor is inside */}
                     {v.status === "inside" && (
-                      <button
-                        onClick={() => handleExit(v._id)}
-                        disabled={exitingId === v._id}
-                        className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-50"
-                      >
+                      <button onClick={() => handleExit(v._id)} disabled={exitingId === v._id}
+                        className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-50">
                         <LogOut size={12} />
                         {exitingId === v._id ? "…" : "Mark Exit"}
                       </button>

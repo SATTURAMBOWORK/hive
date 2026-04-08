@@ -13,6 +13,34 @@ function sanitizeText(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+// GET /visitors/flats
+// Returns all flats that have an approved resident — used to populate the guard's dropdown
+export async function listFlats(req, res, next) {
+  try {
+    const memberships = await Membership.find({
+      tenantId: req.tenantId,
+      status: "approved"
+    })
+      .populate("userId",  "fullName phone")
+      .populate("wingId",  "name")
+      .populate("unitId",  "unitNumber");
+
+    const flats = memberships
+      .filter(m => m.wingId && m.unitId && m.userId)
+      .map(m => ({
+        flatNumber:   `${m.wingId.name}-${m.unitId.unitNumber}`,
+        residentName: m.userId.fullName,
+        residentPhone: m.userId.phone || "",
+        residentId:   m.userId._id,
+      }))
+      .sort((a, b) => a.flatNumber.localeCompare(b.flatNumber));
+
+    res.json({ items: flats });
+  } catch (error) {
+    next(error);
+  }
+}
+
 // Parse "A-401" → { wingName: "A", unitNumber: "401" }
 // If no hyphen, wingName is null and the whole string is unitNumber
 function parseFlatNumber(flat) {
