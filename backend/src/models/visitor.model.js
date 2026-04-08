@@ -31,7 +31,7 @@ const visitorSchema = new mongoose.Schema(
     // Resident's decision on the request
     approvalStatus: {
       type: String,
-      enum: ["pending", "approved", "rejected"],
+      enum: ["pending", "approved", "rejected", "missed"],
       default: "pending"
     },
 

@@ -7,10 +7,40 @@ import { Notification } from "../models/notification.model.js";
 import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
 
-const VALID_PURPOSES = ["delivery", "guest", "contractor", "other"];
+const VALID_PURPOSES    = ["delivery", "guest", "contractor", "other"];
+const REQUEST_TTL_MS    = 15 * 60 * 1000; // 15 minutes
 
 function sanitizeText(value) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+// Mark any pending requests older than 15 minutes as "missed" for this tenant
+async function expireStaleRequests(tenantId) {
+  const cutoff = new Date(Date.now() - REQUEST_TTL_MS);
+  await Visitor.updateMany(
+    { tenantId, approvalStatus: "pending", entryTime: { $lt: cutoff } },
+    { $set: { approvalStatus: "missed" } }
+  );
+}
+
+// GET /visitors/my-requests
+// Resident fetches their own pending visitor requests (for persistent approve/reject UI)
+export async function myPendingRequests(req, res, next) {
+  try {
+    await expireStaleRequests(req.tenantId);
+
+    const items = await Visitor.find({
+      tenantId:       req.tenantId,
+      residentId:     req.user.userId,
+      approvalStatus: "pending"
+    })
+      .sort({ entryTime: -1 })
+      .populate("loggedBy", "fullName");
+
+    res.json({ items });
+  } catch (error) {
+    next(error);
+  }
 }
 
 // GET /visitors/flats
@@ -78,6 +108,8 @@ async function findResidentForFlat(tenantId, flatNumber) {
 // GET /visitors — today's visitor log for this tenant
 export async function listVisitors(req, res, next) {
   try {
+    await expireStaleRequests(req.tenantId);
+
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 

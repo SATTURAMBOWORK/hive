@@ -15,6 +15,7 @@ const APPROVAL_STYLE = {
   pending:  { label: "Waiting…", cls: "bg-amber-100 text-amber-700"    },
   approved: { label: "Approved", cls: "bg-emerald-100 text-emerald-700" },
   rejected: { label: "Rejected", cls: "bg-rose-100 text-rose-700"      },
+  missed:   { label: "Missed",   cls: "bg-slate-100 text-slate-500"    },
 };
 
 const inputCls =

@@ -4,10 +4,11 @@ import {
   Bell, CalendarDays, Ticket, ArrowRight, Clock,
   MapPin, AlertTriangle, XCircle, Users, Wrench,
   Megaphone, RefreshCw, Home, Plus, BookOpen,
-  ChevronRight, Activity, Zap
+  ChevronRight, Activity, Zap, CheckCircle
 } from "lucide-react";
 import { useAuth } from "../components/AuthContext";
 import { apiRequest } from "../components/api";
+import { getSocket } from "../components/socket";
 import { SecurityDashboard } from "./SecurityDashboard";
 
 /* ── Google Fonts injected once ─────────────────────────────── */
@@ -400,15 +401,18 @@ export function DashboardPage() {
   // Route to role-specific dashboard
   if (user?.role === "security") return <SecurityDashboard />;
 
-  const isAdmin = ["committee", "super_admin"].includes(user?.role);
+  const isAdmin    = ["committee", "super_admin"].includes(user?.role);
+  const isResident = user?.role === "resident";
 
-  const [announcements,   setAnnouncements]   = useState([]);
-  const [tickets,         setTickets]         = useState([]);
-  const [events,          setEvents]          = useState([]);
-  const [bookings,        setBookings]        = useState([]);
-  const [pendingApprovals,setPendingApprovals]= useState(0);
-  const [loading,         setLoading]         = useState(true);
-  const [error,           setError]           = useState("");
+  const [announcements,      setAnnouncements]      = useState([]);
+  const [tickets,            setTickets]            = useState([]);
+  const [events,             setEvents]             = useState([]);
+  const [bookings,           setBookings]           = useState([]);
+  const [pendingApprovals,   setPendingApprovals]   = useState(0);
+  const [visitorRequests,    setVisitorRequests]    = useState([]);
+  const [respondingId,       setRespondingId]       = useState(null);
+  const [loading,            setLoading]            = useState(true);
+  const [error,              setError]              = useState("");
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -420,13 +424,16 @@ export function DashboardPage() {
         apiRequest("/events",            { token }),
         apiRequest("/amenities/bookings",{ token }),
       ];
-      if (isAdmin) calls.push(apiRequest("/admin/pending-approvals", { token }));
+      if (isAdmin)   calls.push(apiRequest("/admin/pending-approvals",  { token }));
+      if (isResident) calls.push(apiRequest("/visitors/my-requests",    { token }));
+
       const results = await Promise.all(calls);
       setAnnouncements(results[0].items || []);
       setTickets(results[1].items || []);
       setEvents(results[2].items || []);
       setBookings(results[3].items || []);
-      if (isAdmin) setPendingApprovals((results[4].items || []).length);
+      if (isAdmin)    setPendingApprovals((results[4].items || []).length);
+      if (isResident) setVisitorRequests(results[isAdmin ? 5 : 4]?.items || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -435,6 +442,30 @@ export function DashboardPage() {
   }, [token, isAdmin]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Real-time: new visitor request arrives → add to the list
+  useEffect(() => {
+    if (!isResident) return;
+    const socket = getSocket();
+    function onIncoming({ visitor }) {
+      setVisitorRequests(prev => [visitor, ...prev.filter(v => v._id !== visitor._id)]);
+    }
+    socket.on("visitor:request_incoming", onIncoming);
+    return () => socket.off("visitor:request_incoming", onIncoming);
+  }, [isResident]);
+
+  async function respondToVisitor(visitorId, decision) {
+    setRespondingId(visitorId);
+    try {
+      await apiRequest(`/visitors/${visitorId}/respond`, { token, method: "PATCH", body: { decision } });
+      // Remove from pending list after responding
+      setVisitorRequests(prev => prev.filter(v => v._id !== visitorId));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setRespondingId(null);
+    }
+  }
 
   const userId        = user?._id || user?.id || "";
   const { word, first }= greeting(user?.fullName);
@@ -620,6 +651,66 @@ export function DashboardPage() {
 
           {/* RIGHT column */}
           <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+
+            {/* Pending Visitor Requests — residents only */}
+            {isResident && visitorRequests.length > 0 && (
+              <div style={{
+                background:"#FFF7ED", border:"1px solid #FED7AA",
+                borderRadius:24, padding:24,
+              }}>
+                <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:"#C2500A", marginBottom:4 }}>
+                  Action Required
+                </div>
+                <div style={{ fontFamily:"'DM Serif Display', serif", fontSize:20, color:tok.stone800, marginBottom:16 }}>
+                  Visitor at Gate
+                </div>
+                {visitorRequests.map(v => (
+                  <div key={v._id} style={{
+                    background:"#fff", border:"1px solid #FED7AA",
+                    borderRadius:16, padding:"14px 16px", marginBottom:10,
+                  }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+                      <div style={{ width:38, height:38, borderRadius:12, background:"#FFF7ED", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>
+                        👤
+                      </div>
+                      <div>
+                        <p style={{ fontSize:14, fontWeight:600, color:tok.stone800 }}>{v.visitorName}</p>
+                        <p style={{ fontSize:11, color:tok.stone400 }}>
+                          {v.purpose} {v.visitorPhone ? `· ${v.visitorPhone}` : ""}
+                          {v.loggedBy?.fullName ? ` · Guard: ${v.loggedBy.fullName}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                      <button
+                        onClick={() => respondToVisitor(v._id, "rejected")}
+                        disabled={respondingId === v._id}
+                        style={{
+                          padding:"9px 0", borderRadius:10, fontSize:12, fontWeight:700,
+                          border:"1.5px solid #FCA5A5", background:"#FEF2F2", color:"#B91C1C",
+                          cursor:"pointer", opacity: respondingId === v._id ? 0.6 : 1,
+                          display:"flex", alignItems:"center", justifyContent:"center", gap:6,
+                        }}
+                      >
+                        <XCircle size={13} /> Reject
+                      </button>
+                      <button
+                        onClick={() => respondToVisitor(v._id, "approved")}
+                        disabled={respondingId === v._id}
+                        style={{
+                          padding:"9px 0", borderRadius:10, fontSize:12, fontWeight:700,
+                          border:"none", background:"#16A34A", color:"#fff",
+                          cursor:"pointer", opacity: respondingId === v._id ? 0.6 : 1,
+                          display:"flex", alignItems:"center", justifyContent:"center", gap:6,
+                        }}
+                      >
+                        <CheckCircle size={13} /> Approve
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Quick Actions */}
             <Card style={{ padding:24 }}>
