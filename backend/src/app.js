@@ -16,6 +16,7 @@ import { adminRouter } from "./routes/admin.routes.js";
 import { notificationRouter } from "./routes/notification.routes.js";
 import { userRouter } from "./routes/user.routes.js";
 import { visitorRouter } from "./routes/visitor.routes.js";
+import { preRegRouter } from "./routes/visitor-prereg.routes.js";
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use("/api/admin", adminRouter);
 app.use("/api/notifications", notificationRouter);
 app.use("/api/users", userRouter);
 app.use("/api/visitors", visitorRouter);
+app.use("/api/visitor-prereg", preRegRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { to: "/events",              label: "Events",       roles: null },
   { to: "/amenities",           label: "Amenities",    roles: null },
   { to: "/visitors",            label: "Visitors",     roles: ["security", "committee", "super_admin"] },
+  { to: "/visitors/prereg",    label: "My Passes",    roles: ["resident", "committee", "super_admin"] },
   { to: "/admin/approvals",     label: "Approvals",    roles: ["committee", "super_admin"] },
   { to: "/admin/society-setup", label: "Society",      roles: ["committee", "super_admin"] },
 ];

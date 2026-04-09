@@ -13,6 +13,7 @@ import { SocietySetupPage } from "./pages/SocietySetupPage";
 import { TicketsPage } from "./pages/TicketsPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { VisitorLogPage } from "./pages/VisitorLogPage";
+import { VisitorPreRegPage } from "./pages/VisitorPreRegPage";
 import { useAuth } from "./components/AuthContext";
 
 function ProtectedDashboard() {
@@ -88,6 +89,7 @@ export function App() {
         <Route path="/admin/society-setup" element={<ProtectedFeature><SocietySetupPage /></ProtectedFeature>} />
         <Route path="/profile" element={<ProtectedFeature><ProfilePage /></ProtectedFeature>} />
         <Route path="/visitors" element={<ProtectedFeature><VisitorLogPage /></ProtectedFeature>} />
+        <Route path="/visitors/prereg" element={<ProtectedFeature><VisitorPreRegPage /></ProtectedFeature>} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
       </Route>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LogIn, LogOut, RefreshCw, UserPlus, X, ChevronDown, Search } from "lucide-react";
+import { LogIn, LogOut, RefreshCw, UserPlus, X, ChevronDown, Search, KeyRound } from "lucide-react";
 import { useAuth } from "../components/AuthContext";
 import { apiRequest } from "../components/api";
 import { getSocket } from "../components/socket";
@@ -130,6 +130,13 @@ export function VisitorLogPage() {
   const [showForm,      setShowForm]      = useState(false);
   const [responseToast, setResponseToast] = useState(null);
 
+  // OTP verification modal state
+  const [showOtpModal,  setShowOtpModal]  = useState(false);
+  const [otpValue,      setOtpValue]      = useState("");
+  const [otpError,      setOtpError]      = useState("");
+  const [otpLoading,    setOtpLoading]    = useState(false);
+  const [otpSuccess,    setOtpSuccess]    = useState(null); // the visitor that just entered
+
   const [form, setForm] = useState({
     visitorName: "", visitorPhone: "", flatNumber: "",
     residentName: "", purpose: "guest", vehicleNumber: "",
@@ -204,6 +211,27 @@ export function VisitorLogPage() {
     }
   }
 
+  // Guard enters OTP from a resident's pre-registration pass
+  async function handleOtpVerify(e) {
+    e.preventDefault();
+    if (!/^\d{6}$/.test(otpValue)) { setOtpError("Enter a valid 6-digit OTP."); return; }
+    setOtpError(""); setOtpLoading(true); setOtpSuccess(null);
+    try {
+      const data = await apiRequest("/visitor-prereg/verify-otp", {
+        token, method: "POST", body: { otp: otpValue }
+      });
+      const visitor = data.item;
+      // Add the new visitor to the log
+      setVisitors(prev => [visitor, ...prev]);
+      setOtpSuccess(visitor);
+      setOtpValue("");
+    } catch (err) {
+      setOtpError(err.message);
+    } finally {
+      setOtpLoading(false);
+    }
+  }
+
   async function handleExit(id) {
     setExitingId(id);
     try {
@@ -234,6 +262,85 @@ export function VisitorLogPage() {
         </div>
       )}
 
+      {/* ── OTP Verification Modal ── */}
+      {showOtpModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl">
+
+            {/* Modal header */}
+            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+              <div>
+                <h2 className="font-extrabold text-slate-900">Verify Entry Pass</h2>
+                <p className="text-xs text-slate-400 mt-0.5">Ask the visitor for their 6-digit OTP</p>
+              </div>
+              <button onClick={() => setShowOtpModal(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleOtpVerify} className="px-6 py-5 space-y-4">
+              {otpError && (
+                <div className="rounded-lg bg-rose-50 px-4 py-2.5 text-sm text-rose-700 ring-1 ring-rose-200">
+                  {otpError}
+                </div>
+              )}
+
+              {/* Success state — shows the visitor details after a successful verify */}
+              {otpSuccess ? (
+                <div className="rounded-xl bg-emerald-50 ring-1 ring-emerald-200 p-4 space-y-1">
+                  <p className="text-sm font-bold text-emerald-800">
+                    ✅ {otpSuccess.visitorName} has entered
+                  </p>
+                  <p className="text-xs text-emerald-700">
+                    Flat {otpSuccess.flatNumber} · {otpSuccess.purpose}
+                    {otpSuccess.visitorPhone ? ` · ${otpSuccess.visitorPhone}` : ""}
+                  </p>
+                  <p className="text-xs text-emerald-600 mt-1">
+                    Visitor log has been updated automatically.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold text-slate-600">
+                      6-Digit OTP
+                    </label>
+                    <input
+                      className={`${inputCls} text-center text-2xl font-black tracking-[0.4em]`}
+                      placeholder="······"
+                      maxLength={6}
+                      value={otpValue}
+                      onChange={e => setOtpValue(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      autoFocus
+                    />
+                    <p className="mt-1.5 text-xs text-slate-400">
+                      The resident shared this via their Entry Pass.
+                    </p>
+                  </div>
+
+                  <button type="submit" disabled={otpLoading || otpValue.length < 6}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl
+                      bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white
+                      transition hover:bg-emerald-700 disabled:opacity-50">
+                    <KeyRound size={15} />
+                    {otpLoading ? "Verifying…" : "Verify & Allow Entry"}
+                  </button>
+                </>
+              )}
+
+              {otpSuccess && (
+                <button type="button" onClick={() => setShowOtpModal(false)}
+                  className="w-full rounded-xl border border-slate-200 py-2.5 text-sm
+                    font-semibold text-slate-600 transition hover:bg-slate-50">
+                  Close
+                </button>
+              )}
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div>
@@ -245,6 +352,11 @@ export function VisitorLogPage() {
             className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
             Sync
+          </button>
+          <button onClick={() => { setShowOtpModal(true); setOtpValue(""); setOtpError(""); setOtpSuccess(null); }}
+            className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700">
+            <KeyRound size={15} />
+            Verify OTP
           </button>
           <button onClick={() => { setShowForm(v => !v); setFormError(""); }}
             className="flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-orange-700">
