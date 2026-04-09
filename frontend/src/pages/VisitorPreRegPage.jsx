@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Calendar, Plus, Trash2, X, RefreshCw, QrCode,
-  Users, Upload, Clock, CheckCircle2, AlertTriangle
+  Users, Upload, Clock, CheckCircle2, AlertTriangle, PartyPopper
 } from "lucide-react";
 import { useAuth } from "../components/AuthContext";
 import { apiRequest } from "../components/api";
@@ -628,10 +628,322 @@ function FreqVisitorsTab() {
 }
 
 // ══════════════════════════════════════════════════════════════════
+//  TAB 3 — GROUP PASSES
+// ══════════════════════════════════════════════════════════════════
+
+const GROUP_STATUS_STYLE = {
+  active:    { label: "Active",    cls: "bg-purple-100 text-purple-700 ring-1 ring-purple-200" },
+  exhausted: { label: "Full",      cls: "bg-slate-100  text-slate-500  ring-1 ring-slate-200"  },
+  expired:   { label: "Expired",   cls: "bg-slate-100  text-slate-500  ring-1 ring-slate-200"  },
+  cancelled: { label: "Cancelled", cls: "bg-rose-100   text-rose-600   ring-1 ring-rose-200"   },
+};
+
+// Progress bar showing how many guest slots have been used
+function UsageBar({ used, max }) {
+  const pct = Math.min(100, Math.round((used / max) * 100));
+  const color = pct >= 100 ? "bg-rose-500" : pct >= 75 ? "bg-amber-400" : "bg-purple-500";
+  return (
+    <div className="space-y-1">
+      <div className="flex justify-between text-xs text-slate-500">
+        <span>{used} of {max} guests used</span>
+        <span>{max - used} spots left</span>
+      </div>
+      <div className="h-1.5 w-full rounded-full bg-slate-100">
+        <div className={`h-1.5 rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function GroupPassCard({ pass, onCancel, cancelling }) {
+  const statusStyle = GROUP_STATUS_STYLE[pass.status] || GROUP_STATUS_STYLE.active;
+  const isActive    = pass.status === "active";
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${pass.otp}&size=160x160&margin=10`;
+
+  return (
+    <div className={`rounded-2xl border bg-white overflow-hidden shadow-sm
+      ${isActive ? "border-purple-200" : "border-slate-200 opacity-70"}`}>
+
+      {/* Header */}
+      <div className={`flex items-center justify-between px-5 py-3.5
+        ${isActive ? "bg-purple-50" : "bg-slate-50"}`}>
+        <div className="flex items-center gap-2.5">
+          <span className="text-xl">🎉</span>
+          <div>
+            <p className="font-bold text-slate-900 text-sm">{pass.eventName}</p>
+            <p className="text-xs text-slate-500 flex items-center gap-1">
+              <Calendar size={11} /> {fmtDate(pass.expectedDate)}
+            </p>
+          </div>
+        </div>
+        <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${statusStyle.cls}`}>
+          {statusStyle.label}
+        </span>
+      </div>
+
+      {/* Body — OTP + QR */}
+      <div className="flex items-stretch divide-x divide-slate-100">
+        <div className="flex-1 p-5 space-y-3">
+          {/* Usage progress */}
+          <UsageBar used={pass.usedCount || 0} max={pass.maxUses} />
+
+          {/* OTP */}
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+              Shared Entry OTP
+            </p>
+            <div className={`flex gap-1.5 ${!isActive ? "opacity-40" : ""}`}>
+              {pass.otp.split("").map((digit, i) => (
+                <div key={i}
+                  className="flex h-10 w-9 items-center justify-center rounded-xl bg-slate-900 text-white text-lg font-black shadow-sm">
+                  {digit}
+                </div>
+              ))}
+            </div>
+            {isActive && (
+              <p className="mt-2 text-xs text-slate-400">
+                Share this one code with all your guests. Each person uses it once at the gate.
+              </p>
+            )}
+          </div>
+
+          {/* Entries log — who actually came */}
+          {pass.entries?.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+                Guests who entered
+              </p>
+              <div className="space-y-1">
+                {pass.entries.map((e, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs text-slate-600">
+                    <span className="text-slate-400">#{i + 1}</span>
+                    <span className="font-medium">{e.visitorName}</span>
+                    <span className="text-slate-400">
+                      {new Date(e.entryTime).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* QR code */}
+        <div className="flex flex-col items-center justify-center p-5 gap-2">
+          {isActive ? (
+            <>
+              <img src={qrUrl} alt={`QR ${pass.otp}`} className="h-24 w-24 rounded-xl" loading="lazy" />
+              <p className="text-xs text-slate-400 flex items-center gap-1"><QrCode size={11} /> Scan to see OTP</p>
+            </>
+          ) : (
+            <div className="flex h-24 w-24 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
+              <QrCode size={28} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Footer */}
+      {isActive && (
+        <div className="border-t border-slate-100 px-5 py-3 flex justify-end">
+          <button onClick={() => onCancel(pass._id)} disabled={cancelling === pass._id}
+            className="flex items-center gap-1.5 rounded-lg border border-rose-200 px-3 py-1.5
+              text-xs font-semibold text-rose-600 transition hover:bg-rose-50 disabled:opacity-50">
+            <Trash2 size={12} />
+            {cancelling === pass._id ? "Cancelling…" : "Cancel Pass"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CreateGroupPassForm({ onCreate }) {
+  const { token } = useAuth();
+  const [form, setForm] = useState({
+    eventName: "", maxUses: 10,
+    expectedDate: new Date().toISOString().split("T")[0]
+  });
+  const [error, setError]           = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!form.eventName.trim()) { setError("Event name is required."); return; }
+    if (form.maxUses < 1)       { setError("At least 1 guest required."); return; }
+    setError(""); setSubmitting(true);
+    try {
+      const data = await apiRequest("/group-passes", { token, method: "POST", body: form });
+      onCreate(data.item);
+      setForm(prev => ({ ...prev, eventName: "", maxUses: 10 }));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-purple-100 bg-purple-50 p-6">
+      <h2 className="mb-1 text-base font-bold text-slate-900">Create Group Pass</h2>
+      <p className="mb-5 text-xs text-slate-500">
+        One shared OTP for all your guests. Guard enters it once per person with their name.
+      </p>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="rounded-lg bg-rose-50 px-4 py-2.5 text-sm text-rose-700 ring-1 ring-rose-200">{error}</div>
+        )}
+
+        <div>
+          <label className="mb-1 block text-xs font-semibold text-slate-600">
+            Event Name <span className="text-rose-500">*</span>
+          </label>
+          <input className={inputCls} placeholder="e.g. Birthday Party, Kitty Party, House Warming…"
+            value={form.eventName} onChange={e => setForm(p => ({ ...p, eventName: e.target.value }))} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-slate-600">
+              Max Guests <span className="text-rose-500">*</span>
+            </label>
+            <input type="number" min={1} max={100} className={inputCls}
+              value={form.maxUses}
+              onChange={e => setForm(p => ({ ...p, maxUses: parseInt(e.target.value, 10) || 1 }))} />
+            <p className="mt-1 text-xs text-slate-400">OTP stops working after this many entries.</p>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-slate-600">
+              Event Date <span className="text-rose-500">*</span>
+            </label>
+            <input type="date" className={inputCls}
+              value={form.expectedDate} min={new Date().toISOString().split("T")[0]}
+              onChange={e => setForm(p => ({ ...p, expectedDate: e.target.value }))} />
+          </div>
+        </div>
+
+        <button type="submit" disabled={submitting}
+          className="flex items-center gap-2 rounded-xl bg-purple-600 px-5 py-2.5
+            text-sm font-bold text-white transition hover:bg-purple-700 disabled:opacity-60">
+          <PartyPopper size={15} />
+          {submitting ? "Generating…" : "Generate Group Pass"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function GroupPassesTab() {
+  const { token } = useAuth();
+  const [passes,     setPasses]     = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState("");
+  const [cancelling, setCancelling] = useState(null);
+  const [showForm,   setShowForm]   = useState(false);
+  const [guestToast, setGuestToast] = useState(null);
+
+  const load = useCallback(async () => {
+    if (!token) return;
+    setLoading(true); setError("");
+    try {
+      const data = await apiRequest("/group-passes", { token });
+      setPasses(data.items || []);
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
+  }, [token]);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Real-time: guard verified a guest → update usage count + show toast
+  useEffect(() => {
+    const socket = getSocket();
+    function onGroupPassUsed({ visitor, groupPass }) {
+      setGuestToast(`${visitor.visitorName} entered — ${groupPass.usedCount}/${groupPass.maxUses} guests`);
+      setTimeout(() => setGuestToast(null), 6000);
+      // Reload to get latest entries list and usedCount
+      load();
+    }
+    socket.on("visitor:group_pass_used", onGroupPassUsed);
+    return () => socket.off("visitor:group_pass_used", onGroupPassUsed);
+  }, [load]);
+
+  async function handleCancel(id) {
+    setCancelling(id);
+    try {
+      await apiRequest(`/group-passes/${id}`, { token, method: "DELETE" });
+      setPasses(prev => prev.map(p => p._id === id ? { ...p, status: "cancelled" } : p));
+    } catch (err) { setError(err.message); }
+    finally { setCancelling(null); }
+  }
+
+  const active   = passes.filter(p => p.status === "active");
+  const historic = passes.filter(p => p.status !== "active");
+
+  return (
+    <div className="space-y-4">
+      {guestToast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl
+          bg-purple-700 px-5 py-3.5 text-sm font-semibold text-white shadow-xl">
+          🎉 {guestToast}
+        </div>
+      )}
+
+      <div className="flex justify-end">
+        <button onClick={() => setShowForm(v => !v)}
+          className="flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2
+            text-sm font-bold text-white shadow-sm transition hover:bg-purple-700">
+          <Plus size={15} /> New Group Pass
+        </button>
+      </div>
+
+      {error && (
+        <div className="flex items-center gap-3 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200">
+          <X size={16} /> {error}
+        </div>
+      )}
+
+      {showForm && (
+        <CreateGroupPassForm onCreate={item => { setPasses(p => [item, ...p]); setShowForm(false); }} />
+      )}
+
+      {loading ? (
+        <div className="space-y-3">
+          {[...Array(2)].map((_, i) => <div key={i} className="h-52 animate-pulse rounded-2xl bg-slate-100" />)}
+        </div>
+      ) : (
+        <>
+          {active.length === 0 && !showForm && (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-14 text-center">
+              <span className="mb-3 text-4xl">🎉</span>
+              <p className="font-semibold text-slate-700">No group passes yet</p>
+              <p className="mt-1 text-sm text-slate-400">
+                Hosting a party? Create a group pass — one OTP for all guests.
+              </p>
+            </div>
+          )}
+          {active.length > 0 && (
+            <div className="space-y-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Active ({active.length})</p>
+              {active.map(p => <GroupPassCard key={p._id} pass={p} onCancel={handleCancel} cancelling={cancelling} />)}
+            </div>
+          )}
+          {historic.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">History</p>
+              {historic.map(p => <GroupPassCard key={p._id} pass={p} onCancel={handleCancel} cancelling={cancelling} />)}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════
 //  MAIN PAGE — tabs to switch between the two sections
 // ══════════════════════════════════════════════════════════════════
 export function VisitorPreRegPage() {
-  const [activeTab, setActiveTab] = useState("passes"); // "passes" | "frequent"
+  const [activeTab, setActiveTab] = useState("passes"); // "passes" | "frequent" | "group"
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-6">
@@ -640,7 +952,7 @@ export function VisitorPreRegPage() {
       <div>
         <h1 className="text-2xl font-extrabold text-slate-900">My Visitor Passes</h1>
         <p className="mt-0.5 text-sm text-slate-500">
-          Manage entry passes and your trusted frequent visitors.
+          Manage entry passes, trusted visitors, and group event passes.
         </p>
       </div>
 
@@ -652,11 +964,15 @@ export function VisitorPreRegPage() {
         <Tab active={activeTab === "frequent"} onClick={() => setActiveTab("frequent")}>
           👥 Frequent Visitors
         </Tab>
+        <Tab active={activeTab === "group"}    onClick={() => setActiveTab("group")}>
+          🎉 Group Passes
+        </Tab>
       </div>
 
       {/* Tab content */}
       {activeTab === "passes"   && <PassesTab />}
       {activeTab === "frequent" && <FreqVisitorsTab />}
+      {activeTab === "group"    && <GroupPassesTab />}
     </div>
   );
 }

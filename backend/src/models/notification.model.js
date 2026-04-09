@@ -13,7 +13,10 @@ const notificationSchema = new mongoose.Schema(
         "ticket_status_updated",
         "event_created",
         "amenity_booking_status_updated",
-        "visitor_request_incoming"
+        "visitor_request_incoming",
+        "visitor_prereg_used",
+        "freq_visitor_entry",
+        "group_pass_used"
       ],
       required: true
     },

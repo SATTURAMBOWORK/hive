@@ -18,6 +18,7 @@ import { userRouter } from "./routes/user.routes.js";
 import { visitorRouter } from "./routes/visitor.routes.js";
 import { preRegRouter } from "./routes/visitor-prereg.routes.js";
 import { freqVisitorRouter } from "./routes/freq-visitor.routes.js";
+import { groupPassRouter } from "./routes/group-pass.routes.js";
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use("/api/users", userRouter);
 app.use("/api/visitors", visitorRouter);
 app.use("/api/visitor-prereg", preRegRouter);
 app.use("/api/freq-visitors", freqVisitorRouter);
+app.use("/api/group-passes", groupPassRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

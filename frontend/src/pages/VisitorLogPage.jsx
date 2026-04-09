@@ -136,6 +136,10 @@ export function VisitorLogPage() {
   const [otpError,      setOtpError]      = useState("");
   const [otpLoading,    setOtpLoading]    = useState(false);
   const [otpSuccess,    setOtpSuccess]    = useState(null);
+  // Group pass two-step state
+  const [groupPassInfo,    setGroupPassInfo]    = useState(null);  // from /check — pass details
+  const [groupVisitorName, setGroupVisitorName] = useState("");    // step 2 input
+  const [groupSubmitting,  setGroupSubmitting]  = useState(false);
 
   // Frequent visitor search modal state
   const [showFreqModal,   setShowFreqModal]   = useState(false);
@@ -220,24 +224,53 @@ export function VisitorLogPage() {
     }
   }
 
-  // Guard enters OTP from a resident's pre-registration pass
+  // Step 1 — guard enters OTP.
+  // Try pre-reg first. If not found, check group passes.
   async function handleOtpVerify(e) {
     e.preventDefault();
     if (!/^\d{6}$/.test(otpValue)) { setOtpError("Enter a valid 6-digit OTP."); return; }
-    setOtpError(""); setOtpLoading(true); setOtpSuccess(null);
+    setOtpError(""); setOtpLoading(true); setOtpSuccess(null); setGroupPassInfo(null);
     try {
+      // Try pre-reg pass first
       const data = await apiRequest("/visitor-prereg/verify-otp", {
         token, method: "POST", body: { otp: otpValue }
       });
-      const visitor = data.item;
-      // Add the new visitor to the log
-      setVisitors(prev => [visitor, ...prev]);
-      setOtpSuccess(visitor);
+      setVisitors(prev => [data.item, ...prev]);
+      setOtpSuccess(data.item);
       setOtpValue("");
+    } catch (preRegErr) {
+      // Pre-reg not found — check if it's a group pass
+      try {
+        const groupData = await apiRequest(`/group-passes/check?otp=${otpValue}`, { token });
+        // Group pass found → move to step 2
+        setGroupPassInfo(groupData.item);
+        setGroupVisitorName("");
+        setOtpError("");
+      } catch {
+        // Neither pre-reg nor group pass — show the original pre-reg error
+        setOtpError(preRegErr.message);
+      }
+    } finally {
+      setOtpLoading(false);
+    }
+  }
+
+  // Step 2 — guard enters visitor name for a group pass
+  async function handleGroupPassConfirm(e) {
+    e.preventDefault();
+    if (!groupVisitorName.trim()) { setOtpError("Visitor name is required."); return; }
+    setOtpError(""); setGroupSubmitting(true);
+    try {
+      const data = await apiRequest("/group-passes/verify-otp", {
+        token, method: "POST", body: { otp: otpValue, visitorName: groupVisitorName }
+      });
+      setVisitors(prev => [data.item, ...prev]);
+      setOtpSuccess(data.item);
+      setGroupPassInfo(null);
     } catch (err) {
       setOtpError(err.message);
     } finally {
-      setOtpLoading(false);
+      setGroupSubmitting(false);
     }
   }
 
@@ -463,29 +496,95 @@ export function VisitorLogPage() {
               </button>
             </div>
 
-            <form onSubmit={handleOtpVerify} className="px-6 py-5 space-y-4">
+            <div className="px-6 py-5 space-y-4">
               {otpError && (
                 <div className="rounded-lg bg-rose-50 px-4 py-2.5 text-sm text-rose-700 ring-1 ring-rose-200">
                   {otpError}
                 </div>
               )}
 
-              {/* Success state — shows the visitor details after a successful verify */}
-              {otpSuccess ? (
-                <div className="rounded-xl bg-emerald-50 ring-1 ring-emerald-200 p-4 space-y-1">
-                  <p className="text-sm font-bold text-emerald-800">
-                    ✅ {otpSuccess.visitorName} has entered
-                  </p>
-                  <p className="text-xs text-emerald-700">
-                    Flat {otpSuccess.flatNumber} · {otpSuccess.purpose}
-                    {otpSuccess.visitorPhone ? ` · ${otpSuccess.visitorPhone}` : ""}
-                  </p>
-                  <p className="text-xs text-emerald-600 mt-1">
-                    Visitor log has been updated automatically.
-                  </p>
+              {/* ── SUCCESS ── */}
+              {otpSuccess && (
+                <div className="space-y-3">
+                  <div className="rounded-xl bg-emerald-50 ring-1 ring-emerald-200 p-4 space-y-1">
+                    <p className="text-sm font-bold text-emerald-800">
+                      ✅ {otpSuccess.visitorName} has entered
+                    </p>
+                    <p className="text-xs text-emerald-700">
+                      Flat {otpSuccess.flatNumber} · {otpSuccess.purpose}
+                      {otpSuccess.visitorPhone ? ` · ${otpSuccess.visitorPhone}` : ""}
+                    </p>
+                    <p className="text-xs text-emerald-600 mt-1">Visitor log updated automatically.</p>
+                  </div>
+                  <button onClick={() => setShowOtpModal(false)}
+                    className="w-full rounded-xl border border-slate-200 py-2.5 text-sm
+                      font-semibold text-slate-600 transition hover:bg-slate-50">
+                    Close
+                  </button>
                 </div>
-              ) : (
-                <>
+              )}
+
+              {/* ── STEP 2 — Group pass: enter visitor name ── */}
+              {!otpSuccess && groupPassInfo && (
+                <form onSubmit={handleGroupPassConfirm} className="space-y-4">
+                  {/* Show event info so guard knows what they're dealing with */}
+                  <div className="rounded-xl bg-purple-50 ring-1 ring-purple-200 p-4 space-y-2">
+                    <p className="text-sm font-bold text-purple-900">🎉 Group Pass Found</p>
+                    <p className="text-sm text-purple-800 font-semibold">{groupPassInfo.eventName}</p>
+                    <p className="text-xs text-purple-700">
+                      Resident: {groupPassInfo.residentName}
+                    </p>
+                    {/* Usage progress bar */}
+                    <div className="space-y-1 pt-1">
+                      <div className="flex justify-between text-xs text-purple-700">
+                        <span>{groupPassInfo.usedCount} of {groupPassInfo.maxUses} guests used</span>
+                        <span className="font-bold">{groupPassInfo.spotsLeft} spots left</span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-purple-200">
+                        <div
+                          className="h-1.5 rounded-full bg-purple-600 transition-all"
+                          style={{ width: `${Math.min(100, (groupPassInfo.usedCount / groupPassInfo.maxUses) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold text-slate-600">
+                      Guest Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      className={inputCls}
+                      placeholder="Ask the visitor their name…"
+                      value={groupVisitorName}
+                      onChange={e => setGroupVisitorName(e.target.value)}
+                      autoFocus
+                    />
+                    <p className="mt-1.5 text-xs text-slate-400">
+                      This gets logged in the event's guest list.
+                    </p>
+                  </div>
+
+                  <button type="submit" disabled={groupSubmitting || !groupVisitorName.trim()}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl
+                      bg-purple-600 px-5 py-2.5 text-sm font-bold text-white
+                      transition hover:bg-purple-700 disabled:opacity-50">
+                    <LogIn size={15} />
+                    {groupSubmitting ? "Logging…" : "Confirm Entry"}
+                  </button>
+
+                  <button type="button"
+                    onClick={() => { setGroupPassInfo(null); setOtpValue(""); }}
+                    className="w-full rounded-xl border border-slate-200 py-2 text-sm
+                      font-semibold text-slate-500 transition hover:bg-slate-50">
+                    ← Back
+                  </button>
+                </form>
+              )}
+
+              {/* ── STEP 1 — Enter OTP ── */}
+              {!otpSuccess && !groupPassInfo && (
+                <form onSubmit={handleOtpVerify} className="space-y-4">
                   <div>
                     <label className="mb-1.5 block text-xs font-semibold text-slate-600">
                       6-Digit OTP
@@ -499,28 +598,19 @@ export function VisitorLogPage() {
                       autoFocus
                     />
                     <p className="mt-1.5 text-xs text-slate-400">
-                      The resident shared this via their Entry Pass.
+                      Works for both individual passes and group event passes.
                     </p>
                   </div>
-
                   <button type="submit" disabled={otpLoading || otpValue.length < 6}
                     className="w-full flex items-center justify-center gap-2 rounded-xl
                       bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white
                       transition hover:bg-emerald-700 disabled:opacity-50">
                     <KeyRound size={15} />
-                    {otpLoading ? "Verifying…" : "Verify & Allow Entry"}
+                    {otpLoading ? "Checking…" : "Verify OTP"}
                   </button>
-                </>
+                </form>
               )}
-
-              {otpSuccess && (
-                <button type="button" onClick={() => setShowOtpModal(false)}
-                  className="w-full rounded-xl border border-slate-200 py-2.5 text-sm
-                    font-semibold text-slate-600 transition hover:bg-slate-50">
-                  Close
-                </button>
-              )}
-            </form>
+            </div>
           </div>
         </div>
       )}
