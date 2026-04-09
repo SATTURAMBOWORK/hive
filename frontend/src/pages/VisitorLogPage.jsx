@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LogIn, LogOut, RefreshCw, UserPlus, X, ChevronDown, Search, KeyRound } from "lucide-react";
+import { LogIn, LogOut, RefreshCw, UserPlus, X, ChevronDown, Search, KeyRound, Users, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../components/AuthContext";
 import { apiRequest } from "../components/api";
 import { getSocket } from "../components/socket";
@@ -135,7 +135,16 @@ export function VisitorLogPage() {
   const [otpValue,      setOtpValue]      = useState("");
   const [otpError,      setOtpError]      = useState("");
   const [otpLoading,    setOtpLoading]    = useState(false);
-  const [otpSuccess,    setOtpSuccess]    = useState(null); // the visitor that just entered
+  const [otpSuccess,    setOtpSuccess]    = useState(null);
+
+  // Frequent visitor search modal state
+  const [showFreqModal,   setShowFreqModal]   = useState(false);
+  const [freqPhone,       setFreqPhone]       = useState("");
+  const [freqSearching,   setFreqSearching]   = useState(false);
+  const [freqResult,      setFreqResult]      = useState(null);  // found FrequentVisitor
+  const [freqSearchError, setFreqSearchError] = useState("");
+  const [freqLoggingFlat, setFreqLoggingFlat] = useState(null); // flatNumber being logged
+  const [freqLogSuccess,  setFreqLogSuccess]  = useState(null); // visitor logged
 
   const [form, setForm] = useState({
     visitorName: "", visitorPhone: "", flatNumber: "",
@@ -232,6 +241,37 @@ export function VisitorLogPage() {
     }
   }
 
+  // Guard searches for a frequent visitor by phone
+  async function handleFreqSearch(e) {
+    e.preventDefault();
+    if (!freqPhone.trim()) return;
+    setFreqSearching(true); setFreqSearchError(""); setFreqResult(null); setFreqLogSuccess(null);
+    try {
+      const data = await apiRequest(`/freq-visitors/search?phone=${freqPhone.replace(/\D/g,"")}`, { token });
+      setFreqResult(data.item);
+    } catch (err) {
+      setFreqSearchError(err.message);
+    } finally {
+      setFreqSearching(false);
+    }
+  }
+
+  // Guard logs entry for a specific flat from the freq-visitor search result
+  async function handleFreqLogEntry(freqId, flatNumber) {
+    setFreqLoggingFlat(flatNumber);
+    try {
+      const data = await apiRequest(`/freq-visitors/${freqId}/log-entry`, {
+        token, method: "POST", body: { flatNumber }
+      });
+      setVisitors(prev => [data.item, ...prev]);
+      setFreqLogSuccess(data.item);
+    } catch (err) {
+      setFreqSearchError(err.message);
+    } finally {
+      setFreqLoggingFlat(null);
+    }
+  }
+
   async function handleExit(id) {
     setExitingId(id);
     try {
@@ -259,6 +299,150 @@ export function VisitorLogPage() {
       {responseToast && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl bg-slate-900 px-5 py-3.5 text-sm font-semibold text-white shadow-xl">
           {responseToast}
+        </div>
+      )}
+
+      {/* ── Frequent Visitor Search Modal ── */}
+      {showFreqModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
+
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+              <div>
+                <h2 className="font-extrabold text-slate-900">Frequent Visitor</h2>
+                <p className="text-xs text-slate-400 mt-0.5">Search by phone number</p>
+              </div>
+              <button onClick={() => setShowFreqModal(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-slate-100 text-slate-400">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="px-6 py-5 space-y-4">
+              {/* Search form */}
+              <form onSubmit={handleFreqSearch} className="flex gap-2">
+                <input
+                  className={`${inputCls} flex-1`}
+                  placeholder="Enter phone number…"
+                  value={freqPhone}
+                  onChange={e => setFreqPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  autoFocus
+                />
+                <button type="submit" disabled={freqSearching || !freqPhone.trim()}
+                  className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5
+                    text-sm font-bold text-white transition hover:bg-blue-700 disabled:opacity-50">
+                  {freqSearching ? <RefreshCw size={14} className="animate-spin" /> : <Search size={14} />}
+                </button>
+              </form>
+
+              {freqSearchError && (
+                <div className="rounded-lg bg-rose-50 px-4 py-2.5 text-sm text-rose-700 ring-1 ring-rose-200">
+                  {freqSearchError}
+                </div>
+              )}
+
+              {/* Result card */}
+              {freqResult && !freqLogSuccess && (
+                <div className="space-y-3">
+                  {/* Visitor identity */}
+                  <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-4">
+                    {freqResult.photoUrl ? (
+                      <img src={freqResult.photoUrl} alt={freqResult.name}
+                        className="h-14 w-14 rounded-full object-cover ring-2 ring-slate-200 flex-shrink-0" />
+                    ) : (
+                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-xl font-black flex-shrink-0">
+                        {freqResult.name[0]?.toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-bold text-slate-900">{freqResult.name}</p>
+                      <p className="text-xs text-slate-500">{freqResult.phone}</p>
+                      <span className="mt-1 inline-block rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700 capitalize">
+                        {freqResult.relationship}
+                      </span>
+                      {freqResult.description && (
+                        <p className="mt-0.5 text-xs text-slate-400">{freqResult.description}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Linked flats with schedule */}
+                  <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Linked Flats</p>
+                  <div className="space-y-2">
+                    {freqResult.links.map(link => {
+                      const isOk       = link.scheduleStatus === "ok";
+                      const wrongDay   = link.scheduleStatus === "wrong_day";
+                      const wrongTime  = link.scheduleStatus === "wrong_time";
+                      const dayLabels  = link.allowedDays.join(", ").toUpperCase();
+
+                      return (
+                        <div key={link.flatNumber}
+                          className={`rounded-xl border p-3.5 ${isOk ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1">
+                              <p className="font-bold text-slate-900 text-sm">Flat {link.flatNumber}</p>
+                              <p className="text-xs text-slate-500">{link.residentId?.fullName}</p>
+                              <div className="mt-1 flex items-center gap-1 text-xs text-slate-500">
+                                <Clock size={11} />
+                                <span>{dayLabels} · {link.allowedFrom}–{link.allowedUntil}</span>
+                              </div>
+
+                              {/* Schedule warning */}
+                              {wrongDay && (
+                                <div className="mt-1.5 flex items-center gap-1 text-xs text-amber-700 font-semibold">
+                                  <AlertTriangle size={11} /> Not an allowed day
+                                </div>
+                              )}
+                              {wrongTime && (
+                                <div className="mt-1.5 flex items-center gap-1 text-xs text-amber-700 font-semibold">
+                                  <AlertTriangle size={11} /> Outside allowed hours ({link.allowedFrom}–{link.allowedUntil})
+                                </div>
+                              )}
+                              {isOk && (
+                                <div className="mt-1.5 flex items-center gap-1 text-xs text-emerald-700 font-semibold">
+                                  <CheckCircle2 size={11} /> Within allowed schedule
+                                </div>
+                              )}
+                            </div>
+
+                            <button
+                              onClick={() => handleFreqLogEntry(freqResult._id, link.flatNumber)}
+                              disabled={freqLoggingFlat === link.flatNumber}
+                              className={`flex-shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-2
+                                text-xs font-bold text-white transition disabled:opacity-50
+                                ${isOk ? "bg-emerald-600 hover:bg-emerald-700" : "bg-amber-500 hover:bg-amber-600"}`}>
+                              <LogIn size={12} />
+                              {freqLoggingFlat === link.flatNumber ? "Logging…" : "Log Entry"}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Success state */}
+              {freqLogSuccess && (
+                <div className="space-y-3">
+                  <div className="rounded-xl bg-emerald-50 ring-1 ring-emerald-200 p-4 space-y-1">
+                    <p className="text-sm font-bold text-emerald-800">
+                      ✅ {freqLogSuccess.visitorName} has entered
+                    </p>
+                    <p className="text-xs text-emerald-700">
+                      Flat {freqLogSuccess.flatNumber} · Visitor log updated · Resident notified
+                    </p>
+                  </div>
+                  <button onClick={() => setShowFreqModal(false)}
+                    className="w-full rounded-xl border border-slate-200 py-2.5 text-sm
+                      font-semibold text-slate-600 transition hover:bg-slate-50">
+                    Close
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -352,6 +536,11 @@ export function VisitorLogPage() {
             className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
             Sync
+          </button>
+          <button onClick={() => { setShowFreqModal(true); setFreqPhone(""); setFreqResult(null); setFreqSearchError(""); setFreqLogSuccess(null); }}
+            className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700">
+            <Users size={15} />
+            Frequent Visitor
           </button>
           <button onClick={() => { setShowOtpModal(true); setOtpValue(""); setOtpError(""); setOtpSuccess(null); }}
             className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700">
