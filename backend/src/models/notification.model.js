@@ -16,7 +16,9 @@ const notificationSchema = new mongoose.Schema(
         "visitor_request_incoming",
         "visitor_prereg_used",
         "freq_visitor_entry",
-        "group_pass_used"
+        "group_pass_used",
+        "staff_entry",
+        "staff_leave_toggled"
       ],
       required: true
     },

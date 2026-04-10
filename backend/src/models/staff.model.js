@@ -87,6 +87,16 @@ const staffSchema = new mongoose.Schema(
       type:String,
       default:''
     },
+
+    // Short 6-character alphanumeric code — encoded in the QR card.
+    // Guard either scans QR (gets this code) or types it as fallback.
+    // Much shorter than MongoDB's 24-char _id, easy to type manually.
+    // e.g. "A1B2C3"
+    staffCode: {
+      type:    String,
+      unique:  true,
+      sparse:  true   // allows null until assigned on creation
+    },
     // FIXED: category uses enum, not an array — a staff member has ONE category
     category: {
       type: String,

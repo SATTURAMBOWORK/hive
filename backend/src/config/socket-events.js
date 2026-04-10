@@ -15,5 +15,7 @@ export const SOCKET_EVENTS = {
   VISITOR_REQUEST_RESPONDED: "visitor:request_responded",
   VISITOR_PRE_REG_USED:      "visitor:prereg_used",
   FREQ_VISITOR_ENTRY:        "visitor:freq_entry",
-  GROUP_PASS_USED:           "visitor:group_pass_used"
+  GROUP_PASS_USED:           "visitor:group_pass_used",
+  STAFF_ENTRY:               "staff:entry",
+  STAFF_LEAVE_TOGGLED:       "staff:leave_toggled"
 };
