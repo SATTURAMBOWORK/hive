@@ -17,5 +17,8 @@ export const SOCKET_EVENTS = {
   FREQ_VISITOR_ENTRY:        "visitor:freq_entry",
   GROUP_PASS_USED:           "visitor:group_pass_used",
   STAFF_ENTRY:               "staff:entry",
-  STAFF_LEAVE_TOGGLED:       "staff:leave_toggled"
+  STAFF_LEAVE_TOGGLED:       "staff:leave_toggled",
+  POLL_CREATED:              "poll:created",
+  POLL_UPDATED:              "poll:updated",
+  POLL_DELETED:              "poll:deleted",
 };

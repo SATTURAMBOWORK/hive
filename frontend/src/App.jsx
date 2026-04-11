@@ -16,6 +16,7 @@ import { VisitorLogPage } from "./pages/VisitorLogPage";
 import { VisitorPreRegPage } from "./pages/VisitorPreRegPage";
 import { StaffPage } from "./pages/StaffPage";
 import { StaffGatePage } from "./pages/StaffGatePage";
+import { PollsPage } from "./pages/PollsPage";
 import { useAuth } from "./components/AuthContext";
 
 function ProtectedDashboard() {
@@ -94,6 +95,7 @@ export function App() {
         <Route path="/visitors/prereg" element={<ProtectedFeature><VisitorPreRegPage /></ProtectedFeature>} />
         <Route path="/staff" element={<ProtectedFeature><StaffPage /></ProtectedFeature>} />
         <Route path="/staff/gate" element={<ProtectedFeature><StaffGatePage /></ProtectedFeature>} />
+        <Route path="/polls" element={<ProtectedFeature><PollsPage /></ProtectedFeature>} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
       </Route>

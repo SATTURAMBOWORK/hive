@@ -63,7 +63,7 @@ export function RegisterPage() {
     }
     setError(""); setSuccess("");
     try {
-      const roleMap = { resident: "resident", staff: "staff", security: "security", admin: "super_admin" };
+      const roleMap = { resident: "resident", security: "security", admin: "super_admin" };
       const data = await register({ ...form, desiredRole: roleMap[selectedRole] });
       if (selectedRole === "admin" && data?.token) { navigate("/"); return; }
       setVerificationStep(true);
@@ -139,16 +139,6 @@ export function RegisterPage() {
                   <div className="text-3xl mb-2">🏠</div>
                   <h3 className="font-semibold text-slate-900 text-sm">Resident</h3>
                   <p className="text-xs text-slate-500 mt-1">I own/rent a flat</p>
-                </button>
-
-                {/* STAFF */}
-                <button
-                  onClick={() => { setSelectedRole("staff"); setRoleStep(false); }}
-                  className="p-4 rounded-xl border-2 border-slate-200 hover:border-green-500 hover:bg-green-50 transition text-left"
-                >
-                  <div className="text-3xl mb-2">🔧</div>
-                  <h3 className="font-semibold text-slate-900 text-sm">Maintenance Staff</h3>
-                  <p className="text-xs text-slate-500 mt-1">Maintenance work</p>
                 </button>
 
                 {/* SECURITY */}

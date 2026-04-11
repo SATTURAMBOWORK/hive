@@ -14,6 +14,7 @@ const NAV_LINKS = [
   { to: "/visitors/prereg",    label: "My Passes",    roles: ["resident", "committee", "super_admin"] },
   { to: "/staff",              label: "My Staff",     roles: ["resident", "committee", "super_admin"] },
   { to: "/staff/gate",         label: "Staff Gate",   roles: ["security", "committee", "super_admin"] },
+  { to: "/polls",              label: "Polls",        roles: ["resident", "committee", "super_admin"] },
   { to: "/admin/approvals",     label: "Approvals",    roles: ["committee", "super_admin"] },
   { to: "/admin/society-setup", label: "Society",      roles: ["committee", "super_admin"] },
 ];

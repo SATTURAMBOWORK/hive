@@ -18,7 +18,8 @@ const notificationSchema = new mongoose.Schema(
         "freq_visitor_entry",
         "group_pass_used",
         "staff_entry",
-        "staff_leave_toggled"
+        "staff_leave_toggled",
+        "poll_created"
       ],
       required: true
     },
