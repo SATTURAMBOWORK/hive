@@ -81,6 +81,8 @@ export function App() {
   return (
     <Routes>
       <Route path="/home" element={<LandingPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
       <Route element={<MainLayout />}>
         <Route path="/" element={<ProtectedDashboard />} />
         <Route path="/onboarding" element={<ProtectedOnboarding />} />
@@ -96,8 +98,6 @@ export function App() {
         <Route path="/staff" element={<ProtectedFeature><StaffPage /></ProtectedFeature>} />
         <Route path="/staff/gate" element={<ProtectedFeature><StaffGatePage /></ProtectedFeature>} />
         <Route path="/polls" element={<ProtectedFeature><PollsPage /></ProtectedFeature>} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
       </Route>
     </Routes>
   );
