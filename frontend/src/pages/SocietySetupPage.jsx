@@ -1,86 +1,90 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  Building2, Users, LayoutGrid, Plus, RefreshCw,
-  Phone, Mail, Home, UserCheck, XCircle, Trash2
-} from "lucide-react";
+import { Building2, Users, LayoutGrid, Plus, RefreshCw, Phone, Mail, Home, UserCheck, XCircle, Trash2 } from "lucide-react";
 import { apiRequest } from "../components/api";
 import { useAuth } from "../components/AuthContext";
 
+const T = {
+  surface:   "#111008",
+  surfaceHi: "#181510",
+  border:    "rgba(200,145,74,0.15)",
+  borderHov: "rgba(200,145,74,0.32)",
+  gold:      "#c8914a",
+  goldLight: "#e8c47a",
+  text:      "#f5f0e8",
+  textSub:   "rgba(245,240,232,0.55)",
+  textMuted: "rgba(245,240,232,0.3)",
+  green:     "#3d9e6e",
+  red:       "#e85d5d",
+  amber:     "#d4a843",
+  blue:      "#4d8dd4",
+};
+
 const TABS = [
   { key: "setup",     label: "Setup",     icon: Building2 },
-  { key: "residents", label: "Residents", icon: Users },
+  { key: "residents", label: "Residents", icon: Users      },
   { key: "units",     label: "Units",     icon: LayoutGrid },
 ];
 
-const RESIDENT_ROLE_BADGE = {
-  owner:  "bg-violet-100 text-violet-700",
-  tenant: "bg-sky-100 text-sky-700",
+const inputStyle = {
+  width: "100%", borderRadius: 12, border: `1px solid ${T.border}`,
+  background: "#0f0e0b", padding: "10px 14px",
+  color: T.text, fontSize: 14, outline: "none",
+  transition: "border-color 0.2s, box-shadow 0.2s", boxSizing: "border-box",
 };
 
-/* ── Sub-components ─────────────────────────────────────── */
-function TabBar({ active, onChange }) {
+function Label({ children }) {
+  return <p style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>{children}</p>;
+}
+
+function FocusInput({ style: s = {}, ...props }) {
   return (
-    <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
-      {TABS.map(({ key, label, icon: Icon }) => (
-        <button
-          key={key}
-          onClick={() => onChange(key)}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition
-            ${active === key
-              ? "bg-white text-slate-900 shadow-sm"
-              : "text-slate-500 hover:text-slate-700"
-            }`}
-        >
-          <Icon className="h-4 w-4" />
-          {label}
-        </button>
-      ))}
-    </div>
+    <input style={{ ...inputStyle, ...s }}
+      onFocus={e => { e.target.style.borderColor = T.gold; e.target.style.boxShadow = `0 0 0 3px ${T.gold}22`; }}
+      onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = "none"; }}
+      {...props} />
   );
 }
 
-function SectionHeader({ title, subtitle }) {
+function FocusSelect({ children, style: s = {}, ...props }) {
   return (
-    <div className="mb-6">
-      <h3 className="text-lg font-extrabold text-slate-900">{title}</h3>
-      {subtitle && <p className="mt-0.5 text-sm text-slate-500">{subtitle}</p>}
-    </div>
-  );
-}
-
-function FieldGroup({ label, children }) {
-  return (
-    <div className="space-y-1.5">
-      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</label>
+    <select style={{ ...inputStyle, cursor: "pointer", ...s }}
+      onFocus={e => { e.target.style.borderColor = T.gold; e.target.style.boxShadow = `0 0 0 3px ${T.gold}22`; }}
+      onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = "none"; }}
+      {...props}>
       {children}
-    </div>
+    </select>
+  );
+}
+
+function GoldBtn({ children, disabled, type = "button", onClick, style: s = {} }) {
+  return (
+    <button type={type} disabled={disabled} onClick={onClick}
+      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12, background: disabled ? `${T.gold}44` : `linear-gradient(135deg, ${T.gold}, ${T.goldLight})`, padding: "10px 0", width: "100%", fontSize: 13, fontWeight: 700, color: "#0a0907", border: "none", cursor: disabled ? "not-allowed" : "pointer", transition: "all 0.2s", ...s }}
+      onMouseEnter={e => { if (!disabled) e.currentTarget.style.transform = "translateY(-1px)"; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; }}>
+      {children}
+    </button>
   );
 }
 
 /* ── Setup Tab ──────────────────────────────────────────── */
 function SetupTab({ societyId, token, wings, units, onRefresh }) {
-  const [wingName, setWingName]     = useState("");
-  const [unitWingId, setUnitWingId] = useState(wings[0]?._id || "");
-  const [unitNumber, setUnitNumber] = useState("");
-  const [floor, setFloor]           = useState("");
-  const [error, setError]           = useState("");
+  const [wingName, setWingName]       = useState("");
+  const [unitWingId, setUnitWingId]   = useState(wings[0]?._id || "");
+  const [unitNumber, setUnitNumber]   = useState("");
+  const [floor, setFloor]             = useState("");
+  const [error, setError]             = useState("");
   const [wingLoading, setWingLoading] = useState(false);
   const [unitLoading, setUnitLoading] = useState(false);
   const [deletingId, setDeletingId]   = useState(null);
 
-  useEffect(() => {
-    if (!unitWingId && wings.length) setUnitWingId(wings[0]._id);
-  }, [wings]);
+  useEffect(() => { if (!unitWingId && wings.length) setUnitWingId(wings[0]._id); }, [wings]);
 
   async function handleCreateWing(e) {
-    e.preventDefault();
-    setError("");
-    setWingLoading(true);
+    e.preventDefault(); setError(""); setWingLoading(true);
     try {
       const autoCode = wingName.trim().split(/\s+/).pop().slice(0, 5).toUpperCase();
-      await apiRequest(`/societies/${societyId}/wings`, {
-        method: "POST", token, body: { name: wingName, code: autoCode }
-      });
+      await apiRequest(`/societies/${societyId}/wings`, { method: "POST", token, body: { name: wingName, code: autoCode } });
       setWingName("");
       await onRefresh();
     } catch (err) { setError(err.message); }
@@ -89,8 +93,7 @@ function SetupTab({ societyId, token, wings, units, onRefresh }) {
 
   async function handleDeleteWing(wingId) {
     if (!window.confirm("Delete this tower? This will fail if it still has flats.")) return;
-    setDeletingId(wingId);
-    setError("");
+    setDeletingId(wingId); setError("");
     try {
       await apiRequest(`/societies/${societyId}/wings/${wingId}`, { method: "DELETE", token });
       await onRefresh();
@@ -100,8 +103,7 @@ function SetupTab({ societyId, token, wings, units, onRefresh }) {
 
   async function handleDeleteUnit(unitId) {
     if (!window.confirm("Delete this flat?")) return;
-    setDeletingId(unitId);
-    setError("");
+    setDeletingId(unitId); setError("");
     try {
       await apiRequest(`/societies/${societyId}/units/${unitId}`, { method: "DELETE", token });
       await onRefresh();
@@ -110,13 +112,9 @@ function SetupTab({ societyId, token, wings, units, onRefresh }) {
   }
 
   async function handleCreateUnit(e) {
-    e.preventDefault();
-    setError("");
-    setUnitLoading(true);
+    e.preventDefault(); setError(""); setUnitLoading(true);
     try {
-      await apiRequest(`/societies/${societyId}/units`, {
-        method: "POST", token, body: { wingId: unitWingId, unitNumber, floor: Number(floor) }
-      });
+      await apiRequest(`/societies/${societyId}/units`, { method: "POST", token, body: { wingId: unitWingId, unitNumber, floor: Number(floor) } });
       setUnitNumber(""); setFloor("");
       await onRefresh();
     } catch (err) { setError(err.message); }
@@ -124,97 +122,83 @@ function SetupTab({ societyId, token, wings, units, onRefresh }) {
   }
 
   return (
-    <div className="space-y-8">
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {error && (
-        <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200">
-          <XCircle className="h-4 w-4 shrink-0" /> {error}
+        <div style={{ borderRadius: 12, background: `${T.red}18`, border: `1px solid ${T.red}44`, padding: "12px 16px", fontSize: 13, color: T.red, display: "flex", alignItems: "center", gap: 8 }}>
+          <XCircle size={14} /> {error}
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div style={{ display: "grid", gap: 20, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+
         {/* Create Wing */}
-        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-          <SectionHeader title="Add Tower / Wing" subtitle="Create a new block or tower in your society" />
-          <form onSubmit={handleCreateWing} className="space-y-4">
-            <FieldGroup label="Tower Name">
-              <input className="field" placeholder="e.g. Tower A" value={wingName} onChange={(e) => setWingName(e.target.value)} required />
-            </FieldGroup>
-            <button className="btn-primary w-full" type="submit" disabled={wingLoading}>
-              <span className="flex items-center justify-center gap-2">
-                <Plus className="h-4 w-4" />
-                {wingLoading ? "Creating…" : "Add Tower"}
-              </span>
-            </button>
+        <div style={{ borderRadius: 18, border: `1px solid ${T.border}`, background: T.surface, padding: 24 }}>
+          <p style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 4 }}>Add Tower / Wing</p>
+          <p style={{ fontSize: 12, color: T.textMuted, marginBottom: 20 }}>Create a new block or tower in your society</p>
+          <form onSubmit={handleCreateWing} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div><Label>Tower Name</Label><FocusInput placeholder="e.g. Tower A" value={wingName} onChange={e => setWingName(e.target.value)} required /></div>
+            <GoldBtn type="submit" disabled={wingLoading}><Plus size={14} />{wingLoading ? "Creating…" : "Add Tower"}</GoldBtn>
           </form>
 
           {wings.length > 0 && (
-            <div className="mt-5 space-y-2 border-t border-slate-100 pt-5">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Existing Towers</p>
-              {wings.map((w) => (
-                <div key={w._id} className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-2.5">
-                  <span className="font-semibold text-slate-800">{w.name}</span>
-                  <button
-                    onClick={() => handleDeleteWing(w._id)}
-                    disabled={deletingId === w._id}
-                    className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-500 disabled:opacity-40"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
+            <div style={{ marginTop: 20, paddingTop: 20, borderTop: `1px solid ${T.border}` }}>
+              <Label>Existing Towers</Label>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+                {wings.map(w => (
+                  <div key={w._id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderRadius: 10, background: `${T.gold}0a`, border: `1px solid ${T.border}`, padding: "10px 14px" }}>
+                    <span style={{ fontWeight: 600, color: T.text, fontSize: 13 }}>{w.name}</span>
+                    <button onClick={() => handleDeleteWing(w._id)} disabled={deletingId === w._id}
+                      style={{ background: "transparent", border: "none", cursor: deletingId === w._id ? "not-allowed" : "pointer", color: T.textMuted, padding: 4, borderRadius: 6, transition: "color 0.15s", opacity: deletingId === w._id ? 0.4 : 1 }}
+                      onMouseEnter={e => e.currentTarget.style.color = T.red}
+                      onMouseLeave={e => e.currentTarget.style.color = T.textMuted}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
 
         {/* Create Unit */}
-        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-          <SectionHeader title="Add Flat / Unit" subtitle="Register a new flat under a tower" />
-          <form onSubmit={handleCreateUnit} className="space-y-4">
-            <FieldGroup label="Tower">
-              <select className="field" value={unitWingId} onChange={(e) => setUnitWingId(e.target.value)}>
-                <option value="">Select tower</option>
-                {wings.map((w) => (
-                  <option key={w._id} value={w._id}>{w.name} ({w.code})</option>
-                ))}
-              </select>
-            </FieldGroup>
-            <FieldGroup label="Flat Number">
-              <input className="field" placeholder="e.g. 402" value={unitNumber} onChange={(e) => setUnitNumber(e.target.value)} required />
-            </FieldGroup>
-            <FieldGroup label="Floor">
-              <input className="field" type="number" placeholder="e.g. 4" value={floor} onChange={(e) => setFloor(e.target.value)} required />
-            </FieldGroup>
-            <button className="btn-primary w-full" type="submit" disabled={unitLoading || !wings.length}>
-              <span className="flex items-center justify-center gap-2">
-                <Plus className="h-4 w-4" />
-                {unitLoading ? "Creating…" : "Add Flat"}
-              </span>
-            </button>
+        <div style={{ borderRadius: 18, border: `1px solid ${T.border}`, background: T.surface, padding: 24 }}>
+          <p style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 4 }}>Add Flat / Unit</p>
+          <p style={{ fontSize: 12, color: T.textMuted, marginBottom: 20 }}>Register a new flat under a tower</p>
+          <form onSubmit={handleCreateUnit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <Label>Tower</Label>
+              <FocusSelect value={unitWingId} onChange={e => setUnitWingId(e.target.value)}>
+                <option value="" style={{ background: "#111008" }}>Select tower</option>
+                {wings.map(w => <option key={w._id} value={w._id} style={{ background: "#111008" }}>{w.name} ({w.code})</option>)}
+              </FocusSelect>
+            </div>
+            <div><Label>Flat Number</Label><FocusInput placeholder="e.g. 402" value={unitNumber} onChange={e => setUnitNumber(e.target.value)} required /></div>
+            <div><Label>Floor</Label><FocusInput type="number" placeholder="e.g. 4" value={floor} onChange={e => setFloor(e.target.value)} required /></div>
+            <GoldBtn type="submit" disabled={unitLoading || !wings.length}><Plus size={14} />{unitLoading ? "Creating…" : "Add Flat"}</GoldBtn>
           </form>
 
-          <div className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-500">
-            <span className="font-semibold text-slate-700">{units.length}</span> flats registered across{" "}
-            <span className="font-semibold text-slate-700">{wings.length}</span> towers
+          <div style={{ marginTop: 16, borderRadius: 10, background: `${T.gold}0a`, border: `1px solid ${T.border}`, padding: "12px 14px", fontSize: 13, color: T.textSub }}>
+            <span style={{ fontWeight: 700, color: T.text }}>{units.length}</span> flats registered across <span style={{ fontWeight: 700, color: T.text }}>{wings.length}</span> towers
           </div>
         </div>
       </div>
 
+      {/* Existing flats */}
       {units.length > 0 && (
-        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Existing Flats</p>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {units.map((u) => (
-              <div key={u._id} className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-2.5">
-                <span className="font-semibold text-slate-800">
+        <div style={{ borderRadius: 18, border: `1px solid ${T.border}`, background: T.surface, padding: 24 }}>
+          <Label>Existing Flats</Label>
+          <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", marginTop: 10 }}>
+            {units.map(u => (
+              <div key={u._id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderRadius: 10, background: `${T.gold}0a`, border: `1px solid ${T.border}`, padding: "10px 14px" }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>
                   {u.wing?.name || "—"}-{u.unitNumber}
-                  <span className="ml-2 text-xs font-normal text-slate-400">Floor {u.floor}</span>
+                  <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 400, color: T.textMuted }}>Floor {u.floor}</span>
                 </span>
-                <button
-                  onClick={() => handleDeleteUnit(u._id)}
-                  disabled={deletingId === u._id}
-                  className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-500 disabled:opacity-40"
-                >
-                  <Trash2 className="h-4 w-4" />
+                <button onClick={() => handleDeleteUnit(u._id)} disabled={deletingId === u._id}
+                  style={{ background: "transparent", border: "none", cursor: deletingId === u._id ? "not-allowed" : "pointer", color: T.textMuted, padding: 4, borderRadius: 6, transition: "color 0.15s", opacity: deletingId === u._id ? 0.4 : 1 }}
+                  onMouseEnter={e => e.currentTarget.style.color = T.red}
+                  onMouseLeave={e => e.currentTarget.style.color = T.textMuted}>
+                  <Trash2 size={13} />
                 </button>
               </div>
             ))}
@@ -232,7 +216,7 @@ function ResidentsTab({ residents, loading }) {
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     if (!q) return residents;
-    return residents.filter((r) =>
+    return residents.filter(r =>
       r.userId?.fullName?.toLowerCase().includes(q) ||
       r.userId?.phone?.includes(q) ||
       r.unitId?.unitNumber?.toLowerCase().includes(q) ||
@@ -242,77 +226,79 @@ function ResidentsTab({ residents, loading }) {
 
   if (loading) {
     return (
-      <div className="space-y-3">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-16 animate-pulse rounded-2xl bg-slate-100" />
-        ))}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {[1,2,3,4].map(i => <div key={i} style={{ height: 56, borderRadius: 12, background: `${T.gold}08`, animation: "pulse 1.5s infinite" }} />)}
       </div>
     );
   }
 
+  const ROLE_COLOR = { owner: T.blue, tenant: T.gold };
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-slate-500">
-          <span className="font-bold text-slate-900">{residents.length}</span> approved residents
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+        <p style={{ fontSize: 13, color: T.textSub }}>
+          <span style={{ fontWeight: 700, color: T.text }}>{residents.length}</span> approved residents
         </p>
         <input
-          className="field max-w-xs"
+          style={{ ...inputStyle, maxWidth: 260 }}
           placeholder="Search by name, phone, flat…"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={e => setSearch(e.target.value)}
+          onFocus={e => { e.target.style.borderColor = T.gold; e.target.style.boxShadow = `0 0 0 3px ${T.gold}22`; }}
+          onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = "none"; }}
         />
       </div>
 
       {!filtered.length ? (
-        <p className="py-8 text-center text-sm text-slate-400">No residents found.</p>
+        <p style={{ textAlign: "center", padding: "32px 0", fontSize: 13, color: T.textMuted }}>No residents found.</p>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-          <table className="w-full text-sm">
+        <div style={{ borderRadius: 18, border: `1px solid ${T.border}`, background: T.surface, overflow: "hidden" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50 text-left">
-                <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Resident</th>
-                <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Contact</th>
-                <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Flat</th>
-                <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Type</th>
+              <tr style={{ borderBottom: `1px solid ${T.border}`, background: `${T.gold}08` }}>
+                {["Resident", "Contact", "Flat", "Type"].map(h => (
+                  <th key={h} style={{ padding: "12px 20px", textAlign: "left", fontSize: 11, fontWeight: 700, color: T.textMuted, letterSpacing: "0.08em", textTransform: "uppercase" }}>{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {filtered.map((r, i) => (
-                <tr key={r._id} className={`border-b border-slate-50 transition hover:bg-slate-50 ${i === filtered.length - 1 ? "border-0" : ""}`}>
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">
+                <tr key={r._id}
+                  style={{ borderBottom: i < filtered.length - 1 ? `1px solid ${T.border}` : "none", transition: "background 0.15s" }}
+                  onMouseEnter={e => e.currentTarget.style.background = `${T.gold}08`}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <td style={{ padding: "14px 20px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ flexShrink: 0, height: 36, width: 36, borderRadius: "50%", background: `${T.gold}22`, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: T.gold }}>
                         {r.userId?.fullName?.[0]?.toUpperCase() || "?"}
                       </div>
-                      <span className="font-semibold text-slate-900">{r.userId?.fullName || "—"}</span>
+                      <span style={{ fontWeight: 600, color: T.text }}>{r.userId?.fullName || "—"}</span>
                     </div>
                   </td>
-                  <td className="px-5 py-3.5">
-                    <div className="space-y-0.5">
+                  <td style={{ padding: "14px 20px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                       {r.userId?.phone && (
-                        <div className="flex items-center gap-1.5 text-slate-600">
-                          <Phone className="h-3.5 w-3.5 text-slate-400" />
-                          {r.userId.phone}
+                        <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: T.textSub }}>
+                          <Phone size={11} color={T.textMuted} /> {r.userId.phone}
                         </div>
                       )}
                       {r.userId?.email && (
-                        <div className="flex items-center gap-1.5 text-slate-400 text-xs">
-                          <Mail className="h-3 w-3" />
-                          {r.userId.email}
+                        <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: T.textMuted }}>
+                          <Mail size={10} color={T.textMuted} /> {r.userId.email}
                         </div>
                       )}
                     </div>
                   </td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-1.5 text-slate-700">
-                      <Home className="h-3.5 w-3.5 text-slate-400" />
-                      <span className="font-semibold">{r.wingId?.name || "—"}-{r.unitId?.unitNumber || "—"}</span>
-                      <span className="text-slate-400">· Floor {r.unitId?.floor ?? "—"}</span>
+                  <td style={{ padding: "14px 20px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: T.textSub }}>
+                      <Home size={12} color={T.textMuted} />
+                      <span style={{ fontWeight: 600, color: T.text }}>{r.wingId?.name || "—"}-{r.unitId?.unitNumber || "—"}</span>
+                      <span style={{ color: T.textMuted, fontSize: 11 }}>· Floor {r.unitId?.floor ?? "—"}</span>
                     </div>
                   </td>
-                  <td className="px-5 py-3.5">
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${RESIDENT_ROLE_BADGE[r.residentRole] || "bg-slate-100 text-slate-600"}`}>
+                  <td style={{ padding: "14px 20px" }}>
+                    <span style={{ borderRadius: 100, background: `${ROLE_COLOR[r.residentRole] || T.gold}22`, padding: "3px 10px", fontSize: 11, fontWeight: 700, color: ROLE_COLOR[r.residentRole] || T.gold, textTransform: "capitalize", border: `1px solid ${ROLE_COLOR[r.residentRole] || T.gold}44` }}>
                       {r.residentRole}
                     </span>
                   </td>
@@ -328,97 +314,90 @@ function ResidentsTab({ residents, loading }) {
 
 /* ── Units Tab ──────────────────────────────────────────── */
 function UnitsTab({ units, residents, wings }) {
-  const [filterWing, setFilterWing] = useState("all");
+  const [filterWing,   setFilterWing]   = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
 
   const occupiedUnitIds = useMemo(
-    () => new Set(residents.map((r) => String(r.unitId?._id || r.unitId))),
+    () => new Set(residents.map(r => String(r.unitId?._id || r.unitId))),
     [residents]
   );
 
-  const filtered = useMemo(() => {
-    return units.filter((u) => {
-      const wingMatch = filterWing === "all" || String(u.wing?._id) === filterWing;
-      const occupied = occupiedUnitIds.has(String(u._id));
-      const statusMatch =
-        filterStatus === "all" ||
-        (filterStatus === "occupied" && occupied) ||
-        (filterStatus === "vacant" && !occupied);
-      return wingMatch && statusMatch;
-    });
-  }, [units, filterWing, filterStatus, occupiedUnitIds]);
+  const filtered = useMemo(() => units.filter(u => {
+    const wingMatch   = filterWing === "all" || String(u.wing?._id) === filterWing;
+    const occupied    = occupiedUnitIds.has(String(u._id));
+    const statusMatch = filterStatus === "all" || (filterStatus === "occupied" && occupied) || (filterStatus === "vacant" && !occupied);
+    return wingMatch && statusMatch;
+  }), [units, filterWing, filterStatus, occupiedUnitIds]);
 
-  const totalOccupied = useMemo(() => units.filter((u) => occupiedUnitIds.has(String(u._id))).length, [units, occupiedUnitIds]);
-  const totalVacant = units.length - totalOccupied;
+  const totalOccupied = useMemo(() => units.filter(u => occupiedUnitIds.has(String(u._id))).length, [units, occupiedUnitIds]);
+  const totalVacant   = units.length - totalOccupied;
+
+  const selectStyle = { ...inputStyle, maxWidth: 180 };
 
   return (
-    <div className="space-y-5">
-      {/* Summary strip */}
-      <div className="grid grid-cols-3 gap-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
+      {/* Stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
         {[
-          { label: "Total Flats",  value: units.length,   color: "bg-slate-50 text-slate-700" },
-          { label: "Occupied",     value: totalOccupied,  color: "bg-emerald-50 text-emerald-700" },
-          { label: "Vacant",       value: totalVacant,    color: "bg-amber-50 text-amber-700" },
+          { label: "Total Flats", value: units.length,   color: T.gold  },
+          { label: "Occupied",    value: totalOccupied,  color: T.green },
+          { label: "Vacant",      value: totalVacant,    color: T.amber },
         ].map(({ label, value, color }) => (
-          <div key={label} className={`rounded-2xl ${color} p-4 text-center`}>
-            <p className="text-2xl font-black">{value}</p>
-            <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider opacity-70">{label}</p>
+          <div key={label} style={{ borderRadius: 16, border: `1px solid ${color}33`, background: `${color}10`, padding: "16px 20px", textAlign: "center" }}>
+            <p style={{ fontSize: 28, fontWeight: 800, color, margin: 0 }}>{value}</p>
+            <p style={{ fontSize: 11, fontWeight: 700, color: `${color}aa`, letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 4 }}>{label}</p>
           </div>
         ))}
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <select className="field max-w-[180px]" value={filterWing} onChange={(e) => setFilterWing(e.target.value)}>
-          <option value="all">All Towers</option>
-          {wings.map((w) => <option key={w._id} value={w._id}>{w.name}</option>)}
-        </select>
-        <select className="field max-w-[160px]" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-          <option value="all">All Status</option>
-          <option value="occupied">Occupied</option>
-          <option value="vacant">Vacant</option>
-        </select>
-        <p className="text-sm text-slate-400">{filtered.length} flats shown</p>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+        <FocusSelect style={selectStyle} value={filterWing} onChange={e => setFilterWing(e.target.value)}>
+          <option value="all" style={{ background: "#111008" }}>All Towers</option>
+          {wings.map(w => <option key={w._id} value={w._id} style={{ background: "#111008" }}>{w.name}</option>)}
+        </FocusSelect>
+        <FocusSelect style={selectStyle} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+          <option value="all"      style={{ background: "#111008" }}>All Status</option>
+          <option value="occupied" style={{ background: "#111008" }}>Occupied</option>
+          <option value="vacant"   style={{ background: "#111008" }}>Vacant</option>
+        </FocusSelect>
+        <p style={{ fontSize: 12, color: T.textMuted }}>{filtered.length} flats shown</p>
       </div>
 
       {/* Grid */}
       {!filtered.length ? (
-        <p className="py-8 text-center text-sm text-slate-400">No flats match your filter.</p>
+        <p style={{ textAlign: "center", padding: "32px 0", fontSize: 13, color: T.textMuted }}>No flats match your filter.</p>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {filtered.map((unit) => {
+        <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}>
+          {filtered.map(unit => {
             const occupied = occupiedUnitIds.has(String(unit._id));
-            const resident = residents.find((r) => String(r.unitId?._id || r.unitId) === String(unit._id));
+            const resident = residents.find(r => String(r.unitId?._id || r.unitId) === String(unit._id));
+            const borderCol = occupied ? T.green : T.border;
             return (
-              <div
-                key={unit._id}
-                className={`rounded-2xl border p-4 transition
-                  ${occupied
-                    ? "border-emerald-200 bg-emerald-50"
-                    : "border-slate-100 bg-white"
-                  }`}
-              >
-                <div className="flex items-start justify-between gap-2">
+              <div key={unit._id}
+                style={{ borderRadius: 14, border: `1px solid ${borderCol}44`, background: occupied ? `${T.green}0d` : T.surface, padding: 16, transition: "border-color 0.2s" }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = occupied ? T.green : T.borderHov}
+                onMouseLeave={e => e.currentTarget.style.borderColor = `${borderCol}44`}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
                   <div>
-                    <p className="font-bold text-slate-900">
-                      {unit.wing?.name || "—"}-{unit.unitNumber}
-                    </p>
-                    <p className="text-xs text-slate-400">Floor {unit.floor}</p>
+                    <p style={{ fontWeight: 700, color: T.text, fontSize: 14, margin: 0 }}>{unit.wing?.name || "—"}-{unit.unitNumber}</p>
+                    <p style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>Floor {unit.floor}</p>
                   </div>
                   {occupied
-                    ? <UserCheck className="h-4 w-4 shrink-0 text-emerald-500" />
-                    : <Home className="h-4 w-4 shrink-0 text-slate-300" />
+                    ? <UserCheck size={15} color={T.green} />
+                    : <Home size={15} color={T.textMuted} />
                   }
                 </div>
                 {occupied && resident ? (
-                  <div className="mt-2.5 border-t border-emerald-100 pt-2.5">
-                    <p className="text-xs font-semibold text-slate-700 truncate">{resident.userId?.fullName}</p>
-                    <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${RESIDENT_ROLE_BADGE[resident.residentRole]}`}>
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.green}33` }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{resident.userId?.fullName}</p>
+                    <span style={{ marginTop: 4, display: "inline-block", borderRadius: 100, background: `${T.blue}22`, padding: "2px 8px", fontSize: 10, fontWeight: 700, color: T.blue, textTransform: "capitalize" }}>
                       {resident.residentRole}
                     </span>
                   </div>
                 ) : (
-                  <p className="mt-2 text-xs font-semibold text-amber-500">Vacant</p>
+                  <p style={{ marginTop: 8, fontSize: 11, fontWeight: 700, color: T.amber }}>Vacant</p>
                 )}
               </div>
             );
@@ -434,13 +413,13 @@ export function SocietySetupPage() {
   const { token, user } = useAuth();
   const societyId = user?.tenantId;
 
-  const [tab, setTab]           = useState("setup");
-  const [wings, setWings]       = useState([]);
-  const [units, setUnits]       = useState([]);
-  const [residents, setResidents] = useState([]);
-  const [loading, setLoading]   = useState(true);
+  const [tab,        setTab]        = useState("setup");
+  const [wings,      setWings]      = useState([]);
+  const [units,      setUnits]      = useState([]);
+  const [residents,  setResidents]  = useState([]);
+  const [loading,    setLoading]    = useState(true);
   const [resLoading, setResLoading] = useState(false);
-  const [error, setError]       = useState("");
+  const [error,      setError]      = useState("");
 
   async function loadSocietyData() {
     if (!societyId) return;
@@ -449,9 +428,7 @@ export function SocietySetupPage() {
       const data = await apiRequest(`/societies/${societyId}/units`, { token });
       setWings(data.wings || []);
       setUnits(data.allUnits || []);
-    } catch (err) {
-      setError(err.message);
-    }
+    } catch (err) { setError(err.message); }
   }
 
   async function loadResidents() {
@@ -459,11 +436,8 @@ export function SocietySetupPage() {
     try {
       const data = await apiRequest("/admin/residents", { token });
       setResidents(data.items || []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setResLoading(false);
-    }
+    } catch (err) { setError(err.message); }
+    finally { setResLoading(false); }
   }
 
   async function loadAll() {
@@ -475,48 +449,42 @@ export function SocietySetupPage() {
   useEffect(() => { loadAll(); }, [societyId]);
 
   return (
-    <div className="space-y-6 pb-12">
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 16px 48px", fontFamily: "'DM Sans', sans-serif", display: "flex", flexDirection: "column", gap: 24 }}>
+
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, borderRadius: 18, border: `1px solid ${T.border}`, background: T.surface, padding: "20px 24px", flexWrap: "wrap" }}>
         <div>
-          <h2 className="text-2xl font-black tracking-tight text-slate-900">Society Setup</h2>
-          <p className="mt-0.5 text-sm text-slate-500">Manage towers, flats and residents</p>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: T.text, margin: 0 }}>Society Setup</h2>
+          <p style={{ fontSize: 13, color: T.textMuted, marginTop: 4 }}>Manage towers, flats and residents</p>
         </div>
-        <button
-          onClick={loadAll}
-          disabled={loading}
-          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-          Refresh
+        <button onClick={loadAll} disabled={loading}
+          style={{ display: "flex", alignItems: "center", gap: 6, borderRadius: 12, border: `1px solid ${T.border}`, padding: "8px 16px", background: "transparent", cursor: loading ? "not-allowed" : "pointer", color: T.textSub, fontSize: 13, fontWeight: 600, opacity: loading ? 0.5 : 1, transition: "all 0.2s" }}
+          onMouseEnter={e => { if (!loading) { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.color = T.gold; }}}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSub; }}>
+          <RefreshCw size={14} style={{ animation: loading ? "spin 1s linear infinite" : "none" }} /> Refresh
         </button>
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200">
-          <XCircle className="h-4 w-4 shrink-0" /> {error}
+        <div style={{ borderRadius: 12, background: `${T.red}18`, border: `1px solid ${T.red}44`, padding: "12px 16px", fontSize: 13, color: T.red, display: "flex", alignItems: "center", gap: 8 }}>
+          <XCircle size={14} /> {error}
         </div>
       )}
 
-      <TabBar active={tab} onChange={setTab} />
-
-      <div>
-        {tab === "setup" && (
-          <SetupTab
-            societyId={societyId}
-            token={token}
-            wings={wings}
-            units={units}
-            onRefresh={loadSocietyData}
-          />
-        )}
-        {tab === "residents" && (
-          <ResidentsTab residents={residents} loading={resLoading} />
-        )}
-        {tab === "units" && (
-          <UnitsTab units={units} residents={residents} wings={wings} />
-        )}
+      {/* Tab bar */}
+      <div style={{ display: "flex", gap: 4, borderRadius: 16, background: `${T.gold}10`, padding: 4, border: `1px solid ${T.border}` }}>
+        {TABS.map(({ key, label, icon: Icon }) => (
+          <button key={key} onClick={() => setTab(key)}
+            style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 16px", fontSize: 13, fontWeight: 700, borderRadius: 12, border: "none", cursor: "pointer", transition: "all 0.2s", background: tab === key ? T.gold : "transparent", color: tab === key ? "#0a0907" : T.textMuted }}>
+            <Icon size={15} /> {label}
+          </button>
+        ))}
       </div>
+
+      {/* Tab content */}
+      {tab === "setup"     && <SetupTab societyId={societyId} token={token} wings={wings} units={units} onRefresh={loadSocietyData} />}
+      {tab === "residents" && <ResidentsTab residents={residents} loading={resLoading} />}
+      {tab === "units"     && <UnitsTab units={units} residents={residents} wings={wings} />}
     </div>
   );
 }

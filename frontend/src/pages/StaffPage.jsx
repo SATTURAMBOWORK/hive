@@ -7,7 +7,22 @@ import { useAuth } from "../components/AuthContext";
 import { apiRequest } from "../components/api";
 import { getSocket } from "../components/socket";
 
-// ── Constants ────────────────────────────────────────────────────
+// ── Design tokens ────────────────────────────────────────────────
+const T = {
+  bg:        "#0a0907",
+  surface:   "#111008",
+  surfaceHi: "#181510",
+  border:    "rgba(200,145,74,0.15)",
+  borderHov: "rgba(200,145,74,0.35)",
+  gold:      "#c8914a",
+  goldLight: "#e8c47a",
+  text:      "#f5f0e8",
+  textSub:   "rgba(245,240,232,0.55)",
+  textMuted: "rgba(245,240,232,0.3)",
+  green:     "#3d9e6e",
+  red:       "#e85d5d",
+  amber:     "#d4a843",
+};
 
 const CATEGORY_OPTIONS = [
   { value: "maid",      label: "Maid",      emoji: "🧹" },
@@ -29,10 +44,14 @@ const ALL_DAYS = [
   { key: "sat", label: "Sa" },
 ];
 
-const inputCls =
-  "w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-900 " +
-  "placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none " +
-  "focus:ring-1 focus:ring-emerald-500 text-sm transition-colors";
+const inputStyle = {
+  width: "100%", borderRadius: 12,
+  border: `1px solid ${T.border}`,
+  background: "#0f0e0b",
+  padding: "10px 14px",
+  color: T.text, fontSize: 14,
+  outline: "none", transition: "border-color 0.2s, box-shadow 0.2s",
+};
 
 function getCategoryEmoji(cat) {
   return CATEGORY_OPTIONS.find(c => c.value === cat)?.emoji || "👤";
@@ -41,29 +60,58 @@ function getCategoryEmoji(cat) {
 // ── Day Picker Pills ─────────────────────────────────────────────
 function DayPicker({ value, onChange }) {
   return (
-    <div className="flex gap-1.5 flex-wrap">
+    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
       {ALL_DAYS.map(d => {
         const active = value.includes(d.key);
         return (
           <button
             key={d.key}
             type="button"
-            onClick={() =>
-              onChange(
-                active ? value.filter(x => x !== d.key) : [...value, d.key]
-              )
-            }
-            className={`h-8 w-10 rounded-lg text-xs font-bold transition-all ${
-              active
-                ? "bg-emerald-600 text-white shadow-sm"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
+            onClick={() => onChange(active ? value.filter(x => x !== d.key) : [...value, d.key])}
+            style={{
+              height: 34, width: 38, borderRadius: 10, fontSize: 12, fontWeight: 700,
+              border: `1.5px solid ${active ? T.gold : T.border}`,
+              background: active ? `${T.gold}22` : "transparent",
+              color: active ? T.gold : T.textMuted,
+              cursor: "pointer", transition: "all 0.15s",
+            }}
           >
             {d.label}
           </button>
         );
       })}
     </div>
+  );
+}
+
+// ── Label ────────────────────────────────────────────────────────
+function Label({ children }) {
+  return (
+    <p style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
+      {children}
+    </p>
+  );
+}
+
+// ── Gold Button ──────────────────────────────────────────────────
+function GoldBtn({ children, disabled, type = "button", onClick, style = {} }) {
+  return (
+    <button
+      type={type}
+      disabled={disabled}
+      onClick={onClick}
+      style={{
+        width: "100%", borderRadius: 12, padding: "12px 0",
+        background: disabled ? "rgba(200,145,74,0.3)" : `linear-gradient(135deg, ${T.gold}, ${T.goldLight})`,
+        color: "#0a0907", fontSize: 14, fontWeight: 700,
+        border: "none", cursor: disabled ? "not-allowed" : "pointer",
+        transition: "all 0.2s", ...style,
+      }}
+      onMouseEnter={e => { if (!disabled) e.currentTarget.style.transform = "translateY(-1px)"; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; }}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -80,9 +128,7 @@ function AddStaffModal({ onClose, onAdded }) {
     allowedFrom: "08:00", allowedUntil: "18:00",
   });
 
-  function set(field, value) {
-    setForm(f => ({ ...f, [field]: value }));
-  }
+  function set(field, value) { setForm(f => ({ ...f, [field]: value })); }
 
   function handleFileChange(e) {
     const file = e.target.files[0];
@@ -92,8 +138,7 @@ function AddStaffModal({ onClose, onAdded }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setSaving(true);
-    setError(null);
+    setSaving(true); setError(null);
     try {
       const fd = new FormData();
       fd.append("name",         form.name.trim());
@@ -102,12 +147,8 @@ function AddStaffModal({ onClose, onAdded }) {
       fd.append("allowedDays",  JSON.stringify(form.allowedDays));
       fd.append("allowedFrom",  form.allowedFrom);
       fd.append("allowedUntil", form.allowedUntil);
-      if (fileRef.current?.files[0]) {
-        fd.append("photo", fileRef.current.files[0]);
-      }
-      const data = await apiRequest("/staff", {
-        method: "POST", formData: fd, token,
-      });
+      if (fileRef.current?.files[0]) fd.append("photo", fileRef.current.files[0]);
+      const data = await apiRequest("/staff", { method: "POST", formData: fd, token });
       onAdded(data.item);
     } catch (err) {
       setError(err.message);
@@ -117,103 +158,93 @@ function AddStaffModal({ onClose, onAdded }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-3xl bg-white shadow-2xl overflow-hidden">
+    <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)", padding: 16 }}>
+      <div style={{ width: "100%", maxWidth: 440, borderRadius: 24, background: T.surface, border: `1px solid ${T.border}`, overflow: "hidden", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}>
+
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <h2 className="font-black text-slate-900">Add Staff Member</h2>
-          <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-slate-100 transition">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${T.border}`, padding: "16px 24px" }}>
+          <p style={{ fontWeight: 800, color: T.text, fontSize: 16 }}>Add Staff Member</p>
+          <button onClick={onClose} style={{ background: "transparent", border: "none", cursor: "pointer", color: T.textMuted, padding: 4, borderRadius: 8 }}
+            onMouseEnter={e => e.currentTarget.style.color = T.text}
+            onMouseLeave={e => e.currentTarget.style.color = T.textMuted}>
             <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
-          {/* Photo Upload */}
-          <div className="flex items-center gap-4">
-            <div
-              onClick={() => fileRef.current?.click()}
-              className="h-16 w-16 rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-emerald-400 transition shrink-0"
-            >
+        <form onSubmit={handleSubmit} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16, maxHeight: "80vh", overflowY: "auto" }}>
+
+          {/* Photo */}
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div onClick={() => fileRef.current?.click()}
+              style={{ height: 64, width: 64, borderRadius: 16, border: `2px dashed ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", cursor: "pointer", flexShrink: 0, transition: "border-color 0.2s" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = T.gold}
+              onMouseLeave={e => e.currentTarget.style.borderColor = T.border}>
               {preview
-                ? <img src={preview} alt="" className="h-full w-full object-cover" />
-                : <Upload size={20} className="text-slate-400" />
-              }
+                ? <img src={preview} alt="" style={{ height: "100%", width: "100%", objectFit: "cover" }} />
+                : <Upload size={20} color={T.textMuted} />}
             </div>
             <div>
-              <p className="text-sm font-semibold text-slate-700">Staff Photo</p>
-              <p className="text-xs text-slate-400">Optional — helps guard identify them</p>
+              <p style={{ fontSize: 14, fontWeight: 600, color: T.text }}>Staff Photo</p>
+              <p style={{ fontSize: 12, color: T.textMuted }}>Optional — helps guard identify them</p>
             </div>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+            <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileChange} />
           </div>
 
           {/* Name */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Full Name</label>
-            <input
-              required
-              className={inputCls}
-              placeholder="e.g. Sunita Devi"
-              value={form.name}
-              onChange={e => set("name", e.target.value)}
-            />
+            <Label>Full Name</Label>
+            <input required style={inputStyle} placeholder="e.g. Sunita Devi" value={form.name} onChange={e => set("name", e.target.value)}
+              onFocus={e => { e.target.style.borderColor = T.gold; e.target.style.boxShadow = `0 0 0 3px ${T.gold}22`; }}
+              onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = "none"; }} />
           </div>
 
           {/* Phone */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Phone Number</label>
-            <input
-              required
-              type="tel"
-              className={inputCls}
-              placeholder="10-digit mobile number"
-              value={form.phone}
-              onChange={e => set("phone", e.target.value)}
-            />
+            <Label>Phone Number</Label>
+            <input required type="tel" style={inputStyle} placeholder="10-digit mobile number" value={form.phone} onChange={e => set("phone", e.target.value)}
+              onFocus={e => { e.target.style.borderColor = T.gold; e.target.style.boxShadow = `0 0 0 3px ${T.gold}22`; }}
+              onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = "none"; }} />
           </div>
 
           {/* Category */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Category</label>
-            <select
-              className={inputCls}
-              value={form.category}
-              onChange={e => set("category", e.target.value)}
-            >
-              {CATEGORY_OPTIONS.map(c => (
-                <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>
-              ))}
+            <Label>Category</Label>
+            <select style={{ ...inputStyle, cursor: "pointer" }} value={form.category} onChange={e => set("category", e.target.value)}
+              onFocus={e => { e.target.style.borderColor = T.gold; e.target.style.boxShadow = `0 0 0 3px ${T.gold}22`; }}
+              onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = "none"; }}>
+              {CATEGORY_OPTIONS.map(c => <option key={c.value} value={c.value} style={{ background: T.surface }}>{c.emoji} {c.label}</option>)}
             </select>
           </div>
 
           {/* Allowed Days */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Working Days</label>
+            <Label>Working Days</Label>
             <DayPicker value={form.allowedDays} onChange={v => set("allowedDays", v)} />
           </div>
 
-          {/* Time Window */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Time */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">From</label>
-              <input type="time" className={inputCls} value={form.allowedFrom} onChange={e => set("allowedFrom", e.target.value)} />
+              <Label>From</Label>
+              <input type="time" style={inputStyle} value={form.allowedFrom} onChange={e => set("allowedFrom", e.target.value)}
+                onFocus={e => { e.target.style.borderColor = T.gold; e.target.style.boxShadow = `0 0 0 3px ${T.gold}22`; }}
+                onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = "none"; }} />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Until</label>
-              <input type="time" className={inputCls} value={form.allowedUntil} onChange={e => set("allowedUntil", e.target.value)} />
+              <Label>Until</Label>
+              <input type="time" style={inputStyle} value={form.allowedUntil} onChange={e => set("allowedUntil", e.target.value)}
+                onFocus={e => { e.target.style.borderColor = T.gold; e.target.style.boxShadow = `0 0 0 3px ${T.gold}22`; }}
+                onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = "none"; }} />
             </div>
           </div>
 
           {error && (
-            <p className="rounded-xl bg-rose-50 border border-rose-100 px-4 py-2.5 text-sm text-rose-600">{error}</p>
+            <div style={{ borderRadius: 10, background: `${T.red}18`, border: `1px solid ${T.red}44`, padding: "10px 14px", fontSize: 13, color: T.red }}>
+              {error}
+            </div>
           )}
 
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition disabled:opacity-50"
-          >
-            {saving ? "Saving…" : "Add Staff Member"}
-          </button>
+          <GoldBtn type="submit" disabled={saving}>{saving ? "Saving…" : "Add Staff Member"}</GoldBtn>
         </form>
       </div>
     </div>
@@ -231,22 +262,15 @@ function EditScheduleModal({ staff, onClose, onUpdated }) {
     allowedUntil: staff.myAssignment?.allowedUntil || "18:00",
   });
 
-  function set(field, value) {
-    setForm(f => ({ ...f, [field]: value }));
-  }
+  function set(field, value) { setForm(f => ({ ...f, [field]: value })); }
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setSaving(true);
-    setError(null);
+    setSaving(true); setError(null);
     try {
       const data = await apiRequest(`/staff/${staff._id}/my-assignment`, {
         method: "PATCH",
-        body: {
-          allowedDays:  JSON.stringify(form.allowedDays),
-          allowedFrom:  form.allowedFrom,
-          allowedUntil: form.allowedUntil,
-        },
+        body: { allowedDays: JSON.stringify(form.allowedDays), allowedFrom: form.allowedFrom, allowedUntil: form.allowedUntil },
         token,
       });
       onUpdated(data.item);
@@ -258,42 +282,40 @@ function EditScheduleModal({ staff, onClose, onUpdated }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-3xl bg-white shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+    <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)", padding: 16 }}>
+      <div style={{ width: "100%", maxWidth: 380, borderRadius: 24, background: T.surface, border: `1px solid ${T.border}`, overflow: "hidden", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${T.border}`, padding: "16px 24px" }}>
           <div>
-            <h2 className="font-black text-slate-900">Edit Schedule</h2>
-            <p className="text-xs text-slate-500">{staff.name}</p>
+            <p style={{ fontWeight: 800, color: T.text, fontSize: 15 }}>Edit Schedule</p>
+            <p style={{ fontSize: 12, color: T.textMuted }}>{staff.name}</p>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-slate-100 transition">
+          <button onClick={onClose} style={{ background: "transparent", border: "none", cursor: "pointer", color: T.textMuted, padding: 4 }}>
             <X size={18} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Working Days</label>
+            <Label>Working Days</Label>
             <DayPicker value={form.allowedDays} onChange={v => set("allowedDays", v)} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">From</label>
-              <input type="time" className={inputCls} value={form.allowedFrom} onChange={e => set("allowedFrom", e.target.value)} />
+              <Label>From</Label>
+              <input type="time" style={inputStyle} value={form.allowedFrom} onChange={e => set("allowedFrom", e.target.value)}
+                onFocus={e => { e.target.style.borderColor = T.gold; e.target.style.boxShadow = `0 0 0 3px ${T.gold}22`; }}
+                onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = "none"; }} />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Until</label>
-              <input type="time" className={inputCls} value={form.allowedUntil} onChange={e => set("allowedUntil", e.target.value)} />
+              <Label>Until</Label>
+              <input type="time" style={inputStyle} value={form.allowedUntil} onChange={e => set("allowedUntil", e.target.value)}
+                onFocus={e => { e.target.style.borderColor = T.gold; e.target.style.boxShadow = `0 0 0 3px ${T.gold}22`; }}
+                onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = "none"; }} />
             </div>
           </div>
           {error && (
-            <p className="rounded-xl bg-rose-50 border border-rose-100 px-4 py-2.5 text-sm text-rose-600">{error}</p>
+            <div style={{ borderRadius: 10, background: `${T.red}18`, border: `1px solid ${T.red}44`, padding: "10px 14px", fontSize: 13, color: T.red }}>{error}</div>
           )}
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition disabled:opacity-50"
-          >
-            {saving ? "Saving…" : "Save Schedule"}
-          </button>
+          <GoldBtn type="submit" disabled={saving}>{saving ? "Saving…" : "Save Schedule"}</GoldBtn>
         </form>
       </div>
     </div>
@@ -305,81 +327,87 @@ function StaffCard({ staff, onBlock, onRemove, onEditSchedule, blocking, removin
   const a = staff.myAssignment;
   const isBlocked = a?.blocked;
   const isOnLeave = a?.onLeave;
+  const [hovered, setHovered] = useState(false);
 
   const activeDays = a?.allowedDays?.length
     ? ALL_DAYS.filter(d => a.allowedDays.includes(d.key)).map(d => d.label).join(" ")
     : "—";
 
   return (
-    <div className={`rounded-2xl border bg-white shadow-sm overflow-hidden transition ${isBlocked ? "opacity-60" : ""}`}>
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        borderRadius: 18, border: `1px solid ${hovered ? T.borderHov : T.border}`,
+        background: T.surface, overflow: "hidden",
+        opacity: isBlocked ? 0.6 : 1,
+        transition: "border-color 0.25s, box-shadow 0.25s",
+        boxShadow: hovered ? `0 4px 24px rgba(200,145,74,0.1)` : "none",
+      }}
+    >
       {/* Top row */}
-      <div className="flex items-center gap-4 px-5 py-4 border-b border-slate-100">
+      <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}>
         {staff.photoUrl
-          ? <img src={staff.photoUrl} alt={staff.name} className="h-12 w-12 rounded-full object-cover shrink-0" />
-          : (
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-2xl shrink-0">
+          ? <img src={staff.photoUrl} alt={staff.name} style={{ height: 48, width: 48, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: `2px solid ${T.border}` }} />
+          : <div style={{ display: "flex", height: 48, width: 48, alignItems: "center", justifyContent: "center", borderRadius: "50%", background: `${T.gold}18`, border: `1px solid ${T.border}`, fontSize: 22, flexShrink: 0 }}>
               {getCategoryEmoji(staff.category)}
             </div>
-          )
         }
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-bold text-slate-900 truncate">{staff.name}</p>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <p style={{ fontWeight: 700, color: T.text, fontSize: 14 }}>{staff.name}</p>
             {isBlocked && (
-              <span className="flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-xs font-bold text-rose-600">
+              <span style={{ display: "flex", alignItems: "center", gap: 4, borderRadius: 100, background: `${T.red}22`, padding: "2px 8px", fontSize: 11, fontWeight: 700, color: T.red, border: `1px solid ${T.red}44` }}>
                 <Ban size={10} /> Blocked
               </span>
             )}
             {isOnLeave && !isBlocked && (
-              <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-600">
+              <span style={{ display: "flex", alignItems: "center", gap: 4, borderRadius: 100, background: `${T.amber}22`, padding: "2px 8px", fontSize: 11, fontWeight: 700, color: T.amber, border: `1px solid ${T.amber}44` }}>
                 <Clock size={10} /> On Leave
               </span>
             )}
           </div>
-          <p className="text-xs text-slate-500 capitalize">{staff.category} · {staff.phone}</p>
+          <p style={{ fontSize: 12, color: T.textSub, textTransform: "capitalize" }}>{staff.category} · {staff.phone}</p>
         </div>
-        <div className="text-xs font-mono bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg shrink-0">
+        <div style={{ fontSize: 12, fontFamily: "monospace", background: `${T.gold}15`, color: T.gold, padding: "4px 10px", borderRadius: 8, flexShrink: 0, border: `1px solid ${T.border}` }}>
           {staff.staffCode}
         </div>
       </div>
 
       {/* Schedule row */}
       {a && (
-        <div className="px-5 py-3 bg-slate-50 flex items-center gap-3 text-xs text-slate-600">
-          <Calendar size={13} className="shrink-0 text-emerald-600" />
-          <span className="font-semibold">{activeDays}</span>
-          <Clock size={13} className="shrink-0 text-emerald-600 ml-2" />
+        <div style={{ padding: "10px 20px", background: `${T.gold}08`, display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: T.textSub, borderBottom: `1px solid ${T.border}` }}>
+          <Calendar size={13} color={T.gold} />
+          <span style={{ fontWeight: 600 }}>{activeDays}</span>
+          <Clock size={13} color={T.gold} style={{ marginLeft: 6 }} />
           <span>{a.allowedFrom} – {a.allowedUntil}</span>
         </div>
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-2 px-5 py-3 border-t border-slate-100">
-        <button
-          onClick={() => onEditSchedule(staff)}
-          className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
-        >
-          <Edit2 size={12} /> Edit Schedule
-        </button>
-        <button
-          onClick={() => onBlock(staff)}
-          disabled={blocking === staff._id}
-          className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50 ${
-            isBlocked
-              ? "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-              : "border-amber-200 text-amber-700 hover:bg-amber-50"
-          }`}
-        >
-          <Ban size={12} />
-          {blocking === staff._id ? "…" : isBlocked ? "Unblock" : "Block"}
-        </button>
-        <button
-          onClick={() => onRemove(staff)}
-          disabled={removing === staff._id}
-          className="ml-auto flex items-center gap-1.5 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition disabled:opacity-50"
-        >
-          <Trash2 size={12} />
-          {removing === staff._id ? "…" : "Remove"}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 20px" }}>
+        {[
+          { label: "Edit Schedule", icon: <Edit2 size={12} />, onClick: () => onEditSchedule(staff), color: T.gold },
+          {
+            label: blocking === staff._id ? "…" : isBlocked ? "Unblock" : "Block",
+            icon: <Ban size={12} />,
+            onClick: () => onBlock(staff),
+            disabled: blocking === staff._id,
+            color: isBlocked ? T.green : T.amber,
+          },
+        ].map((btn, i) => (
+          <button key={i} onClick={btn.onClick} disabled={btn.disabled}
+            style={{ display: "flex", alignItems: "center", gap: 6, borderRadius: 8, border: `1px solid ${btn.color}44`, padding: "6px 12px", fontSize: 12, fontWeight: 600, color: btn.color, background: "transparent", cursor: btn.disabled ? "not-allowed" : "pointer", opacity: btn.disabled ? 0.5 : 1, transition: "background 0.15s" }}
+            onMouseEnter={e => { if (!btn.disabled) e.currentTarget.style.background = `${btn.color}18`; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+            {btn.icon}{btn.label}
+          </button>
+        ))}
+        <button onClick={() => onRemove(staff)} disabled={removing === staff._id}
+          style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, borderRadius: 8, border: `1px solid ${T.red}44`, padding: "6px 12px", fontSize: 12, fontWeight: 600, color: T.red, background: "transparent", cursor: removing === staff._id ? "not-allowed" : "pointer", opacity: removing === staff._id ? 0.5 : 1, transition: "background 0.15s" }}
+          onMouseEnter={e => { if (removing !== staff._id) e.currentTarget.style.background = `${T.red}18`; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+          <Trash2 size={12} />{removing === staff._id ? "…" : "Remove"}
         </button>
       </div>
     </div>
@@ -389,39 +417,42 @@ function StaffCard({ staff, onBlock, onRemove, onEditSchedule, blocking, removin
 // ── Society-wide Staff Card (Committee view) ─────────────────────
 function SocietyStaffCard({ staff }) {
   const [expanded, setExpanded] = useState(false);
+  const [hovered, setHovered] = useState(false);
   return (
-    <div className="rounded-2xl border bg-white shadow-sm overflow-hidden">
-      <button
-        onClick={() => setExpanded(v => !v)}
-        className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-slate-50 transition"
-      >
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ borderRadius: 18, border: `1px solid ${hovered ? T.borderHov : T.border}`, background: T.surface, overflow: "hidden", transition: "border-color 0.25s, box-shadow 0.25s", boxShadow: hovered ? `0 4px 24px rgba(200,145,74,0.1)` : "none" }}
+    >
+      <button onClick={() => setExpanded(v => !v)}
+        style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", background: "transparent", border: "none", cursor: "pointer", textAlign: "left" }}>
         {staff.photoUrl
-          ? <img src={staff.photoUrl} alt={staff.name} className="h-11 w-11 rounded-full object-cover shrink-0" />
-          : <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-xl shrink-0">{getCategoryEmoji(staff.category)}</div>
+          ? <img src={staff.photoUrl} alt={staff.name} style={{ height: 44, width: 44, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: `2px solid ${T.border}` }} />
+          : <div style={{ display: "flex", height: 44, width: 44, alignItems: "center", justifyContent: "center", borderRadius: "50%", background: `${T.gold}18`, border: `1px solid ${T.border}`, fontSize: 20, flexShrink: 0 }}>
+              {getCategoryEmoji(staff.category)}
+            </div>
         }
-        <div className="flex-1">
-          <p className="font-bold text-slate-900">{staff.name}</p>
-          <p className="text-xs text-slate-500 capitalize">{staff.category} · {staff.phone}</p>
+        <div style={{ flex: 1 }}>
+          <p style={{ fontWeight: 700, color: T.text, fontSize: 14 }}>{staff.name}</p>
+          <p style={{ fontSize: 12, color: T.textSub, textTransform: "capitalize" }}>{staff.category} · {staff.phone}</p>
         </div>
-        <span className="text-xs bg-slate-100 rounded-full px-2.5 py-1 text-slate-600 font-semibold mr-2">
+        <span style={{ fontSize: 12, background: `${T.gold}15`, color: T.gold, padding: "4px 10px", borderRadius: 100, fontWeight: 600, marginRight: 8, border: `1px solid ${T.border}` }}>
           {staff.assignments?.length || 0} flat{staff.assignments?.length !== 1 ? "s" : ""}
         </span>
-        <ChevronDown size={16} className={`text-slate-400 transition-transform ${expanded ? "rotate-180" : ""}`} />
+        <ChevronDown size={16} color={T.textMuted} style={{ transition: "transform 0.2s", transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }} />
       </button>
       {expanded && staff.assignments?.length > 0 && (
-        <div className="border-t border-slate-100 divide-y divide-slate-50">
+        <div style={{ borderTop: `1px solid ${T.border}` }}>
           {staff.assignments.map((a, i) => (
-            <div key={i} className="flex items-center gap-4 px-5 py-3 text-sm">
-              <div className="flex-1">
-                <p className="font-semibold text-slate-900">{a.flatNumber}</p>
-                <p className="text-xs text-slate-400">{a.residentId?.fullName || "Unknown resident"}</p>
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 20px", borderBottom: i < staff.assignments.length - 1 ? `1px solid ${T.border}` : "none", fontSize: 13 }}>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontWeight: 600, color: T.text }}>{a.flatNumber}</p>
+                <p style={{ fontSize: 12, color: T.textMuted }}>{a.residentId?.fullName || "Unknown resident"}</p>
               </div>
-              <div className="text-xs text-slate-500">
-                {ALL_DAYS.filter(d => a.allowedDays?.includes(d.key)).map(d => d.label).join(" ")}
-              </div>
-              <div className="text-xs text-slate-500">{a.allowedFrom}–{a.allowedUntil}</div>
-              {a.blocked && <span className="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-bold text-rose-600">Blocked</span>}
-              {a.onLeave && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-600">On Leave</span>}
+              <div style={{ fontSize: 12, color: T.textSub }}>{ALL_DAYS.filter(d => a.allowedDays?.includes(d.key)).map(d => d.label).join(" ")}</div>
+              <div style={{ fontSize: 12, color: T.textSub }}>{a.allowedFrom}–{a.allowedUntil}</div>
+              {a.blocked && <span style={{ borderRadius: 100, background: `${T.red}22`, padding: "2px 8px", fontSize: 11, fontWeight: 700, color: T.red }}>Blocked</span>}
+              {a.onLeave && <span style={{ borderRadius: 100, background: `${T.amber}22`, padding: "2px 8px", fontSize: 11, fontWeight: 700, color: T.amber }}>On Leave</span>}
             </div>
           ))}
         </div>
@@ -436,27 +467,18 @@ export function StaffPage() {
   const isCommittee = user?.role === "committee" || user?.role === "super_admin";
   const [tab, setTab] = useState("mine");
 
-  // My staff state
-  const [myStaff,  setMyStaff]  = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState(null);
-
-  // Society staff state
-  const [allStaff, setAllStaff] = useState([]);
+  const [myStaff,    setMyStaff]    = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState(null);
+  const [allStaff,   setAllStaff]   = useState([]);
   const [allLoading, setAllLoading] = useState(false);
-
-  // Modal state
   const [showAdd,    setShowAdd]    = useState(false);
-  const [editTarget, setEditTarget] = useState(null);   // staff to edit schedule
+  const [editTarget, setEditTarget] = useState(null);
+  const [blocking,   setBlocking]   = useState(null);
+  const [removing,   setRemoving]   = useState(null);
 
-  // Action loading states
-  const [blocking, setBlocking] = useState(null);
-  const [removing, setRemoving] = useState(null);
-
-  // ── Fetch my staff ─────────────────────────────────────────────
   const fetchMyStaff = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
       const data = await apiRequest("/staff/mine", { token });
       setMyStaff(data.items || []);
@@ -467,7 +489,6 @@ export function StaffPage() {
     }
   }, [token]);
 
-  // ── Fetch all staff (committee) ────────────────────────────────
   const fetchAllStaff = useCallback(async () => {
     setAllLoading(true);
     try {
@@ -481,53 +502,28 @@ export function StaffPage() {
   }, [token]);
 
   useEffect(() => { fetchMyStaff(); }, [fetchMyStaff]);
+  useEffect(() => { if (tab === "all" && isCommittee) fetchAllStaff(); }, [tab, isCommittee, fetchAllStaff]);
 
-  useEffect(() => {
-    if (tab === "all" && isCommittee) fetchAllStaff();
-  }, [tab, isCommittee, fetchAllStaff]);
-
-  // ── Real-time: listen for staff leave toggle notifications ─────
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
     function onLeaveToggled({ staffId, onLeave }) {
-      setMyStaff(prev =>
-        prev.map(s =>
-          s._id === staffId
-            ? { ...s, myAssignment: s.myAssignment ? { ...s.myAssignment, onLeave } : s.myAssignment }
-            : s
-        )
-      );
+      setMyStaff(prev => prev.map(s => s._id === staffId ? { ...s, myAssignment: s.myAssignment ? { ...s.myAssignment, onLeave } : s.myAssignment } : s));
     }
     socket.on("staff:leave_toggled", onLeaveToggled);
     return () => socket.off("staff:leave_toggled", onLeaveToggled);
   }, []);
 
-  // ── Actions ────────────────────────────────────────────────────
-  function handleAdded() {
-    setShowAdd(false);
-    fetchMyStaff();
-  }
-
-  function handleUpdated() {
-    setEditTarget(null);
-    fetchMyStaff();
-  }
+  function handleAdded()  { setShowAdd(false); fetchMyStaff(); }
+  function handleUpdated() { setEditTarget(null); fetchMyStaff(); }
 
   async function handleBlock(staff) {
     setBlocking(staff._id);
     try {
-      await apiRequest(`/staff/${staff._id}/toggle-block`, {
-        method: "PATCH",
-        body: { flatNumber: staff.myAssignment?.flatNumber },
-        token,
-      });
+      await apiRequest(`/staff/${staff._id}/toggle-block`, { method: "PATCH", body: { flatNumber: staff.myAssignment?.flatNumber }, token });
       fetchMyStaff();
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setBlocking(null);
-    }
+    } catch (err) { alert(err.message); }
+    finally { setBlocking(null); }
   }
 
   async function handleRemove(staff) {
@@ -536,51 +532,44 @@ export function StaffPage() {
     try {
       await apiRequest(`/staff/${staff._id}/my-assignment`, { method: "DELETE", token });
       setMyStaff(prev => prev.filter(s => s._id !== staff._id));
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setRemoving(null);
-    }
+    } catch (err) { alert(err.message); }
+    finally { setRemoving(null); }
   }
 
-  // ── Render ─────────────────────────────────────────────────────
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 space-y-6">
+    <div style={{ maxWidth: 720, margin: "0 auto", padding: "32px 16px", fontFamily: "'DM Sans', sans-serif" }}>
 
-      {/* Page header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
         <div>
-          <h1 className="text-2xl font-black text-slate-900">Staff Management</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Manage your household staff members</p>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: T.text, margin: 0 }}>Staff Management</h1>
+          <p style={{ fontSize: 13, color: T.textMuted, marginTop: 4 }}>Manage your household staff members</p>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={fetchMyStaff} className="rounded-xl border border-slate-200 p-2.5 hover:bg-slate-50 transition text-slate-500">
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button onClick={fetchMyStaff}
+            style={{ borderRadius: 12, border: `1px solid ${T.border}`, padding: "10px", background: "transparent", cursor: "pointer", color: T.textSub, transition: "all 0.2s" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.color = T.gold; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSub; }}>
             <RefreshCw size={16} />
           </button>
-          <button
-            onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition"
-          >
+          <button onClick={() => setShowAdd(true)}
+            style={{ display: "flex", alignItems: "center", gap: 8, borderRadius: 12, background: `linear-gradient(135deg, ${T.gold}, ${T.goldLight})`, padding: "10px 18px", fontSize: 13, fontWeight: 700, color: "#0a0907", border: "none", cursor: "pointer", transition: "all 0.2s", boxShadow: `0 4px 16px ${T.gold}40` }}
+            onMouseEnter={e => e.currentTarget.style.transform = "translateY(-1px)"}
+            onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
             <Plus size={16} /> Add Staff
           </button>
         </div>
       </div>
 
-      {/* Tabs (committee only) */}
+      {/* Tabs */}
       {isCommittee && (
-        <div className="flex gap-1 rounded-2xl bg-slate-100 p-1 w-fit">
-          <button
-            onClick={() => setTab("mine")}
-            className={`px-5 py-2 text-sm font-bold rounded-xl transition-all ${tab === "mine" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-          >
-            My Staff
-          </button>
-          <button
-            onClick={() => setTab("all")}
-            className={`px-5 py-2 text-sm font-bold rounded-xl transition-all ${tab === "all" ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-          >
-            All Society Staff
-          </button>
+        <div style={{ display: "flex", gap: 4, borderRadius: 16, background: `${T.gold}10`, padding: 4, width: "fit-content", marginBottom: 20, border: `1px solid ${T.border}` }}>
+          {[["mine", "My Staff"], ["all", "All Society Staff"]].map(([key, label]) => (
+            <button key={key} onClick={() => setTab(key)}
+              style={{ padding: "8px 20px", fontSize: 13, fontWeight: 700, borderRadius: 12, border: "none", cursor: "pointer", transition: "all 0.2s", background: tab === key ? T.gold : "transparent", color: tab === key ? "#0a0907" : T.textMuted }}>
+              {label}
+            </button>
+          ))}
         </div>
       )}
 
@@ -588,58 +577,45 @@ export function StaffPage() {
       {tab === "mine" && (
         <>
           {loading ? (
-            <div className="text-center py-16 text-slate-400 text-sm">Loading…</div>
+            <div style={{ textAlign: "center", padding: "64px 0", color: T.textMuted, fontSize: 14 }}>Loading…</div>
           ) : error ? (
-            <div className="rounded-2xl bg-rose-50 border border-rose-100 px-5 py-4 text-sm text-rose-600">{error}</div>
+            <div style={{ borderRadius: 14, background: `${T.red}18`, border: `1px solid ${T.red}44`, padding: "14px 18px", fontSize: 13, color: T.red }}>{error}</div>
           ) : myStaff.length === 0 ? (
-            <div className="rounded-2xl border-2 border-dashed border-slate-200 py-16 text-center">
-              <p className="text-4xl mb-3">🧹</p>
-              <p className="font-bold text-slate-700">No staff added yet</p>
-              <p className="text-sm text-slate-400 mt-1">Add your maid, cook, or driver to manage their access</p>
-              <button
-                onClick={() => setShowAdd(true)}
-                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 transition"
-              >
+            <div style={{ borderRadius: 18, border: `2px dashed ${T.border}`, padding: "64px 24px", textAlign: "center" }}>
+              <p style={{ fontSize: 36, marginBottom: 12 }}>🧹</p>
+              <p style={{ fontWeight: 700, color: T.text, fontSize: 15 }}>No staff added yet</p>
+              <p style={{ fontSize: 13, color: T.textMuted, marginTop: 4 }}>Add your maid, cook, or driver to manage their access</p>
+              <button onClick={() => setShowAdd(true)}
+                style={{ marginTop: 16, display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 12, background: `linear-gradient(135deg, ${T.gold}, ${T.goldLight})`, padding: "10px 20px", fontSize: 13, fontWeight: 700, color: "#0a0907", border: "none", cursor: "pointer" }}>
                 <Plus size={16} /> Add First Staff
               </button>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {myStaff.map(staff => (
-                <StaffCard
-                  key={staff._id}
-                  staff={staff}
-                  onBlock={handleBlock}
-                  onRemove={handleRemove}
-                  onEditSchedule={setEditTarget}
-                  blocking={blocking}
-                  removing={removing}
-                />
+                <StaffCard key={staff._id} staff={staff} onBlock={handleBlock} onRemove={handleRemove} onEditSchedule={setEditTarget} blocking={blocking} removing={removing} />
               ))}
             </div>
           )}
         </>
       )}
 
-      {/* All Society Staff tab (committee) */}
+      {/* All Society Staff tab */}
       {tab === "all" && isCommittee && (
         <>
           {allLoading ? (
-            <div className="text-center py-16 text-slate-400 text-sm">Loading…</div>
+            <div style={{ textAlign: "center", padding: "64px 0", color: T.textMuted, fontSize: 14 }}>Loading…</div>
           ) : allStaff.length === 0 ? (
-            <div className="text-center py-16 text-slate-400 text-sm">No staff registered in this society yet.</div>
+            <div style={{ textAlign: "center", padding: "64px 0", color: T.textMuted, fontSize: 14 }}>No staff registered in this society yet.</div>
           ) : (
-            <div className="space-y-3">
-              {allStaff.map(staff => (
-                <SocietyStaffCard key={staff._id} staff={staff} />
-              ))}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {allStaff.map(staff => <SocietyStaffCard key={staff._id} staff={staff} />)}
             </div>
           )}
         </>
       )}
 
-      {/* Modals */}
-      {showAdd    && <AddStaffModal    onClose={() => setShowAdd(false)}   onAdded={handleAdded}    />}
+      {showAdd    && <AddStaffModal    onClose={() => setShowAdd(false)}    onAdded={handleAdded}    />}
       {editTarget && <EditScheduleModal staff={editTarget} onClose={() => setEditTarget(null)} onUpdated={handleUpdated} />}
     </div>
   );

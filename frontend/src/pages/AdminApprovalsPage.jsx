@@ -1,13 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
+import { RefreshCw, CheckCircle, XCircle, FileText, Phone, Mail } from "lucide-react";
 import { apiRequest } from "../components/api";
 import { useAuth } from "../components/AuthContext";
-import { tok, fonts, card, fieldStyle, btn } from "../lib/tokens";
 
-function Sk() {
+const T = {
+  surface:   "#111008",
+  surfaceHi: "#181510",
+  border:    "rgba(200,145,74,0.15)",
+  borderHov: "rgba(200,145,74,0.32)",
+  gold:      "#c8914a",
+  goldLight: "#e8c47a",
+  text:      "#f5f0e8",
+  textSub:   "rgba(245,240,232,0.55)",
+  textMuted: "rgba(245,240,232,0.3)",
+  green:     "#3d9e6e",
+  red:       "#e85d5d",
+  amber:     "#d4a843",
+};
+
+function SkeletonCard() {
   return (
-    <div style={{ ...card, display: "flex", flexDirection: "column", gap: 10 }}>
-      {[80, 60, 40, 24].map((h, i) => (
-        <div key={i} style={{ height: h, borderRadius: 8, background: tok.stone100, animation: "pulse 1.5s ease-in-out infinite" }} />
+    <div style={{ borderRadius: 18, border: `1px solid ${T.border}`, background: T.surface, padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
+      {[80, 48, 32].map((h, i) => (
+        <div key={i} style={{ height: h, borderRadius: 10, background: `${T.gold}10`, animation: "pulse 1.5s ease-in-out infinite" }} />
       ))}
     </div>
   );
@@ -15,12 +30,13 @@ function Sk() {
 
 export function AdminApprovalsPage() {
   const { token, user } = useAuth();
-  const [items, setItems]           = useState([]);
-  const [error, setError]           = useState("");
-  const [loading, setLoading]       = useState(false);
-  const [rejectingId, setRejectingId] = useState(null);
+  const [items, setItems]               = useState([]);
+  const [error, setError]               = useState("");
+  const [loading, setLoading]           = useState(false);
+  const [rejectingId, setRejectingId]   = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectError, setRejectError]   = useState("");
+  const [approvingId, setApprovingId]   = useState(null);
 
   const canModerate = useMemo(() => ["committee", "super_admin"].includes(user?.role), [user?.role]);
 
@@ -34,15 +50,16 @@ export function AdminApprovalsPage() {
   }
 
   async function handleApprove(id) {
-    setError("");
+    setApprovingId(id); setError("");
     try {
       await apiRequest(`/admin/approve-resident/${id}`, { method: "PATCH", token });
       setItems(prev => prev.filter(i => i._id !== id));
     } catch (err) { setError(err.message); }
+    finally { setApprovingId(null); }
   }
 
-  function openReject(id) { setRejectingId(id); setRejectReason(""); setRejectError(""); }
-  function cancelReject() { setRejectingId(null); setRejectReason(""); setRejectError(""); }
+  function openReject(id)  { setRejectingId(id); setRejectReason(""); setRejectError(""); }
+  function cancelReject()  { setRejectingId(null); setRejectReason(""); setRejectError(""); }
 
   async function handleReject(id) {
     if (!rejectReason.trim()) { setRejectError("Please enter a reason."); return; }
@@ -58,123 +75,157 @@ export function AdminApprovalsPage() {
 
   if (!canModerate) {
     return (
-      <div style={{ ...card, fontFamily: fonts.sans, textAlign: "center", padding: 48 }}>
-        <p style={{ color: tok.stone400 }}>Only committee admins can view this page.</p>
+      <div style={{ maxWidth: 480, margin: "80px auto", textAlign: "center", padding: 24 }}>
+        <p style={{ color: T.textMuted, fontSize: 14 }}>Only committee admins can view this page.</p>
       </div>
     );
   }
 
   return (
-    <div style={{ fontFamily: fonts.sans, maxWidth: 760, margin: "0 auto", paddingBottom: 64 }}>
+    <div style={{ maxWidth: 760, margin: "0 auto", padding: "32px 16px 64px", fontFamily: "'DM Sans', sans-serif" }}>
 
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <div>
-            <h1 style={{ fontFamily: fonts.display, fontSize: 32, fontWeight: 400, color: tok.stone800, margin: 0 }}>Approvals</h1>
-            <p style={{ fontSize: 14, color: tok.stone400, marginTop: 4 }}>
-              {items.length > 0
-                ? `${items.length} resident${items.length > 1 ? "s" : ""} waiting for approval`
-                : "Resident membership requests"}
-            </p>
-          </div>
-          <button style={btn.muted} onClick={loadItems}>↻ Refresh</button>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 28, flexWrap: "wrap" }}>
+        <div>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: T.text, margin: 0 }}>Approvals</h1>
+          <p style={{ fontSize: 13, color: T.textMuted, marginTop: 4 }}>
+            {items.length > 0
+              ? `${items.length} resident${items.length > 1 ? "s" : ""} waiting for approval`
+              : "Resident membership requests"}
+          </p>
         </div>
-        {error && (
-          <div style={{ marginTop: 16, padding: "12px 16px", background: tok.roseLight, border: `1px solid ${tok.roseBorder}`, borderRadius: 12, fontSize: 14, color: tok.rose }}>
-            {error}
-          </div>
-        )}
+        <button onClick={loadItems}
+          style={{ display: "flex", alignItems: "center", gap: 6, borderRadius: 12, border: `1px solid ${T.border}`, padding: "8px 16px", background: "transparent", cursor: "pointer", color: T.textSub, fontSize: 13, fontWeight: 600, transition: "all 0.2s" }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.color = T.gold; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSub; }}>
+          <RefreshCw size={14} /> Refresh
+        </button>
       </div>
 
-      {/* List */}
-      {loading && [1, 2].map(i => <div key={i} style={{ marginBottom: 14 }}><Sk /></div>)}
-
-      {!loading && items.length === 0 && (
-        <div style={{ ...card, textAlign: "center", padding: 56 }}>
-          <div style={{ fontSize: 44, marginBottom: 12 }}>✅</div>
-          <p style={{ fontSize: 16, fontWeight: 600, color: tok.stone800 }}>All clear!</p>
-          <p style={{ fontSize: 14, color: tok.stone400, marginTop: 4 }}>No pending requests.</p>
+      {error && (
+        <div style={{ marginBottom: 20, borderRadius: 12, background: `${T.red}18`, border: `1px solid ${T.red}44`, padding: "12px 16px", fontSize: 13, color: T.red, display: "flex", alignItems: "center", gap: 8 }}>
+          <XCircle size={14} /> {error}
         </div>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {!loading && items.map(item => (
-          <article key={item._id} style={{ ...card, borderLeft: `4px solid ${tok.amber}` }}>
+      {/* Skeletons */}
+      {loading && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <SkeletonCard /><SkeletonCard />
+        </div>
+      )}
 
-            {/* Resident info */}
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 16 }}>
-              <div style={{
-                width: 48, height: 48, borderRadius: 14, flexShrink: 0,
-                background: tok.amberLight, border: `1px solid ${tok.amberBorder}`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontFamily: fonts.display, fontSize: 20, color: tok.amber,
-              }}>
-                {item.userId?.fullName?.[0]?.toUpperCase() || "?"}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 16, fontWeight: 600, color: tok.stone800, margin: "0 0 4px" }}>
-                  {item.userId?.fullName || "Resident"}
-                </p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                  {item.userId?.email && <span style={{ fontSize: 13, color: tok.stone400 }}>✉ {item.userId.email}</span>}
-                  {item.userId?.phone && <span style={{ fontSize: 13, color: tok.stone400 }}>📞 {item.userId.phone}</span>}
+      {/* Empty */}
+      {!loading && items.length === 0 && (
+        <div style={{ borderRadius: 20, border: `1px solid ${T.border}`, background: T.surface, padding: "56px 24px", textAlign: "center" }}>
+          <p style={{ fontSize: 44, marginBottom: 12 }}>✅</p>
+          <p style={{ fontSize: 16, fontWeight: 700, color: T.text }}>All clear!</p>
+          <p style={{ fontSize: 13, color: T.textMuted, marginTop: 4 }}>No pending requests.</p>
+        </div>
+      )}
+
+      {/* Cards */}
+      {!loading && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {items.map(item => (
+            <article key={item._id}
+              style={{ borderRadius: 18, border: `1px solid ${T.border}`, background: T.surface, overflow: "hidden", borderLeft: `3px solid ${T.amber}`, transition: "border-color 0.2s" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = T.borderHov}
+              onMouseLeave={e => e.currentTarget.style.borderColor = T.border}>
+
+              <div style={{ padding: 24 }}>
+                {/* Resident info */}
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 18 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 14, flexShrink: 0, background: `${T.amber}22`, border: `1px solid ${T.amber}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 700, color: T.amber }}>
+                    {item.userId?.fullName?.[0]?.toUpperCase() || "?"}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 16, fontWeight: 700, color: T.text, margin: "0 0 6px" }}>
+                      {item.userId?.fullName || "Resident"}
+                    </p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                      {item.userId?.email && (
+                        <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: T.textSub }}>
+                          <Mail size={12} color={T.textMuted} /> {item.userId.email}
+                        </span>
+                      )}
+                      {item.userId?.phone && (
+                        <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: T.textSub }}>
+                          <Phone size={12} color={T.textMuted} /> {item.userId.phone}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Details row */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
-              <span style={{ padding: "5px 12px", borderRadius: 100, background: tok.stone50, border: `1px solid ${tok.stone200}`, fontSize: 13, color: tok.stone600 }}>
-                🏠 {item.wingId?.name || "—"}-{item.unitId?.unitNumber || "—"}
-              </span>
-              {item.residentRole && (
-                <span style={{ padding: "5px 12px", borderRadius: 100, background: tok.indigoLight, border: `1px solid ${tok.indigoBorder}`, fontSize: 13, color: tok.indigo, textTransform: "capitalize" }}>
-                  {item.residentRole}
-                </span>
-              )}
-              <a
-                href={item.verificationDocUrl}
-                target="_blank" rel="noreferrer"
-                style={{ padding: "5px 12px", borderRadius: 100, background: tok.emeraldLight, border: `1px solid ${tok.emeraldBorder}`, fontSize: 13, color: tok.emerald, textDecoration: "none", fontWeight: 600 }}
-              >
-                📄 View Document
-              </a>
-            </div>
-
-            {/* Action buttons */}
-            {rejectingId !== item._id && (
-              <div style={{ display: "flex", gap: 10 }}>
-                <button style={btn.primary} onClick={() => handleApprove(item._id)}>✓ Approve</button>
-                <button
-                  style={{ ...btn.muted, color: tok.rose, borderColor: tok.roseBorder }}
-                  onClick={() => openReject(item._id)}
-                >
-                  ✕ Reject
-                </button>
-              </div>
-            )}
-
-            {/* Reject form */}
-            {rejectingId === item._id && (
-              <div style={{ padding: 16, background: tok.roseLight, border: `1px solid ${tok.roseBorder}`, borderRadius: 14, marginTop: 4 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: tok.rose, marginBottom: 10 }}>Reason for rejection</p>
-                <textarea
-                  style={{ ...fieldStyle, minHeight: 72, resize: "vertical", background: "#fff", borderColor: tok.roseBorder }}
-                  placeholder="e.g. Documents unclear, flat number mismatch…"
-                  value={rejectReason}
-                  onChange={e => setRejectReason(e.target.value)}
-                />
-                {rejectError && <p style={{ fontSize: 12, color: tok.rose, marginTop: 6 }}>{rejectError}</p>}
-                <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-                  <button style={btn.danger} onClick={() => handleReject(item._id)}>Confirm Rejection</button>
-                  <button style={btn.muted} onClick={cancelReject}>Cancel</button>
+                {/* Details pills */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+                  <span style={{ padding: "5px 12px", borderRadius: 100, background: `${T.gold}18`, border: `1px solid ${T.border}`, fontSize: 12, color: T.textSub }}>
+                    🏠 {item.wingId?.name || "—"}-{item.unitId?.unitNumber || "—"}
+                  </span>
+                  {item.residentRole && (
+                    <span style={{ padding: "5px 12px", borderRadius: 100, background: `${T.blue}18`, border: `1px solid rgba(77,141,212,0.3)`, fontSize: 12, color: "#4d8dd4", textTransform: "capitalize" }}>
+                      {item.residentRole}
+                    </span>
+                  )}
+                  {item.verificationDocUrl && (
+                    <a href={item.verificationDocUrl} target="_blank" rel="noreferrer"
+                      style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 12px", borderRadius: 100, background: `${T.green}18`, border: `1px solid ${T.green}44`, fontSize: 12, color: T.green, textDecoration: "none", fontWeight: 600 }}>
+                      <FileText size={11} /> View Document
+                    </a>
+                  )}
                 </div>
+
+                {/* Action buttons */}
+                {rejectingId !== item._id && (
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button onClick={() => handleApprove(item._id)} disabled={approvingId === item._id}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 10, background: approvingId === item._id ? `${T.green}44` : `linear-gradient(135deg, #3d9e6e, #52c48a)`, padding: "9px 18px", fontSize: 13, fontWeight: 700, color: "#fff", border: "none", cursor: approvingId === item._id ? "not-allowed" : "pointer", transition: "all 0.2s" }}
+                      onMouseEnter={e => { if (approvingId !== item._id) e.currentTarget.style.transform = "translateY(-1px)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; }}>
+                      <CheckCircle size={14} /> {approvingId === item._id ? "Approving…" : "Approve"}
+                    </button>
+                    <button onClick={() => openReject(item._id)}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 10, background: "transparent", padding: "9px 18px", fontSize: 13, fontWeight: 700, color: T.red, border: `1px solid ${T.red}44`, cursor: "pointer", transition: "all 0.2s" }}
+                      onMouseEnter={e => { e.currentTarget.style.background = `${T.red}18`; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.transform = "translateY(0)"; }}>
+                      <XCircle size={14} /> Reject
+                    </button>
+                  </div>
+                )}
+
+                {/* Reject form */}
+                {rejectingId === item._id && (
+                  <div style={{ padding: 16, background: `${T.red}12`, border: `1px solid ${T.red}33`, borderRadius: 14, marginTop: 4 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: T.red, marginBottom: 10 }}>Reason for rejection</p>
+                    <textarea
+                      style={{ width: "100%", minHeight: 72, resize: "vertical", borderRadius: 10, border: `1px solid ${T.red}44`, background: "#0f0e0b", padding: "10px 14px", color: T.text, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "'DM Sans', sans-serif" }}
+                      placeholder="e.g. Documents unclear, flat number mismatch…"
+                      value={rejectReason}
+                      onChange={e => setRejectReason(e.target.value)}
+                    />
+                    {rejectError && <p style={{ fontSize: 12, color: T.red, marginTop: 6 }}>{rejectError}</p>}
+                    <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                      <button onClick={() => handleReject(item._id)}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 10, background: T.red, padding: "9px 18px", fontSize: 13, fontWeight: 700, color: "#fff", border: "none", cursor: "pointer", transition: "all 0.2s" }}
+                        onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
+                        onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+                        Confirm Rejection
+                      </button>
+                      <button onClick={cancelReject}
+                        style={{ borderRadius: 10, background: "transparent", padding: "9px 18px", fontSize: 13, fontWeight: 600, color: T.textSub, border: `1px solid ${T.border}`, cursor: "pointer" }}
+                        onMouseEnter={e => e.currentTarget.style.color = T.text}
+                        onMouseLeave={e => e.currentTarget.style.color = T.textSub}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </article>
-        ))}
-      </div>
+            </article>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { requireTenantScope } from "../middlewares/tenant.middleware.js";
 
 const adminRouter = Router();
 
-adminRouter.use(requireAuth, requireTenantScope, requireRoles("committee", "super_admin"));
+adminRouter.use(requireAuth, requireTenantScope, requireRoles("committee", "super_admin")); //every single routes below must pass through these middlewares in order
 adminRouter.get("/pending-approvals", listPendingApprovals);
 adminRouter.get("/residents", listResidents);
 adminRouter.patch("/approve-resident/:id", approveResident);

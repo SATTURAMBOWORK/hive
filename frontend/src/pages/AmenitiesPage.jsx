@@ -4,7 +4,22 @@ import { AmenityGrid } from "../components/AmenityGrid";
 import { apiRequest } from "../components/api";
 import { BookingForm } from "../components/BookingForm";
 import { useAuth } from "../components/AuthContext";
-import { tok, fonts, card, fieldStyle, btn } from "../lib/tokens";
+import { RefreshCw, Plus } from "lucide-react";
+
+// ── Design tokens ────────────────────────────────────────────────
+const T = {
+  surface:   "#111008",
+  border:    "rgba(200,145,74,0.15)",
+  borderHov: "rgba(200,145,74,0.35)",
+  gold:      "#c8914a",
+  goldLight: "#e8c47a",
+  text:      "#f5f0e8",
+  textSub:   "rgba(245,240,232,0.55)",
+  textMuted: "rgba(245,240,232,0.3)",
+  green:     "#3d9e6e",
+  red:       "#e85d5d",
+  amber:     "#d4a843",
+};
 
 const DAY_KEYS = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
 
@@ -16,11 +31,40 @@ function buildOperatingHours(open, close) {
 }
 
 const BOOKING_STATUS_CFG = {
-  pending:   { bg: tok.amberLight,   color: tok.amber,   border: tok.amberBorder,   emoji: "🟡" },
-  approved:  { bg: tok.emeraldLight, color: tok.emerald, border: tok.emeraldBorder, emoji: "🟢" },
-  rejected:  { bg: tok.roseLight,    color: tok.rose,    border: tok.roseBorder,    emoji: "🔴" },
-  cancelled: { bg: tok.stone100,     color: tok.stone600, border: tok.stone200,     emoji: "⚪" },
+  pending:   { color: T.amber  },
+  approved:  { color: T.green  },
+  rejected:  { color: T.red    },
+  cancelled: { color: T.textMuted },
 };
+
+const inputStyle = {
+  width: "100%", borderRadius: 12, border: `1px solid ${T.border}`,
+  background: "#0f0e0b", padding: "10px 14px",
+  color: T.text, fontSize: 14, outline: "none",
+  transition: "border-color 0.2s, box-shadow 0.2s", boxSizing: "border-box",
+};
+
+function Label({ children }) {
+  return <p style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>{children}</p>;
+}
+
+function FocusInput({ style: extraStyle = {}, ...props }) {
+  return (
+    <input style={{ ...inputStyle, ...extraStyle }}
+      onFocus={e => { e.target.style.borderColor = T.gold; e.target.style.boxShadow = `0 0 0 3px ${T.gold}22`; }}
+      onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = "none"; }}
+      {...props} />
+  );
+}
+
+function FocusTextarea({ style: extraStyle = {}, ...props }) {
+  return (
+    <textarea style={{ ...inputStyle, minHeight: 80, resize: "vertical", ...extraStyle }}
+      onFocus={e => { e.target.style.borderColor = T.gold; e.target.style.boxShadow = `0 0 0 3px ${T.gold}22`; }}
+      onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = "none"; }}
+      {...props} />
+  );
+}
 
 export function AmenitiesPage() {
   const { token, user } = useAuth();
@@ -31,47 +75,34 @@ export function AmenitiesPage() {
   const [bookingError, setBookingError]     = useState("");
   const [error, setError]                   = useState("");
 
-  const [name, setName]             = useState("");
+  const [name, setName]               = useState("");
   const [description, setDescription] = useState("");
-  const [capacity, setCapacity]     = useState(1);
+  const [capacity, setCapacity]       = useState(1);
   const [isAutoApprove, setIsAutoApprove] = useState(false);
-  const [openTime, setOpenTime]     = useState("06:00");
-  const [closeTime, setCloseTime]   = useState("22:00");
-  const [photoFiles, setPhotoFiles] = useState([]);
+  const [openTime, setOpenTime]       = useState("06:00");
+  const [closeTime, setCloseTime]     = useState("22:00");
+  const [photoFiles, setPhotoFiles]   = useState([]);
   const [isUploading, setIsUploading] = useState(false);
 
-  const canManage = useMemo(
-    () => ["committee", "super_admin"].includes(user?.role),
-    [user?.role]
-  );
-
-  const pendingBookings = useMemo(
-    () => bookings.filter(b => b.status === "pending"),
-    [bookings]
-  );
+  const canManage = useMemo(() => ["committee", "super_admin"].includes(user?.role), [user?.role]);
+  const pendingBookings = useMemo(() => bookings.filter(b => b.status === "pending"), [bookings]);
 
   async function loadAmenities() {
     const data = await apiRequest("/amenities", { token });
     setAmenities(data.items || []);
   }
-
   async function loadBookings() {
     const data = await apiRequest("/amenities/bookings", { token });
     setBookings(data.items || []);
   }
-
   async function loadAll() {
     setError("");
-    try {
-      await Promise.all([loadAmenities(), loadBookings()]);
-    } catch (err) {
-      setError(err.message);
-    }
+    try { await Promise.all([loadAmenities(), loadBookings()]); }
+    catch (err) { setError(err.message); }
   }
 
   async function handleCreateAmenity(event) {
-    event.preventDefault();
-    setError("");
+    event.preventDefault(); setError("");
     try {
       let photos = [];
       if (photoFiles.length > 0) {
@@ -89,10 +120,7 @@ export function AmenitiesPage() {
       setAmenities(prev => [...prev, data.item]);
       setName(""); setDescription(""); setCapacity(1); setIsAutoApprove(false);
       setOpenTime("06:00"); setCloseTime("22:00"); setPhotoFiles([]);
-    } catch (err) {
-      setIsUploading(false);
-      setError(err.message);
-    }
+    } catch (err) { setIsUploading(false); setError(err.message); }
   }
 
   async function handleCreateBooking(payload) {
@@ -104,9 +132,7 @@ export function AmenitiesPage() {
     } catch (err) {
       setError(err.message);
       setBookingError(err.message || "Failed to create booking");
-    } finally {
-      setIsBookingSubmitting(false);
-    }
+    } finally { setIsBookingSubmitting(false); }
   }
 
   async function handleStatusUpdate(bookingId, status) {
@@ -114,137 +140,120 @@ export function AmenitiesPage() {
     try {
       const data = await apiRequest(`/amenities/bookings/${bookingId}/status`, { method: "PATCH", token, body: { status } });
       setBookings(prev => prev.map(item => item._id === bookingId ? data.item : item));
-    } catch (err) {
-      setError(err.message);
-    }
+    } catch (err) { setError(err.message); }
   }
 
   useEffect(() => { loadAll(); }, []);
 
   return (
-    <div style={{ fontFamily: fonts.sans, maxWidth: 900, margin: "0 auto", paddingBottom: 64 }}>
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 16px 64px", fontFamily: "'DM Sans', sans-serif" }}>
 
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <div>
-            <h1 style={{ fontFamily: fonts.display, fontSize: 32, fontWeight: 400, color: tok.stone800, margin: 0 }}>Amenities</h1>
-            <p style={{ fontSize: 14, color: tok.stone400, marginTop: 4 }}>Book shared facilities in your society</p>
-          </div>
-          <button style={btn.muted} onClick={loadAll}>↻ Refresh</button>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 28, flexWrap: "wrap" }}>
+        <div>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: T.text, margin: 0 }}>Amenities</h1>
+          <p style={{ fontSize: 13, color: T.textMuted, marginTop: 4 }}>Book shared facilities in your society</p>
         </div>
-        {error && (
-          <div style={{ marginTop: 16, padding: "12px 16px", background: tok.roseLight, border: `1px solid ${tok.roseBorder}`, borderRadius: 12, fontSize: 14, color: tok.rose }}>
-            {error}
-          </div>
-        )}
+        <button onClick={loadAll}
+          style={{ display: "flex", alignItems: "center", gap: 6, borderRadius: 12, border: `1px solid ${T.border}`, padding: "8px 14px", background: "transparent", cursor: "pointer", color: T.textSub, fontSize: 13, fontWeight: 600, transition: "all 0.2s" }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.color = T.gold; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSub; }}>
+          <RefreshCw size={14} /> Refresh
+        </button>
       </div>
 
-      {/* Create form — admin only */}
+      {error && (
+        <div style={{ marginBottom: 20, borderRadius: 12, background: `${T.red}18`, border: `1px solid ${T.red}44`, padding: "12px 16px", fontSize: 13, color: T.red }}>
+          {error}
+        </div>
+      )}
+
+      {/* Create form — committee only */}
       {canManage && (
-        <div style={{ ...card, marginBottom: 28 }}>
-          <h2 style={{ fontFamily: fonts.display, fontSize: 20, fontWeight: 400, color: tok.stone800, margin: "0 0 16px" }}>
-            Add Amenity
+        <div style={{ borderRadius: 18, border: `1px solid ${T.border}`, background: T.surface, padding: 24, marginBottom: 28 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: T.text, margin: "0 0 20px", display: "flex", alignItems: "center", gap: 8 }}>
+            <Plus size={16} color={T.gold} /> Add Amenity
           </h2>
-          <form onSubmit={handleCreateAmenity} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <input style={fieldStyle} placeholder="Amenity name (e.g. Swimming Pool)" value={name} onChange={e => setName(e.target.value)} required />
-            <textarea style={{ ...fieldStyle, minHeight: 80, resize: "vertical" }} placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
+          <form onSubmit={handleCreateAmenity} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <FocusInput placeholder="Amenity name (e.g. Swimming Pool)" value={name} onChange={e => setName(e.target.value)} required />
+            <FocusTextarea placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: tok.stone400, letterSpacing: "0.07em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>
-                  Capacity
-                </label>
-                <input style={fieldStyle} type="number" min="1" value={capacity} onChange={e => setCapacity(e.target.value)} />
+                <Label>Capacity</Label>
+                <FocusInput type="number" min="1" value={capacity} onChange={e => setCapacity(e.target.value)} />
               </div>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <label style={{
-                  display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
-                  padding: "10px 14px", background: isAutoApprove ? tok.emeraldLight : tok.stone50,
-                  border: `1px solid ${isAutoApprove ? tok.emeraldBorder : tok.stone200}`,
-                  borderRadius: 12, fontSize: 14, color: isAutoApprove ? tok.emerald : tok.stone600,
-                  fontWeight: 500, width: "100%", marginTop: 22,
-                }}>
-                  <input
-                    type="checkbox"
-                    checked={isAutoApprove}
-                    onChange={e => setIsAutoApprove(e.target.checked)}
-                    style={{ width: 16, height: 16, accentColor: tok.emerald }}
-                  />
+              <div style={{ display: "flex", alignItems: "flex-end" }}>
+                <label
+                  onClick={() => setIsAutoApprove(v => !v)}
+                  style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "10px 14px", background: isAutoApprove ? `${T.green}18` : "transparent", border: `1px solid ${isAutoApprove ? T.green : T.border}`, borderRadius: 12, fontSize: 13, color: isAutoApprove ? T.green : T.textSub, fontWeight: 500, width: "100%", marginTop: 22, transition: "all 0.2s", boxSizing: "border-box" }}>
+                  <div style={{ width: 36, height: 20, borderRadius: 100, background: isAutoApprove ? T.green : `${T.gold}30`, position: "relative", transition: "background 0.2s", flexShrink: 0 }}>
+                    <div style={{ position: "absolute", top: 2, left: isAutoApprove ? 18 : 2, width: 16, height: 16, borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
+                  </div>
                   ⚡ Auto-approve bookings
                 </label>
               </div>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: tok.stone400, letterSpacing: "0.07em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Opens</label>
-                <input style={fieldStyle} type="time" value={openTime} onChange={e => setOpenTime(e.target.value)} />
-              </div>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: tok.stone400, letterSpacing: "0.07em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Closes</label>
-                <input style={fieldStyle} type="time" value={closeTime} onChange={e => setCloseTime(e.target.value)} />
-              </div>
+              <div><Label>Opens</Label><FocusInput type="time" value={openTime} onChange={e => setOpenTime(e.target.value)} /></div>
+              <div><Label>Closes</Label><FocusInput type="time" value={closeTime} onChange={e => setCloseTime(e.target.value)} /></div>
             </div>
 
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: tok.stone400, letterSpacing: "0.07em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>
-                Photos (up to 5, max 5 MB each)
-              </label>
-              <input
-                style={{ ...fieldStyle, cursor: "pointer" }}
-                type="file" accept="image/*" multiple
-                onChange={e => setPhotoFiles(Array.from(e.target.files).slice(0, 5))}
-              />
+              <Label>Photos (up to 5, max 5 MB each)</Label>
+              <input type="file" accept="image/*" multiple
+                style={{ ...inputStyle, cursor: "pointer" }}
+                onChange={e => setPhotoFiles(Array.from(e.target.files).slice(0, 5))} />
               {photoFiles.length > 0 && (
-                <p style={{ fontSize: 12, color: tok.stone400, marginTop: 6 }}>
+                <p style={{ fontSize: 12, color: T.textMuted, marginTop: 6 }}>
                   {photoFiles.length} file{photoFiles.length > 1 ? "s" : ""} selected
                 </p>
               )}
             </div>
 
-            <div>
-              <button style={btn.primary} type="submit" disabled={isUploading}>
-                {isUploading ? "Uploading photos…" : "🏊 Add Amenity"}
-              </button>
-            </div>
+            <button type="submit" disabled={isUploading}
+              style={{ display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 12, background: isUploading ? `${T.gold}44` : `linear-gradient(135deg, ${T.gold}, ${T.goldLight})`, padding: "11px 22px", fontSize: 13, fontWeight: 700, color: "#0a0907", border: "none", cursor: isUploading ? "not-allowed" : "pointer", transition: "all 0.2s", alignSelf: "flex-start" }}
+              onMouseEnter={e => { if (!isUploading) e.currentTarget.style.transform = "translateY(-1px)"; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; }}>
+              {isUploading ? "Uploading photos…" : "🏊 Add Amenity"}
+            </button>
           </form>
         </div>
       )}
 
       {/* Amenity grid */}
       <div style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 13, fontWeight: 700, color: tok.stone400, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16 }}>
+        <p style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 16 }}>
           Available Facilities
-        </h2>
+        </p>
         <AmenityGrid amenities={amenities} onBook={setActiveAmenity} />
       </div>
 
       {/* Bookings list */}
       {bookings.length > 0 && (
         <div style={{ marginBottom: 32 }}>
-          <h2 style={{ fontSize: 13, fontWeight: 700, color: tok.stone400, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 16 }}>
             My Bookings
-          </h2>
+          </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {bookings.map(item => {
               const cfg = BOOKING_STATUS_CFG[item.status] || BOOKING_STATUS_CFG.pending;
               return (
-                <article key={item._id} style={{ ...card, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "16px 20px" }}>
+                <article key={item._id}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "16px 20px", borderRadius: 16, border: `1px solid ${T.border}`, background: T.surface, transition: "border-color 0.2s" }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = T.borderHov}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = T.border}>
                   <div>
-                    <p style={{ fontSize: 15, fontWeight: 600, color: tok.stone800, margin: "0 0 4px" }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: T.text, margin: "0 0 4px" }}>
                       {item.amenityId?.name || item.amenityName}
                     </p>
-                    <p style={{ fontSize: 13, color: tok.stone600, margin: 0 }}>
+                    <p style={{ fontSize: 12, color: T.textSub, margin: 0 }}>
                       📅 {item.date} · {item.startTime}–{item.endTime}
                     </p>
                   </div>
-                  <span style={{
-                    flexShrink: 0, padding: "4px 12px", borderRadius: 100, fontSize: 11, fontWeight: 700,
-                    background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`,
-                    textTransform: "capitalize", whiteSpace: "nowrap",
-                  }}>
-                    {cfg.emoji} {item.status}
+                  <span style={{ flexShrink: 0, padding: "4px 12px", borderRadius: 100, fontSize: 11, fontWeight: 700, background: `${cfg.color}22`, color: cfg.color, border: `1px solid ${cfg.color}44`, textTransform: "capitalize", whiteSpace: "nowrap" }}>
+                    {item.status}
                   </span>
                 </article>
               );
@@ -256,9 +265,9 @@ export function AmenitiesPage() {
       {/* Admin approval queue */}
       {canManage && pendingBookings.length > 0 && (
         <div>
-          <h2 style={{ fontSize: 13, fontWeight: 700, color: tok.stone400, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 16 }}>
             Pending Approvals ({pendingBookings.length})
-          </h2>
+          </p>
           <AdminManager items={pendingBookings} onStatusUpdate={handleStatusUpdate} />
         </div>
       )}

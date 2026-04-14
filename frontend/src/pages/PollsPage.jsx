@@ -7,13 +7,211 @@ import { useAuth } from "../components/AuthContext";
 import { apiRequest } from "../components/api";
 import { getSocket } from "../components/socket";
 
-// ── Constants ────────────────────────────────────────────────────
+/* ─── Design tokens ──────────────────────────────────────────── */
+const T = {
+  bg:          "#0a0907",
+  surface:     "#111008",
+  surfaceRaised: "#181510",
+  border:      "rgba(200,145,74,0.12)",
+  borderHover: "rgba(200,145,74,0.28)",
+  gold:        "#c8914a",
+  goldLight:   "#e8c47a",
+  textPrimary: "#f5f0e8",
+  textSecondary: "rgba(245,240,232,0.55)",
+  textMuted:   "rgba(245,240,232,0.3)",
+  green:       "#3d9e6e",
+  red:         "#e85d5d",
+  amber:       "#d4a843",
+  blue:        "#4d8dd4",
+};
 
-const inputCls =
-  "w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-900 " +
-  "placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none " +
-  "focus:ring-1 focus:ring-emerald-500 text-sm transition-colors";
+/* ─── Injected CSS ───────────────────────────────────────────── */
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600&display=swap');
 
+  .pp-card {
+    background: ${T.surface};
+    border: 1px solid ${T.border};
+    border-radius: 16px;
+    transition: border-color 0.25s, box-shadow 0.25s;
+    overflow: hidden;
+  }
+  .pp-card:hover {
+    border-color: ${T.borderHover};
+    box-shadow: 0 4px 24px rgba(200,145,74,0.09);
+  }
+  .pp-input {
+    width: 100%;
+    background: #0f0e0b;
+    border: 1px solid rgba(200,145,74,0.2);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: ${T.textPrimary};
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+  }
+  .pp-input::placeholder { color: ${T.textMuted}; }
+  .pp-input:focus {
+    border-color: ${T.gold};
+    box-shadow: 0 0 0 3px rgba(200,145,74,0.15);
+  }
+  .pp-btn-gold {
+    display: flex; align-items: center; gap: 7px;
+    background: linear-gradient(135deg, ${T.gold}, ${T.goldLight});
+    color: #0a0907;
+    border: none;
+    border-radius: 10px;
+    padding: 9px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  .pp-btn-gold:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(200,145,74,0.35);
+  }
+  .pp-btn-gold:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+  .pp-btn-ghost {
+    display: flex; align-items: center; gap: 6px;
+    background: none;
+    border: 1px solid ${T.border};
+    border-radius: 10px;
+    padding: 8px 14px;
+    color: ${T.textSecondary};
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .pp-btn-ghost:hover {
+    border-color: ${T.borderHover};
+    color: ${T.textPrimary};
+    transform: translateY(-1px);
+  }
+  .pp-btn-danger {
+    display: flex; align-items: center; gap: 5px;
+    background: rgba(232,93,93,0.08);
+    border: 1px solid rgba(232,93,93,0.25);
+    border-radius: 8px;
+    padding: 5px 11px;
+    color: ${T.red};
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .pp-btn-danger:hover { background: rgba(232,93,93,0.15); transform: translateY(-1px); }
+  .pp-btn-amber {
+    display: flex; align-items: center; gap: 5px;
+    background: rgba(212,168,67,0.08);
+    border: 1px solid rgba(212,168,67,0.25);
+    border-radius: 8px;
+    padding: 5px 11px;
+    color: ${T.amber};
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .pp-btn-amber:hover { background: rgba(212,168,67,0.15); transform: translateY(-1px); }
+  .pp-option-btn {
+    width: 100%;
+    text-align: left;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid ${T.border};
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: ${T.textSecondary};
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .pp-option-btn:hover {
+    border-color: ${T.borderHover};
+    color: ${T.textPrimary};
+  }
+  .pp-option-btn.selected {
+    border-color: ${T.gold};
+    background: rgba(200,145,74,0.08);
+    color: ${T.gold};
+    box-shadow: 0 0 0 1px rgba(200,145,74,0.2);
+  }
+  .pp-tab {
+    padding: 8px 20px;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    color: ${T.textMuted};
+    background: transparent;
+    text-transform: capitalize;
+  }
+  .pp-tab.active {
+    background: rgba(200,145,74,0.12);
+    color: ${T.gold};
+  }
+  .pp-tab:hover:not(.active) { color: ${T.textSecondary}; }
+
+  /* Pulse dot for active polls */
+  @keyframes ppPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.5; transform: scale(1.5); }
+  }
+  .pp-pulse { animation: ppPulse 1.5s ease-in-out infinite; }
+
+  /* Skeleton */
+  @keyframes ppSkeleton {
+    0%   { background-position: -200% center; }
+    100% { background-position:  200% center; }
+  }
+  .pp-skel {
+    border-radius: 12px;
+    background: linear-gradient(90deg, #181510 25%, #201c14 50%, #181510 75%);
+    background-size: 200% 100%;
+    animation: ppSkeleton 1.4s ease infinite;
+  }
+
+  /* Modal scrollbar */
+  .pp-modal-body::-webkit-scrollbar { width: 4px; }
+  .pp-modal-body::-webkit-scrollbar-track { background: transparent; }
+  .pp-modal-body::-webkit-scrollbar-thumb { background: rgba(200,145,74,0.25); border-radius: 4px; }
+
+  /* Toggle */
+  .pp-toggle {
+    width: 36px; height: 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+    border: none;
+  }
+  .pp-toggle-knob {
+    position: absolute;
+    top: 2px; height: 16px; width: 16px;
+    border-radius: 50%;
+    background: white;
+    transition: left 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  }
+`;
+
+/* ─── Helpers ────────────────────────────────────────────────── */
 function fmtDate(d) {
   if (!d) return null;
   return new Date(d).toLocaleDateString("en-IN", {
@@ -34,35 +232,48 @@ function timeLeft(endsAt) {
   return `${m}m left`;
 }
 
-// ── Vote Progress Bar ────────────────────────────────────────────
+/* ─── Vote Progress Bar ──────────────────────────────────────── */
 function VoteBar({ option, totalVotes, isMyChoice }) {
   const pct = totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
 
   return (
-    <div className={`rounded-xl border p-3.5 transition-all ${
-      isMyChoice
-        ? "border-emerald-300 bg-emerald-50"
-        : "border-slate-200 bg-white"
-    }`}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          {isMyChoice && <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />}
-          <span className="text-sm font-semibold text-slate-800">{option.text}</span>
+    <div style={{
+      borderRadius: 10,
+      border: `1px solid ${isMyChoice ? T.gold : T.border}`,
+      background: isMyChoice ? "rgba(200,145,74,0.07)" : "rgba(255,255,255,0.02)",
+      padding: "12px 14px",
+      transition: "all 0.25s",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          {isMyChoice && <CheckCircle2 size={13} color={T.gold} />}
+          <span style={{ fontSize: "0.875rem", fontWeight: 500, color: isMyChoice ? T.goldLight : T.textPrimary }}>
+            {option.text}
+          </span>
         </div>
-        <span className="text-sm font-black text-slate-700">{pct}%</span>
+        <span style={{ fontSize: "0.875rem", fontWeight: 700, color: isMyChoice ? T.gold : T.textSecondary }}>{pct}%</span>
       </div>
-      <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+      <div style={{ height: 5, width: "100%", borderRadius: 4, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
         <div
-          className={`h-full rounded-full transition-all duration-700 ${isMyChoice ? "bg-emerald-500" : "bg-slate-300"}`}
-          style={{ width: `${pct}%` }}
+          style={{
+            height: "100%",
+            borderRadius: 4,
+            width: `${pct}%`,
+            background: isMyChoice
+              ? `linear-gradient(90deg, ${T.gold}, ${T.goldLight})`
+              : "rgba(245,240,232,0.2)",
+            transition: "width 0.7s ease",
+          }}
         />
       </div>
-      <p className="mt-1.5 text-xs text-slate-400">{option.votes} vote{option.votes !== 1 ? "s" : ""}</p>
+      <p style={{ marginTop: 5, fontSize: "0.75rem", color: T.textMuted }}>
+        {option.votes} vote{option.votes !== 1 ? "s" : ""}
+      </p>
     </div>
   );
 }
 
-// ── Poll Card ─────────────────────────────────────────────────────
+/* ─── Poll Card ──────────────────────────────────────────────── */
 function PollCard({ poll, onVote, onClose, onDelete, voting, closing, deleting }) {
   const { user } = useAuth();
   const isCommittee = user?.role === "committee" || user?.role === "super_admin";
@@ -72,7 +283,6 @@ function PollCard({ poll, onVote, onClose, onDelete, voting, closing, deleting }
   const myVoteSet  = new Set((poll.myVote || []).map(String));
   const [selected, setSelected] = useState([]);
 
-  // Reset selection when poll changes
   useEffect(() => { setSelected([]); }, [poll._id]);
 
   function toggleOption(optId) {
@@ -89,51 +299,87 @@ function PollCard({ poll, onVote, onClose, onDelete, voting, closing, deleting }
   const showResults = hasVoted || !isOpen;
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div className="pp-card">
       {/* Header */}
-      <div className="px-6 py-5 border-b border-slate-100">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 flex-wrap mb-1">
+      <div style={{
+        padding: "20px 22px",
+        borderBottom: `1px solid ${T.border}`,
+      }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            {/* Status badges */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
               {isOpen ? (
-                <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Active
+                <span style={{
+                  display: "flex", alignItems: "center", gap: 5,
+                  background: "rgba(61,158,110,0.12)",
+                  border: "1px solid rgba(61,158,110,0.25)",
+                  borderRadius: 100,
+                  padding: "3px 10px",
+                  fontSize: "0.72rem", fontWeight: 700, color: T.green,
+                  letterSpacing: "0.04em",
+                }}>
+                  <span className="pp-pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: T.green, display: "inline-block" }} />
+                  ACTIVE
                 </span>
               ) : (
-                <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500">
-                  <Lock size={10} /> Closed
+                <span style={{
+                  display: "flex", alignItems: "center", gap: 5,
+                  background: "rgba(245,240,232,0.05)",
+                  border: `1px solid ${T.border}`,
+                  borderRadius: 100,
+                  padding: "3px 10px",
+                  fontSize: "0.72rem", fontWeight: 700, color: T.textMuted,
+                  letterSpacing: "0.04em",
+                }}>
+                  <Lock size={9} /> CLOSED
                 </span>
               )}
               {poll.allowMultiple && (
-                <span className="rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-bold text-violet-700">
-                  Multi-choice
+                <span style={{
+                  background: "rgba(77,141,212,0.1)",
+                  border: "1px solid rgba(77,141,212,0.2)",
+                  borderRadius: 100,
+                  padding: "3px 10px",
+                  fontSize: "0.72rem", fontWeight: 700, color: T.blue,
+                  letterSpacing: "0.04em",
+                }}>
+                  MULTI-CHOICE
                 </span>
               )}
             </div>
-            <h3 className="text-base font-black text-slate-900">{poll.title}</h3>
+            <h3 style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "1.15rem", fontWeight: 600,
+              color: T.textPrimary, margin: 0,
+              lineHeight: 1.35,
+            }}>
+              {poll.title}
+            </h3>
             {poll.description && (
-              <p className="mt-1 text-sm text-slate-500">{poll.description}</p>
+              <p style={{ marginTop: 5, fontSize: "0.84rem", color: T.textSecondary, lineHeight: 1.5 }}>
+                {poll.description}
+              </p>
             )}
           </div>
 
           {/* Committee actions */}
           {isCommittee && (
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
               {isOpen && (
                 <button
+                  className="pp-btn-amber"
                   onClick={() => onClose(poll._id)}
                   disabled={closing === poll._id}
-                  className="flex items-center gap-1 rounded-lg border border-amber-200 px-2.5 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-50 transition disabled:opacity-50"
                 >
                   <Lock size={11} />
                   {closing === poll._id ? "…" : "Close"}
                 </button>
               )}
               <button
+                className="pp-btn-danger"
                 onClick={() => onDelete(poll._id)}
                 disabled={deleting === poll._id}
-                className="flex items-center gap-1 rounded-lg border border-rose-200 px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition disabled:opacity-50"
               >
                 <Trash2 size={11} />
                 {deleting === poll._id ? "…" : "Delete"}
@@ -142,26 +388,27 @@ function PollCard({ poll, onVote, onClose, onDelete, voting, closing, deleting }
           )}
         </div>
 
-        {/* Meta */}
-        <div className="mt-3 flex items-center gap-4 text-xs text-slate-400">
-          <span className="flex items-center gap-1">
+        {/* Meta row */}
+        <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: "0.78rem", color: T.textMuted }}>
             <Users size={11} />
             {poll.totalVotes} vote{poll.totalVotes !== 1 ? "s" : ""}
           </span>
           {timeStr && (
-            <span className="flex items-center gap-1">
+            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: "0.78rem", color: T.textMuted }}>
               <Clock size={11} />
               {timeStr}
             </span>
           )}
-          <span>by {poll.createdBy?.fullName || "Committee"}</span>
+          <span style={{ fontSize: "0.78rem", color: T.textMuted }}>
+            by {poll.createdBy?.fullName || "Committee"}
+          </span>
         </div>
       </div>
 
-      {/* Options */}
-      <div className="px-6 py-5 space-y-2.5">
+      {/* Options area */}
+      <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 10 }}>
         {showResults ? (
-          // ── Results view — show progress bars ──
           <>
             {poll.options.map(opt => (
               <VoteBar
@@ -172,15 +419,14 @@ function PollCard({ poll, onVote, onClose, onDelete, voting, closing, deleting }
               />
             ))}
             {hasVoted && (
-              <p className="pt-1 text-center text-xs text-emerald-600 font-semibold">
+              <p style={{ textAlign: "center", fontSize: "0.8rem", color: T.green, fontWeight: 600, marginTop: 4 }}>
                 ✓ Your vote has been recorded
               </p>
             )}
           </>
         ) : (
-          // ── Voting view — show selectable options ──
           <>
-            <p className="text-xs text-slate-400 mb-3">
+            <p style={{ fontSize: "0.78rem", color: T.textMuted, marginBottom: 4 }}>
               {poll.allowMultiple ? "Select all that apply" : "Select one option"}
             </p>
             {poll.options.map(opt => {
@@ -189,28 +435,28 @@ function PollCard({ poll, onVote, onClose, onDelete, voting, closing, deleting }
                 <button
                   key={opt._id}
                   onClick={() => toggleOption(String(opt._id))}
-                  className={`w-full text-left rounded-xl border px-4 py-3 text-sm font-semibold transition-all ${
-                    isSelected
-                      ? "border-emerald-400 bg-emerald-50 text-emerald-800 shadow-sm"
-                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
-                  }`}
+                  className={`pp-option-btn${isSelected ? " selected" : ""}`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`h-4 w-4 shrink-0 rounded-full border-2 flex items-center justify-center transition-all ${
-                      isSelected ? "border-emerald-500 bg-emerald-500" : "border-slate-300"
-                    }`}>
-                      {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
-                    </div>
-                    {opt.text}
+                  <div style={{
+                    width: 16, height: 16,
+                    borderRadius: poll.allowMultiple ? 4 : "50%",
+                    border: `2px solid ${isSelected ? T.gold : T.border}`,
+                    background: isSelected ? T.gold : "transparent",
+                    flexShrink: 0,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    transition: "all 0.15s",
+                  }}>
+                    {isSelected && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#0a0907" }} />}
                   </div>
+                  {opt.text}
                 </button>
               );
             })}
-
             <button
+              className="pp-btn-gold"
               onClick={() => onVote(poll._id, selected)}
               disabled={selected.length === 0 || voting === poll._id}
-              className="mt-3 w-full rounded-xl bg-emerald-600 py-3 text-sm font-black text-white shadow-sm hover:bg-emerald-500 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ marginTop: 6, justifyContent: "center", padding: "11px" }}
             >
               {voting === poll._id ? "Submitting…" : "Submit Vote"}
             </button>
@@ -221,7 +467,7 @@ function PollCard({ poll, onVote, onClose, onDelete, voting, closing, deleting }
   );
 }
 
-// ── Create Poll Modal ─────────────────────────────────────────────
+/* ─── Create Poll Modal ──────────────────────────────────────── */
 function CreatePollModal({ onClose, onCreated }) {
   const { token } = useAuth();
   const [saving, setSaving]   = useState(false);
@@ -275,22 +521,50 @@ function CreatePollModal({ onClose, onCreated }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-3xl bg-white shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <h2 className="font-black text-slate-900">Create Poll</h2>
-          <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-slate-100 transition">
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 50,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      background: "rgba(0,0,0,0.6)",
+      backdropFilter: "blur(8px)",
+      padding: 16,
+    }}>
+      <div style={{
+        width: "100%", maxWidth: 460,
+        background: "#0f0e0b",
+        border: `1px solid ${T.border}`,
+        borderRadius: 20,
+        overflow: "hidden",
+        boxShadow: "0 24px 64px rgba(0,0,0,0.6)",
+      }}>
+        {/* Modal header */}
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "18px 22px",
+          borderBottom: `1px solid ${T.border}`,
+        }}>
+          <h2 style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: "1.2rem", fontWeight: 600, color: T.textPrimary, margin: 0,
+          }}>
+            Create Poll
+          </h2>
+          <button
+            onClick={onClose}
+            style={{ background: "none", border: "none", cursor: "pointer", color: T.textMuted, padding: 4 }}
+          >
             <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="pp-modal-body" style={{ padding: 22, overflowY: "auto", maxHeight: "75vh", display: "flex", flexDirection: "column", gap: 16 }}>
           {/* Title */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Question</label>
+            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: T.textMuted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 7 }}>
+              Question
+            </label>
             <input
               required
-              className={inputCls}
+              className="pp-input"
               placeholder="e.g. Which day should we hold the AGM?"
               value={title}
               onChange={e => setTitle(e.target.value)}
@@ -299,10 +573,13 @@ function CreatePollModal({ onClose, onCreated }) {
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Description <span className="font-normal normal-case text-slate-400">(optional)</span></label>
+            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: T.textMuted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 7 }}>
+              Description <span style={{ fontWeight: 400, textTransform: "none" }}>(optional)</span>
+            </label>
             <textarea
               rows={2}
-              className={inputCls}
+              className="pp-input"
+              style={{ resize: "vertical" }}
               placeholder="Add context for residents…"
               value={description}
               onChange={e => setDescription(e.target.value)}
@@ -311,50 +588,73 @@ function CreatePollModal({ onClose, onCreated }) {
 
           {/* Options */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Options</label>
-            <div className="space-y-2">
+            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: T.textMuted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 7 }}>
+              Options
+            </label>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {options.map((opt, i) => (
-                <div key={i} className="flex gap-2 items-center">
+                <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <input
-                    className={inputCls}
+                    className="pp-input"
                     placeholder={`Option ${i + 1}`}
                     value={opt}
                     onChange={e => updateOption(i, e.target.value)}
                   />
                   {options.length > 2 && (
-                    <button type="button" onClick={() => removeOption(i)}
-                      className="shrink-0 rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition">
-                      <X size={14} />
+                    <button
+                      type="button"
+                      onClick={() => removeOption(i)}
+                      style={{
+                        flexShrink: 0, width: 30, height: 30,
+                        borderRadius: 8, background: "rgba(232,93,93,0.08)",
+                        border: "1px solid rgba(232,93,93,0.2)",
+                        color: T.red, cursor: "pointer", display: "flex",
+                        alignItems: "center", justifyContent: "center",
+                      }}
+                    >
+                      <X size={13} />
                     </button>
                   )}
                 </div>
               ))}
             </div>
             {options.length < 10 && (
-              <button type="button" onClick={addOption}
-                className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition">
+              <button
+                type="button"
+                onClick={addOption}
+                style={{
+                  marginTop: 8, background: "none", border: "none",
+                  display: "flex", alignItems: "center", gap: 5,
+                  fontSize: "0.8rem", fontWeight: 600, color: T.gold, cursor: "pointer",
+                  padding: 0,
+                }}
+              >
                 <Plus size={13} /> Add option
               </button>
             )}
           </div>
 
-          {/* Allow multiple */}
-          <label className="flex items-center gap-3 cursor-pointer">
-            <div
+          {/* Allow multiple toggle */}
+          <label style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+            <button
+              type="button"
+              className="pp-toggle"
+              style={{ background: allowMultiple ? T.gold : "rgba(255,255,255,0.08)" }}
               onClick={() => setAllowMultiple(v => !v)}
-              className={`h-5 w-9 rounded-full transition-all relative ${allowMultiple ? "bg-emerald-500" : "bg-slate-200"}`}
             >
-              <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${allowMultiple ? "left-4" : "left-0.5"}`} />
-            </div>
-            <span className="text-sm font-semibold text-slate-700">Allow multiple choices</span>
+              <div className="pp-toggle-knob" style={{ left: allowMultiple ? 18 : 2 }} />
+            </button>
+            <span style={{ fontSize: "0.875rem", fontWeight: 500, color: T.textSecondary }}>Allow multiple choices</span>
           </label>
 
           {/* Deadline */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Deadline <span className="font-normal normal-case text-slate-400">(optional)</span></label>
+            <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: T.textMuted, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 7 }}>
+              Deadline <span style={{ fontWeight: 400, textTransform: "none" }}>(optional)</span>
+            </label>
             <input
               type="datetime-local"
-              className={inputCls}
+              className="pp-input"
               value={endsAt}
               onChange={e => setEndsAt(e.target.value)}
               min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
@@ -362,14 +662,17 @@ function CreatePollModal({ onClose, onCreated }) {
           </div>
 
           {error && (
-            <p className="rounded-xl bg-rose-50 border border-rose-100 px-4 py-2.5 text-sm text-rose-600">{error}</p>
+            <div style={{
+              background: "rgba(232,93,93,0.1)",
+              border: "1px solid rgba(232,93,93,0.25)",
+              borderRadius: 10, padding: "10px 14px",
+              fontSize: "0.84rem", color: T.red,
+            }}>
+              {error}
+            </div>
           )}
 
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-black text-white shadow-sm hover:bg-emerald-500 transition disabled:opacity-50"
-          >
+          <button type="submit" disabled={saving} className="pp-btn-gold" style={{ justifyContent: "center", padding: "12px" }}>
             {saving ? "Creating…" : "Create Poll"}
           </button>
         </form>
@@ -378,7 +681,7 @@ function CreatePollModal({ onClose, onCreated }) {
   );
 }
 
-// ── Main Page ─────────────────────────────────────────────────────
+/* ─── Main Page ──────────────────────────────────────────────── */
 export function PollsPage() {
   const { user, token } = useAuth();
   const isCommittee = user?.role === "committee" || user?.role === "super_admin";
@@ -389,12 +692,10 @@ export function PollsPage() {
   const [tab,      setTab]      = useState("active");
   const [showCreate, setShowCreate] = useState(false);
 
-  // Action states
   const [voting,   setVoting]   = useState(null);
   const [closing,  setClosing]  = useState(null);
   const [deleting, setDeleting] = useState(null);
 
-  // ── Fetch polls ────────────────────────────────────────────────
   const fetchPolls = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -410,22 +711,16 @@ export function PollsPage() {
 
   useEffect(() => { fetchPolls(); }, [fetchPolls]);
 
-  // ── Real-time socket ───────────────────────────────────────────
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
 
-    // New poll created → prepend if active tab
     function onPollCreated(poll) {
       if (tab === "active") setPolls(prev => [poll, ...prev]);
     }
-
-    // Vote cast or poll closed → update in place
     function onPollUpdated(poll) {
       setPolls(prev => prev.map(p => p._id === poll._id ? { ...poll, myVote: p.myVote } : p));
     }
-
-    // Poll deleted → remove from list
     function onPollDeleted({ pollId }) {
       setPolls(prev => prev.filter(p => p._id !== pollId));
     }
@@ -441,7 +736,6 @@ export function PollsPage() {
     };
   }, [tab]);
 
-  // ── Actions ────────────────────────────────────────────────────
   async function handleVote(pollId, optionIds) {
     if (optionIds.length === 0) return;
     setVoting(pollId);
@@ -451,7 +745,6 @@ export function PollsPage() {
         body: { optionIds },
         token,
       });
-      // Update poll in list with fresh data + preserve myVote
       setPolls(prev => prev.map(p => p._id === pollId ? data.item : p));
     } catch (err) {
       alert(err.message);
@@ -464,8 +757,7 @@ export function PollsPage() {
     if (!confirm("Close this poll? Residents won't be able to vote anymore.")) return;
     setClosing(pollId);
     try {
-      const data = await apiRequest(`/polls/${pollId}/close`, { method: "PATCH", token });
-      // Move to closed — remove from active list
+      await apiRequest(`/polls/${pollId}/close`, { method: "PATCH", token });
       setPolls(prev => prev.filter(p => p._id !== pollId));
     } catch (err) {
       alert(err.message);
@@ -492,91 +784,126 @@ export function PollsPage() {
     if (tab === "active") setPolls(prev => [newPoll, ...prev]);
   }
 
-  // ── Render ─────────────────────────────────────────────────────
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 space-y-6">
+    <>
+      <style>{CSS}</style>
+      <div style={{
+        fontFamily: "'DM Sans', sans-serif",
+        maxWidth: 680,
+        margin: "0 auto",
+        paddingBottom: 64,
+      }}>
 
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900">Polls & Voting</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Community decisions, made together</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={fetchPolls} className="rounded-xl border border-slate-200 p-2.5 hover:bg-slate-50 transition text-slate-500">
-            <RefreshCw size={16} />
-          </button>
-          {isCommittee && (
-            <button
-              onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-500 transition"
-            >
-              <Plus size={16} /> New Poll
+        {/* Header */}
+        <div style={{ marginBottom: 28, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+          <div>
+            <h1 style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "2rem", fontWeight: 600,
+              color: T.textPrimary, margin: 0,
+            }}>
+              Polls & Voting
+            </h1>
+            <p style={{ fontSize: "0.875rem", color: T.textMuted, marginTop: 4 }}>
+              Community decisions, made together
+            </p>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button className="pp-btn-ghost" onClick={fetchPolls} style={{ padding: "9px 10px" }}>
+              <RefreshCw size={15} />
             </button>
-          )}
+            {isCommittee && (
+              <button className="pp-btn-gold" onClick={() => setShowCreate(true)}>
+                <Plus size={15} /> New Poll
+              </button>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 rounded-2xl bg-slate-100 p-1 w-fit">
-        {["active", "closed"].map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-5 py-2 text-sm font-bold rounded-xl capitalize transition-all ${
-              tab === t ? "bg-white text-emerald-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-
-      {/* Content */}
-      {loading ? (
-        <div className="py-20 text-center text-sm text-slate-400">Loading…</div>
-      ) : error ? (
-        <div className="rounded-2xl bg-rose-50 border border-rose-100 px-5 py-4 text-sm text-rose-600">{error}</div>
-      ) : polls.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-slate-200 py-20 text-center">
-          <BarChart2 size={32} className="mx-auto mb-3 text-slate-300" />
-          <p className="font-bold text-slate-700">
-            {tab === "active" ? "No active polls" : "No closed polls"}
-          </p>
-          <p className="text-sm text-slate-400 mt-1">
-            {tab === "active" && isCommittee
-              ? "Create a poll to gather your community's opinion."
-              : "Check back later."}
-          </p>
-          {tab === "active" && isCommittee && (
+        {/* Tabs */}
+        <div style={{
+          display: "flex", gap: 4,
+          background: "rgba(255,255,255,0.03)",
+          border: `1px solid ${T.border}`,
+          borderRadius: 12,
+          padding: 4,
+          width: "fit-content",
+          marginBottom: 24,
+        }}>
+          {["active", "closed"].map(t => (
             <button
-              onClick={() => setShowCreate(true)}
-              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-500 transition"
+              key={t}
+              className={`pp-tab${tab === t ? " active" : ""}`}
+              onClick={() => setTab(t)}
             >
-              <Plus size={16} /> Create First Poll
+              {t}
             </button>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {polls.map(poll => (
-            <PollCard
-              key={poll._id}
-              poll={poll}
-              onVote={handleVote}
-              onClose={handleClose}
-              onDelete={handleDelete}
-              voting={voting}
-              closing={closing}
-              deleting={deleting}
-            />
           ))}
         </div>
-      )}
 
-      {showCreate && (
-        <CreatePollModal onClose={() => setShowCreate(false)} onCreated={handleCreated} />
-      )}
-    </div>
+        {/* Content */}
+        {loading ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {[240, 200, 220].map((h, i) => (
+              <div key={i} className="pp-skel" style={{ height: h }} />
+            ))}
+          </div>
+        ) : error ? (
+          <div style={{
+            background: "rgba(232,93,93,0.08)",
+            border: "1px solid rgba(232,93,93,0.2)",
+            borderRadius: 12, padding: "14px 18px",
+            fontSize: "0.875rem", color: T.red,
+          }}>
+            {error}
+          </div>
+        ) : polls.length === 0 ? (
+          <div style={{
+            border: `1px dashed ${T.border}`,
+            borderRadius: 16,
+            padding: "60px 24px",
+            textAlign: "center",
+          }}>
+            <BarChart2 size={36} color={T.borderHover} style={{ margin: "0 auto 14px" }} />
+            <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.15rem", fontWeight: 600, color: T.textSecondary }}>
+              {tab === "active" ? "No active polls" : "No closed polls"}
+            </p>
+            <p style={{ fontSize: "0.84rem", color: T.textMuted, marginTop: 6 }}>
+              {tab === "active" && isCommittee
+                ? "Create a poll to gather your community's opinion."
+                : "Check back later."}
+            </p>
+            {tab === "active" && isCommittee && (
+              <button
+                className="pp-btn-gold"
+                onClick={() => setShowCreate(true)}
+                style={{ margin: "16px auto 0", display: "inline-flex" }}
+              >
+                <Plus size={15} /> Create First Poll
+              </button>
+            )}
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {polls.map(poll => (
+              <PollCard
+                key={poll._id}
+                poll={poll}
+                onVote={handleVote}
+                onClose={handleClose}
+                onDelete={handleDelete}
+                voting={voting}
+                closing={closing}
+                deleting={deleting}
+              />
+            ))}
+          </div>
+        )}
+
+        {showCreate && (
+          <CreatePollModal onClose={() => setShowCreate(false)} onCreated={handleCreated} />
+        )}
+      </div>
+    </>
   );
 }
