@@ -152,7 +152,9 @@ const CSS = `
     border-radius: 16px;
     padding: 20px 22px 18px;
     border: 1px solid rgba(200,145,74,0.1);
-    background: #111008;
+    background: rgba(17,16,8,0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     position: relative;
     overflow: hidden;
     transition: border-color 0.2s, box-shadow 0.2s;
@@ -198,10 +200,21 @@ const CSS = `
   /* Visitor card */
   .visitor-card {
     background: rgba(255,255,255,0.03);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(200,145,74,0.15);
     border-radius: 14px;
     padding: 14px;
     margin-bottom: 10px;
+  }
+
+  /* Section "View all" link — hover handled in CSS, not onMouseEnter */
+  .section-link {
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .section-link:hover {
+    color: #c8914a !important;
+    border-color: rgba(200,145,74,0.28) !important;
   }
 
   @media (max-width: 860px) {
@@ -254,19 +267,22 @@ function buildFeed(announcements, tickets, events) {
   return items.sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
-/* ─── Count-up hook ───────────────────────────────────────────── */
+/* ─── Count-up hook (requestAnimationFrame + ease-out cubic) ─── */
 function useCountUp(target, duration = 900) {
   const [count, setCount] = useState(0);
   useEffect(() => {
     if (!target) { setCount(0); return; }
-    let current = 0;
-    const step = Math.max(1, Math.ceil(target / (duration / 16)));
-    const id = setInterval(() => {
-      current = Math.min(current + step, target);
-      setCount(current);
-      if (current >= target) clearInterval(id);
-    }, 16);
-    return () => clearInterval(id);
+    let startTime = null;
+    let rafId;
+    function step(timestamp) {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      setCount(Math.round(eased * target));
+      if (progress < 1) rafId = requestAnimationFrame(step);
+    }
+    rafId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(rafId);
   }, [target, duration]);
   return count;
 }
@@ -311,6 +327,7 @@ function SectionHeader({ eyebrow, title, linkTo, linkLabel }) {
       {linkTo && (
         <Link
           to={linkTo}
+          className="section-link"
           style={{
             fontFamily:    "'DM Sans', sans-serif",
             fontSize:      "0.72rem", fontWeight: 500,
@@ -320,11 +337,8 @@ function SectionHeader({ eyebrow, title, linkTo, linkLabel }) {
             borderRadius:  "100px",
             border:        `1px solid ${T.border}`,
             background:    "rgba(255,255,255,0.03)",
-            transition:    "color 0.2s, border-color 0.2s",
             display:       "flex", alignItems: "center", gap: 4,
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = T.gold; e.currentTarget.style.borderColor = T.borderHover; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = T.textMuted; e.currentTarget.style.borderColor = T.border; }}
         >
           {linkLabel || "View all"} <ChevronRight size={11} />
         </Link>
@@ -618,13 +632,16 @@ export function DashboardPage() {
       if (isAdmin)    calls.push(apiRequest("/admin/pending-approvals", { token }));
       if (isResident) calls.push(apiRequest("/visitors/my-requests",   { token }));
 
-      const results = await Promise.all(calls);
-      setAnnouncements(results[0].items || []);
-      setTickets(results[1].items || []);
-      setEvents(results[2].items || []);
-      setBookings(results[3].items || []);
-      if (isAdmin)    setPendingApprovals((results[4].items || []).length);
-      if (isResident) setVisitorRequests(results[isAdmin ? 5 : 4]?.items || []);
+      const results = await Promise.allSettled(calls);
+      const get = r => r.status === "fulfilled" ? r.value : null;
+      setAnnouncements(get(results[0])?.items || []);
+      setTickets(get(results[1])?.items || []);
+      setEvents(get(results[2])?.items || []);
+      setBookings(get(results[3])?.items || []);
+      if (isAdmin)    setPendingApprovals((get(results[4])?.items || []).length);
+      if (isResident) setVisitorRequests(get(results[isAdmin ? 5 : 4])?.items || []);
+      const failed = results.filter(r => r.status === "rejected");
+      if (failed.length) setError(`${failed.length} section(s) failed to load — showing partial data`);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -934,7 +951,7 @@ export function DashboardPage() {
                           onClick={() => respondToVisitor(v._id, "rejected")}
                           disabled={respondingId === v._id}
                           style={{
-                            padding: "9px 0", borderRadius: 10,
+                            padding: "0 0", minHeight: 44, borderRadius: 10,
                             fontSize: "0.78rem", fontWeight: 700,
                             background: "rgba(232,93,93,0.1)", color: T.red,
                             border: "1px solid rgba(232,93,93,0.25)",
@@ -951,7 +968,7 @@ export function DashboardPage() {
                           onClick={() => respondToVisitor(v._id, "approved")}
                           disabled={respondingId === v._id}
                           style={{
-                            padding: "9px 0", borderRadius: 10,
+                            padding: "0 0", minHeight: 44, borderRadius: 10,
                             fontSize: "0.78rem", fontWeight: 700,
                             background: "rgba(61,158,110,0.12)", color: T.green,
                             border: "1px solid rgba(61,158,110,0.25)",

@@ -6,23 +6,35 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
+    "start:prod": "pm2 start ecosystem.config.cjs --env production",
+    "stop:prod": "pm2 stop apthive-api",
+    "restart:prod": "pm2 restart apthive-api",
+    "logs": "pm2 logs apthive-api",
+    "monit": "pm2 monit",
     "seed:tenant": "node src/scripts/seed-tenant.js",
     "seed:super-admin": "node src/scripts/seed-super-admin.js",
     "lint:todo": "echo \"Add ESLint later\""
   },
   "dependencies": {
+    "@socket.io/redis-adapter": "^8.3.0",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.9.0",
+    "compression": "^1.8.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "express-rate-limit": "^8.3.2",
+    "helmet": "^8.1.0",
     "http-status-codes": "^2.3.0",
+    "ioredis": "^5.10.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.9.3",
     "morgan": "^1.10.0",
     "multer": "^2.1.1",
+    "node-cache": "^5.1.2",
     "nodemailer": "^8.0.4",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "winston": "^3.19.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"

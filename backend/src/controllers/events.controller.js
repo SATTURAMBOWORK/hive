@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { Event } from "../models/event.model.js";
 import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
+import { cache, cacheKey } from "../config/cache.js";
 
 function sanitizeText(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -10,10 +11,19 @@ function sanitizeText(value) {
 
 export async function listEvents(req, res, next) {
   try {
+    const key = cacheKey("events", req.tenantId);
+
+    const cached = cache.get(key);
+    if (cached) {
+      return res.json({ items: cached });
+    }
+
     const items = await Event.find({ tenantId: req.tenantId })
       .sort({ startAt: 1, createdAt: -1 })
-      .populate("createdBy", "fullName role");
+      .populate("createdBy", "fullName role")
+      .lean();
 
+    cache.set(key, items);
     res.json({ items });
   } catch (error) {
     next(error);
@@ -53,10 +63,10 @@ export async function createEvent(req, res, next) {
       createdBy: req.user.userId
     });
 
+    cache.del(cacheKey("events", req.tenantId));
+
     const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.EVENT_CREATED, {
-      item: event
-    });
+    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.EVENT_CREATED, { item: event });
 
     res.status(StatusCodes.CREATED).json({ item: event });
   } catch (error) {
@@ -86,11 +96,9 @@ export async function updateEvent(req, res, next) {
     if (req.body?.startAt && Number.isNaN(nextStartAt.getTime())) {
       throw new AppError("Invalid startAt date", StatusCodes.BAD_REQUEST);
     }
-
     if (req.body?.endAt && Number.isNaN(nextEndAt.getTime())) {
       throw new AppError("Invalid endAt date", StatusCodes.BAD_REQUEST);
     }
-
     if (nextEndAt <= nextStartAt) {
       throw new AppError("endAt must be after startAt", StatusCodes.BAD_REQUEST);
     }
@@ -103,10 +111,10 @@ export async function updateEvent(req, res, next) {
 
     await event.save();
 
+    cache.del(cacheKey("events", req.tenantId));
+
     const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.EVENT_UPDATED, {
-      item: event
-    });
+    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.EVENT_UPDATED, { item: event });
 
     res.json({ item: event });
   } catch (error) {
@@ -126,10 +134,10 @@ export async function deleteEvent(req, res, next) {
       throw new AppError("Event not found", StatusCodes.NOT_FOUND);
     }
 
+    cache.del(cacheKey("events", req.tenantId));
+
     const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.EVENT_DELETED, {
-      item: event
-    });
+    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.EVENT_DELETED, { item: event });
 
     res.status(StatusCodes.OK).json({ message: "Event deleted", item: event });
   } catch (error) {

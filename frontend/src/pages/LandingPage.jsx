@@ -40,7 +40,7 @@ const CSS = `
 
   .badge-float   { animation: floatBadge 4s ease-in-out infinite; }
   .shimmer-text  {
-    background: linear-gradient(90deg, #c8914a 0%, #f0d49a 40%, #c8914a 60%, #e8c47a 100%);
+    background: linear-gradient(90deg, #ffffff 0%, #eceae4 40%, #ffffff 60%, #d8d8d0 100%);
     background-size: 200% auto;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -104,7 +104,7 @@ const FEATURES = [
     icon: Wifi,
     title: "Smart Access",
     desc: "QR-code gate entry, visitor pre-registration, and real-time access logs — all from your phone.",
-    accent: "#c8914a",
+    accent: "#ffffff",
   },
   {
     icon: Calendar,
@@ -181,7 +181,7 @@ function Navbar() {
             : "rgba(14,11,8,0.55)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
-          border: "1px solid rgba(200,145,74,0.14)",
+          border: "1px solid rgba(255,255,255,0.14)",
           boxShadow: scrolled ? "0 8px 40px rgba(0,0,0,0.5)" : "none",
         }}
       >
@@ -190,8 +190,8 @@ function Navbar() {
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center"
             style={{
-              background: "linear-gradient(135deg,#c8914a,#e8c47a)",
-              boxShadow: "0 4px 16px rgba(200,145,74,0.35)",
+              background: "linear-gradient(135deg,#ffffff,#d9d9d3)",
+              boxShadow: "0 4px 16px rgba(255,255,255,0.2)",
             }}
           >
             <Shield size={14} color="#0a0907" strokeWidth={2.5} />
@@ -212,7 +212,7 @@ function Navbar() {
               href={`#${l.toLowerCase()}`}
               className="text-sm font-medium no-underline transition-colors duration-200"
               style={{ color: "rgba(245,240,232,0.5)", textDecoration: "none" }}
-              onMouseEnter={(e) => (e.target.style.color = "#c8914a")}
+              onMouseEnter={(e) => (e.target.style.color = "#ffffff")}
               onMouseLeave={(e) => (e.target.style.color = "rgba(245,240,232,0.5)")}
             >
               {l}
@@ -235,13 +235,13 @@ function Navbar() {
             to="/register"
             className="text-sm font-semibold no-underline px-4 py-2 rounded-xl transition-all duration-200"
             style={{
-              background: "linear-gradient(135deg,#c8914a,#e8c47a)",
+              background: "linear-gradient(135deg,#ffffff,#d9d9d3)",
               color: "#0a0907",
               textDecoration: "none",
-              boxShadow: "0 4px 16px rgba(200,145,74,0.3)",
+              boxShadow: "0 4px 16px rgba(255,255,255,0.22)",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 6px 24px rgba(200,145,74,0.5)")}
-            onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 4px 16px rgba(200,145,74,0.3)")}
+            onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 6px 24px rgba(255,255,255,0.35)")}
+            onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 4px 16px rgba(255,255,255,0.22)")}
           >
             Get Started
           </Link>
@@ -263,7 +263,7 @@ const HERO_SLIDES = [
     sub: "Smarter access, vibrant community, and seamless living — all in one platform built for modern apartment residents.",
     bg: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1600&q=80",
     bgPos: "center 30%",
-    accent: "#c8914a",
+    accent: "#ffffff",
     pill: { value: "500+", label: "Happy Residents" },
   },
   {
@@ -303,7 +303,7 @@ const HERO_SLIDES = [
     sub: "Book amenities, manage maintenance requests, and enjoy premium services — all designed around your lifestyle.",
     bg: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1600&q=80",
     bgPos: "center 45%",
-    accent: "#c8914a",
+    accent: "#ffffff",
     pill: { value: "100%", label: "Resident First" },
   },
 ];
@@ -409,7 +409,7 @@ function Hero() {
               {slide.headline[0]}
               <br />
               <span className="shimmer-text italic" style={{
-                background: `linear-gradient(90deg, ${slide.accent} 0%, #f0d49a 40%, ${slide.accent} 60%, #e8c47a 100%)`,
+                background: `linear-gradient(90deg, ${slide.accent} 0%, #eceae4 40%, ${slide.accent} 60%, #d8d8d0 100%)`,
                 backgroundSize: "200% auto",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
@@ -446,7 +446,7 @@ function Hero() {
             to="/register"
             className="inline-flex items-center gap-2 font-semibold no-underline rounded-xl px-7 py-3.5 transition-all duration-200"
             style={{
-              background: `linear-gradient(135deg, ${slide.accent}, #e8c47a)`,
+              background: `linear-gradient(135deg, ${slide.accent}, #d9d9d3)`,
               color: "#0a0907",
               textDecoration: "none",
               fontSize: "0.95rem",
@@ -467,10 +467,10 @@ function Hero() {
             style={{
               width: 36, height: 36,
               background: "rgba(245,240,232,0.06)",
-              border: "1px solid rgba(245,240,232,0.12)",
+              border: "1px solid rgba(245,240,232,0.16)",
               color: "rgba(245,240,232,0.5)",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(245,240,232,0.14)"; e.currentTarget.style.color = "#f5f0e8"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(245,240,232,0.14)"; e.currentTarget.style.color = "#ffffff"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(245,240,232,0.06)"; e.currentTarget.style.color = "rgba(245,240,232,0.5)"; }}
           >
             <ChevronLeft size={16} />
@@ -498,10 +498,10 @@ function Hero() {
             style={{
               width: 36, height: 36,
               background: "rgba(245,240,232,0.06)",
-              border: "1px solid rgba(245,240,232,0.12)",
+              border: "1px solid rgba(245,240,232,0.16)",
               color: "rgba(245,240,232,0.5)",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(245,240,232,0.14)"; e.currentTarget.style.color = "#f5f0e8"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(245,240,232,0.14)"; e.currentTarget.style.color = "#ffffff"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(245,240,232,0.06)"; e.currentTarget.style.color = "rgba(245,240,232,0.5)"; }}
           >
             <ChevronRight size={16} />
@@ -518,7 +518,7 @@ function Hero() {
           <span style={{ color: "rgba(245,240,232,0.3)", fontSize: "0.68rem", letterSpacing: "0.12em", textTransform: "uppercase" }}>
             Scroll
           </span>
-          <ChevronDown size={16} className="scroll-arrow" style={{ color: "rgba(245,240,232,0.3)" }} />
+            <ChevronDown size={16} className="scroll-arrow" style={{ color: "rgba(245,240,232,0.3)" }} />
         </motion.div>
       </div>
     </section>
@@ -571,7 +571,7 @@ function _RemovedCarousel() {
         transition={{ duration: 0.6 }}
         className="text-center mb-12 px-6"
       >
-        <p style={{ color: "#c8914a", fontSize: "0.72rem", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "0.75rem" }}>
+        <p style={{ color: "#ffffff", fontSize: "0.72rem", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "0.75rem" }}>
           Gallery
         </p>
         <h2
@@ -584,7 +584,7 @@ function _RemovedCarousel() {
 
       {/* Carousel window */}
       <div className="relative max-w-5xl mx-auto px-12">
-        <div className="overflow-hidden rounded-2xl" style={{ border: "1px solid rgba(200,145,74,0.12)" }}>
+        <div className="overflow-hidden rounded-2xl" style={{ border: "1px solid rgba(255,255,255,0.12)" }}>
           <div
             className="carousel-track"
             style={{ transform: `translateX(-${current * 100}%)` }}
@@ -610,7 +610,7 @@ function _RemovedCarousel() {
                 >
                   <span
                     className="font-display italic"
-                    style={{ fontFamily: "'Cormorant Garamond', serif", color: "#e8c47a", fontSize: "1.25rem", fontWeight: 500 }}
+                    style={{ fontFamily: "'Cormorant Garamond', serif", color: "#ffffff", fontSize: "1.25rem", fontWeight: 500 }}
                   >
                     {s.label}
                   </span>
@@ -631,16 +631,16 @@ function _RemovedCarousel() {
             className={`absolute top-1/2 -translate-y-1/2 ${pos} z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200`}
             style={{
               background: "rgba(14,11,8,0.85)",
-              border: "1px solid rgba(200,145,74,0.25)",
+              border: "1px solid rgba(255,255,255,0.22)",
               backdropFilter: "blur(8px)",
               cursor: "pointer",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(200,145,74,0.2)")}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.12)")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(14,11,8,0.85)")}
           >
             {dir === "prev"
-              ? <ChevronLeft  size={18} style={{ color: "#f5f0e8" }} />
-              : <ChevronRight size={18} style={{ color: "#f5f0e8" }} />}
+              ? <ChevronLeft  size={18} style={{ color: "#ffffff" }} />
+              : <ChevronRight size={18} style={{ color: "#ffffff" }} />}
           </button>
         ))}
       </div>
@@ -655,7 +655,7 @@ function _RemovedCarousel() {
               width:        i === current ? "24px" : "8px",
               height:       "8px",
               borderRadius: "4px",
-              background:   i === current ? "#c8914a" : "rgba(200,145,74,0.25)",
+              background:   i === current ? "#ffffff" : "rgba(255,255,255,0.25)",
               border:       "none",
               cursor:       "pointer",
               transition:   "all 0.35s ease",
@@ -690,7 +690,7 @@ function FeatureCard({ feature, index }) {
       whileHover={{
         y:          -6,
         background: "rgba(255,255,255,0.055)",
-        borderColor:"rgba(200,145,74,0.2)",
+        borderColor:"rgba(255,255,255,0.16)",
         transition: { duration: 0.25 },
       }}
     >
@@ -736,7 +736,7 @@ function Features() {
           transition={{ duration: 0.6 }}
           className="text-center mb-14"
         >
-          <p style={{ color: "#c8914a", fontSize: "0.72rem", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "0.75rem" }}>
+            <p style={{ color: "#ffffff", fontSize: "0.72rem", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "0.75rem" }}>
             Why AptHive
           </p>
           <h2
@@ -765,7 +765,7 @@ function Stars({ n }) {
   return (
     <div className="flex items-center gap-0.5 mb-4">
       {Array.from({ length: n }).map((_, i) => (
-        <Star key={i} size={14} fill="#c8914a" style={{ color: "#c8914a" }} />
+        <Star key={i} size={14} fill="#ffffff" style={{ color: "#ffffff" }} />
       ))}
     </div>
   );
@@ -777,7 +777,7 @@ function TestimonialFlipCard({ t }) {
     background:     "rgba(255,255,255,0.04)",
     backdropFilter: "blur(20px)",
     WebkitBackdropFilter: "blur(20px)",
-    border:         "1px solid rgba(200,145,74,0.15)",
+    border:         "1px solid rgba(255,255,255,0.14)",
     boxShadow:      "0 8px 40px rgba(0,0,0,0.35)",
   };
 
@@ -795,15 +795,15 @@ function TestimonialFlipCard({ t }) {
               src={t.avatar}
               alt={t.name}
               className="w-9 h-9 rounded-full object-cover"
-              style={{ border: "2px solid rgba(200,145,74,0.35)" }}
+              style={{ border: "2px solid rgba(255,255,255,0.4)" }}
             />
             <div>
               <p style={{ color: "#f5f0e8", fontSize: "0.9rem", fontWeight: 500, lineHeight: 1.2 }}>{t.name}</p>
-              <p style={{ color: "rgba(200,145,74,0.7)", fontSize: "0.72rem", marginTop: "2px" }}>{t.unit}</p>
+              <p style={{ color: "rgba(255,255,255,0.65)", fontSize: "0.72rem", marginTop: "2px" }}>{t.unit}</p>
             </div>
           </div>
           {/* Hover hint */}
-          <p className="absolute bottom-4 right-5" style={{ color: "rgba(200,145,74,0.35)", fontSize: "0.65rem", letterSpacing: "0.08em" }}>
+          <p className="absolute bottom-4 right-5" style={{ color: "rgba(255,255,255,0.35)", fontSize: "0.65rem", letterSpacing: "0.08em" }}>
             hover to read more →
           </p>
         </div>
@@ -811,20 +811,20 @@ function TestimonialFlipCard({ t }) {
         {/* Back */}
         <div
           className="flip-back p-7 flex flex-col justify-center"
-          style={{ ...glass, background: "rgba(200,145,74,0.08)", borderColor: "rgba(200,145,74,0.3)" }}
+          style={{ ...glass, background: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.22)" }}
         >
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center mb-4"
-            style={{ background: "rgba(200,145,74,0.2)" }}
+            style={{ background: "rgba(255,255,255,0.16)" }}
           >
-            <span style={{ color: "#c8914a", fontSize: "1.1rem" }}>"</span>
+            <span style={{ color: "#ffffff", fontSize: "1.1rem" }}>"</span>
           </div>
           <p style={{ color: "rgba(245,240,232,0.8)", fontSize: "0.92rem", lineHeight: 1.8, fontStyle: "italic" }}>
             {t.back}
           </p>
           <div className="flex items-center gap-2 mt-5">
             <img src={t.avatar} alt={t.name} className="w-7 h-7 rounded-full object-cover" />
-            <span style={{ color: "#c8914a", fontSize: "0.8rem" }}>{t.name}</span>
+            <span style={{ color: "#ffffff", fontSize: "0.8rem" }}>{t.name}</span>
           </div>
         </div>
       </div>
@@ -849,7 +849,7 @@ function Testimonials() {
           transition={{ duration: 0.6 }}
           className="text-center mb-14"
         >
-          <p style={{ color: "#c8914a", fontSize: "0.72rem", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "0.75rem" }}>
+            <p style={{ color: "#ffffff", fontSize: "0.72rem", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "0.75rem" }}>
             Residents Love It
           </p>
           <h2
@@ -893,21 +893,21 @@ function Testimonials() {
             <button
               onClick={() => setIdx((i) => (i - 1 + TESTIMONIALS.length) % TESTIMONIALS.length)}
               className="w-9 h-9 rounded-full flex items-center justify-center"
-              style={{ background: "rgba(200,145,74,0.1)", border: "1px solid rgba(200,145,74,0.25)", cursor: "pointer" }}
+              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", cursor: "pointer" }}
             >
-              <ChevronLeft size={16} style={{ color: "#c8914a" }} />
+              <ChevronLeft size={16} style={{ color: "#ffffff" }} />
             </button>
             <div className="flex gap-2">
               {TESTIMONIALS.map((_, i) => (
-                <div key={i} style={{ width: i === idx ? "20px" : "6px", height: "6px", borderRadius: "3px", background: i === idx ? "#c8914a" : "rgba(200,145,74,0.25)", transition: "all 0.3s" }} />
+                <div key={i} style={{ width: i === idx ? "20px" : "6px", height: "6px", borderRadius: "3px", background: i === idx ? "#ffffff" : "rgba(255,255,255,0.25)", transition: "all 0.3s" }} />
               ))}
             </div>
             <button
               onClick={() => setIdx((i) => (i + 1) % TESTIMONIALS.length)}
               className="w-9 h-9 rounded-full flex items-center justify-center"
-              style={{ background: "rgba(200,145,74,0.1)", border: "1px solid rgba(200,145,74,0.25)", cursor: "pointer" }}
+              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", cursor: "pointer" }}
             >
-              <ChevronRight size={16} style={{ color: "#c8914a" }} />
+              <ChevronRight size={16} style={{ color: "#ffffff" }} />
             </button>
           </div>
         </div>
@@ -932,15 +932,15 @@ function CTABanner() {
         transition={{ duration: 0.65 }}
         className="max-w-3xl mx-auto text-center rounded-3xl py-14 px-8 relative overflow-hidden"
         style={{
-          background: "linear-gradient(135deg, rgba(200,145,74,0.12) 0%, rgba(200,145,74,0.04) 100%)",
-          border: "1px solid rgba(200,145,74,0.2)",
-          boxShadow: "0 0 80px rgba(200,145,74,0.07)",
+          background: "linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%)",
+          border: "1px solid rgba(255,255,255,0.18)",
+          boxShadow: "0 0 80px rgba(255,255,255,0.06)",
         }}
       >
         {/* Decorative radial */}
         <div
           className="absolute inset-0 pointer-events-none"
-          style={{ background: "radial-gradient(ellipse 60% 50% at 50% 0%, rgba(200,145,74,0.12) 0%, transparent 70%)" }}
+          style={{ background: "radial-gradient(ellipse 60% 50% at 50% 0%, rgba(255,255,255,0.12) 0%, transparent 70%)" }}
         />
 
         <p
@@ -964,14 +964,14 @@ function CTABanner() {
           to="/register"
           className="inline-flex items-center gap-2 font-semibold no-underline rounded-xl px-8 py-4 transition-all duration-200 relative z-10"
           style={{
-            background:  "linear-gradient(135deg,#c8914a,#e8c47a)",
+            background:  "linear-gradient(135deg,#ffffff,#d9d9d3)",
             color:       "#0a0907",
             textDecoration: "none",
             fontSize:    "1rem",
-            boxShadow:   "0 8px 32px rgba(200,145,74,0.4)",
+            boxShadow:   "0 8px 32px rgba(255,255,255,0.28)",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 12px 40px rgba(200,145,74,0.55)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)";    e.currentTarget.style.boxShadow = "0 8px 32px rgba(200,145,74,0.4)"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 12px 40px rgba(255,255,255,0.4)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)";    e.currentTarget.style.boxShadow = "0 8px 32px rgba(255,255,255,0.28)"; }}
         >
           Get Started <ArrowRight size={17} />
         </Link>

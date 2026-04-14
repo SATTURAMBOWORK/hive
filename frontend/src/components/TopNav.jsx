@@ -7,26 +7,26 @@ import { NotificationBell } from "./NotificationBell";
 /* ─── Design tokens ───────────────────────────────────────────── */
 const T = {
   bg:          "rgba(10,9,7,0.88)",
-  surface:     "#111008",
-  border:      "rgba(200,145,74,0.12)",
-  borderHover: "rgba(200,145,74,0.28)",
-  gold:        "#c8914a",
-  goldLight:   "#e8c47a",
-  textPrimary: "#f5f0e8",
-  textMuted:   "rgba(245,240,232,0.45)",
+  surface:     "#111111",
+  border:      "rgba(255,255,255,0.08)",
+  borderHover: "rgba(255,255,255,0.22)",
+  gold:        "#f2f2f2",
+  goldLight:   "#d7d7d7",
+  textPrimary: "#f5f5f5",
+  textMuted:   "rgba(245,245,245,0.45)",
 };
 
 /* ─── Injected CSS ────────────────────────────────────────────── */
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600&display=swap');
 
-  /* Gold underline slide-in from left */
+  /* Light underline slide-in from left */
   .tn-link {
     position: relative;
     font-family: 'DM Sans', sans-serif;
     font-size: 0.84rem;
     font-weight: 500;
-    color: rgba(245,240,232,0.45);
+    color: rgba(245,245,245,0.45);
     text-decoration: none;
     padding: 4px 0;
     letter-spacing: 0.01em;
@@ -40,23 +40,23 @@ const CSS = `
     left: 0;
     width: 0;
     height: 1.5px;
-    background: linear-gradient(90deg, #c8914a, #e8c47a);
+    background: linear-gradient(90deg, #f2f2f2, #d7d7d7);
     border-radius: 2px;
     transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .tn-link:hover {
-    color: rgba(245,240,232,0.85);
+    color: rgba(245,245,245,0.85);
   }
   .tn-link:hover::after {
     width: 100%;
   }
   .tn-link.active {
-    color: #c8914a;
+    color: #f2f2f2;
   }
   .tn-link.active::after {
     width: 100%;
-    background: linear-gradient(90deg, #c8914a, #e8c47a);
-    box-shadow: 0 0 8px rgba(200,145,74,0.4);
+    background: linear-gradient(90deg, #f2f2f2, #d7d7d7);
+    box-shadow: 0 0 8px rgba(255,255,255,0.24);
   }
 
   /* Logo shimmer on hover */
@@ -65,7 +65,7 @@ const CSS = `
     100% { background-position:  200% center; }
   }
   .tn-logo-text-hover {
-    background: linear-gradient(90deg, #c8914a 0%, #f0d49a 40%, #c8914a 60%, #e8c47a 100%);
+    background: linear-gradient(90deg, #ffffff 0%, #ededed 40%, #ffffff 60%, #d7d7d7 100%);
     background-size: 200% auto;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -80,16 +80,16 @@ const CSS = `
   }
   .tn-drawer { animation: drawerIn 0.22s ease forwards; }
 
-  /* Avatar gold ring pulse on hover */
+  /* Avatar ring pulse on hover */
   .tn-avatar:hover {
-    box-shadow: 0 0 0 3px rgba(200,145,74,0.35), 0 0 16px rgba(200,145,74,0.2) !important;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.26), 0 0 16px rgba(255,255,255,0.12) !important;
   }
 
   /* Logout ghost button */
   .tn-logout {
     background: none;
-    border: 1px solid rgba(245,240,232,0.1);
-    color: rgba(245,240,232,0.45);
+    border: 1px solid rgba(245,245,245,0.1);
+    color: rgba(245,245,245,0.45);
     border-radius: 9px;
     padding: 6px 12px;
     font-family: 'DM Sans', sans-serif;
@@ -102,26 +102,26 @@ const CSS = `
     transition: border-color 0.2s, color 0.2s, background 0.2s;
   }
   .tn-logout:hover {
-    border-color: rgba(200,145,74,0.4);
-    color: #c8914a;
-    background: rgba(200,145,74,0.06);
+    border-color: rgba(255,255,255,0.25);
+    color: #f2f2f2;
+    background: rgba(255,255,255,0.06);
   }
 
   /* Hamburger button */
   .tn-ham {
     background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(200,145,74,0.12);
+    border: 1px solid rgba(255,255,255,0.08);
     border-radius: 9px;
     width: 34px; height: 34px;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
-    color: rgba(245,240,232,0.6);
+    color: rgba(245,245,245,0.6);
     transition: background 0.2s, border-color 0.2s, color 0.2s;
   }
   .tn-ham:hover {
-    background: rgba(200,145,74,0.08);
-    border-color: rgba(200,145,74,0.28);
-    color: #c8914a;
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.22);
+    color: #f2f2f2;
   }
 `;
 
@@ -204,11 +204,11 @@ export function TopNav() {
               style={{
                 width:      32, height: 32,
                 borderRadius: 9,
-                background: "linear-gradient(135deg,#c8914a,#e8c47a)",
+                background: "linear-gradient(135deg,#ffffff,#d7d7d7)",
                 display:    "flex", alignItems: "center", justifyContent: "center",
                 boxShadow:  logoHovered
-                  ? "0 4px 20px rgba(200,145,74,0.5)"
-                  : "0 2px 10px rgba(200,145,74,0.25)",
+                  ? "0 4px 20px rgba(255,255,255,0.26)"
+                  : "0 2px 10px rgba(255,255,255,0.12)",
                 transition: "box-shadow 0.3s",
                 flexShrink: 0,
               }}
@@ -262,15 +262,15 @@ export function TopNav() {
                   style={({ isActive }) => ({
                     width:          34, height: 34,
                     borderRadius:   "50%",
-                    background:     isActive ? "rgba(200,145,74,0.18)" : "rgba(200,145,74,0.1)",
-                    border:         `1.5px solid ${isActive ? T.gold : "rgba(200,145,74,0.35)"}`,
+                      background:     isActive ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.08)",
+                        border:         `1.5px solid ${isActive ? T.gold : "rgba(255,255,255,0.25)"}`,
                     display:        "flex", alignItems: "center", justifyContent: "center",
                     fontFamily:     "'DM Sans', sans-serif",
                     fontSize:       "0.78rem",
                     fontWeight:     700,
                     color:          T.gold,
                     textDecoration: "none",
-                    boxShadow:      isActive ? "0 0 0 3px rgba(200,145,74,0.2)" : "none",
+                    boxShadow:      isActive ? "0 0 0 3px rgba(255,255,255,0.14)" : "none",
                     transition:     "box-shadow 0.25s, border-color 0.25s",
                   })}
                 >
@@ -327,9 +327,9 @@ export function TopNav() {
                     fontFamily: "'DM Sans', sans-serif",
                     fontSize: "0.82rem", fontWeight: 600,
                     color: "#0a0907", textDecoration: "none",
-                    background: "linear-gradient(135deg,#c8914a,#e8c47a)",
+                    background: "linear-gradient(135deg,#ffffff,#d7d7d7)",
                     padding: "7px 14px", borderRadius: "9px",
-                    boxShadow: "0 2px 12px rgba(200,145,74,0.3)",
+                    boxShadow: "0 2px 12px rgba(255,255,255,0.18)",
                   }}
                 >
                   Get Started
@@ -366,7 +366,7 @@ export function TopNav() {
               style={{
                 marginTop:   "16px",
                 paddingTop:  "16px",
-                borderTop:   `1px solid rgba(200,145,74,0.08)`,
+                borderTop:   `1px solid rgba(255,255,255,0.08)`,
               }}
             >
               <button

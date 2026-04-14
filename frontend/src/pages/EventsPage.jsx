@@ -56,7 +56,9 @@ const CSS = `
   /* Card */
   .ev-card {
     position: relative;
-    background: #111008;
+    background: rgba(17,16,8,0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(200,145,74,0.12);
     border-radius: 18px;
     overflow: hidden;

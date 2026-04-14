@@ -6,6 +6,7 @@ import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
 import { hasAmenityBookingConflict } from "../utils/booking-conflict.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
+import { cache, cacheKey } from "../config/cache.js";
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -121,6 +122,8 @@ export async function createAmenity(req, res, next) {
       operatingHours
     });
 
+    cache.del(cacheKey("amenities", req.tenantId));
+
     const io = req.app.get("io");
     io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.AMENITY_CREATED, { item });
 
@@ -132,7 +135,18 @@ export async function createAmenity(req, res, next) {
 
 export async function listAmenities(req, res, next) {
   try {
-    const items = await Amenity.find({ societyId: req.tenantId }).sort({ name: 1 });
+    const key = cacheKey("amenities", req.tenantId);
+
+    const cached = cache.get(key);
+    if (cached) {
+      return res.json({ items: cached });
+    }
+
+    const items = await Amenity.find({ societyId: req.tenantId })
+      .sort({ name: 1 })
+      .lean();
+
+    cache.set(key, items);
     res.json({ items });
   } catch (error) {
     next(error);

@@ -9,12 +9,12 @@
 
   body {
     font-family: "DM Sans", "Inter", "Segoe UI", sans-serif;
-    background-color: #FDFCF9;
-    color: #2E2D29;
+    background-color: #0a0a0a;
+    color: #f2f2f2;
     min-height: 100vh;
 
-    /* Subtle warm dot grid */
-    background-image: radial-gradient(circle, #D9D6CC44 1px, transparent 1px);
+    /* Subtle monochrome dot grid */
+    background-image: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
     background-size: 22px 22px;
   }
 
@@ -23,11 +23,11 @@
 
 @layer components {
   .panel {
-    background: #FDFCF9;
-    border: 1px solid #D9D6CC;
+    background: #111111;
+    border: 1px solid #262626;
     border-radius: 20px;
     padding: 24px;
-    box-shadow: 0 1px 4px rgba(46,45,41,0.06), 0 4px 16px rgba(46,45,41,0.04);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3), 0 16px 36px rgba(0,0,0,0.24);
   }
 
   .field {
@@ -35,23 +35,23 @@
     padding: 10px 14px;
     font-size: 14px;
     font-family: "DM Sans", sans-serif;
-    background: #F7F5F0;
-    border: 1px solid #D9D6CC;
+    background: #151515;
+    border: 1px solid #2A2A2A;
     border-radius: 12px;
-    color: #2E2D29;
+    color: #F2F2F2;
     outline: none;
     transition: border-color .15s;
   }
-  .field:focus { border-color: #1A7A5E; }
-  .field::placeholder { color: #9E9B91; }
+  .field:focus { border-color: #f2f2f2; }
+  .field::placeholder { color: #7e7e7e; }
 
   .btn-primary {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
     padding: 10px 20px; font-size: 14px; font-weight: 600;
     font-family: "DM Sans", sans-serif;
-    background: #1A7A5E; color: #fff; border: none;
+    background: linear-gradient(135deg, #ffffff, #d7d7d7); color: #0a0a0a; border: none;
     border-radius: 12px; cursor: pointer;
-    box-shadow: 0 2px 8px rgba(26,122,94,0.25);
+    box-shadow: 0 10px 24px rgba(255,255,255,0.12);
     transition: opacity .15s, transform .1s;
   }
   .btn-primary:hover { opacity: 0.9; }
@@ -61,8 +61,8 @@
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
     padding: 10px 20px; font-size: 14px; font-weight: 600;
     font-family: "DM Sans", sans-serif;
-    background: #EDEBE4; color: #2E2D29;
-    border: 1px solid #D9D6CC;
+    background: #151515; color: #F2F2F2;
+    border: 1px solid #2A2A2A;
     border-radius: 12px; cursor: pointer;
     transition: opacity .15s, transform .1s;
   }
@@ -75,7 +75,7 @@
     font-family: "DM Sans", sans-serif;
     background: #C0392B; color: #fff; border: none;
     border-radius: 12px; cursor: pointer;
-    box-shadow: 0 2px 8px rgba(192,57,43,0.25);
+    box-shadow: 0 10px 24px rgba(192,57,43,0.18);
     transition: opacity .15s, transform .1s;
   }
   .btn-danger:hover { opacity: 0.9; }

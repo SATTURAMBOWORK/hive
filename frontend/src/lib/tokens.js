@@ -1,14 +1,14 @@
 export const tok = {
-  cream:         "#FDFCF9",
-  stone50:       "#F7F5F0",
-  stone100:      "#EDEBE4",
-  stone200:      "#D9D6CC",
-  stone400:      "#9E9B91",
-  stone600:      "#6B6860",
-  stone800:      "#2E2D29",
-  gold:          "#C9A84C",
-  goldLight:     "#F5EDD6",
-  goldBorder:    "#E8D5A0",
+  cream:         "#111111",
+  stone50:       "#171717",
+  stone100:      "#202020",
+  stone200:      "#2D2D2D",
+  stone400:      "#8A8A8A",
+  stone600:      "#B3B3B3",
+  stone800:      "#F3F3F3",
+  gold:          "#F3F3F3",
+  goldLight:     "#D7D7D7",
+  goldBorder:    "#9A9A9A",
   indigo:        "#3D52A0",
   indigoLight:   "#EEF1FA",
   indigoBorder:  "#C7D0EE",
@@ -37,7 +37,7 @@ export const card = {
   border: `1px solid ${tok.stone200}`,
   borderRadius: 20,
   padding: 24,
-  boxShadow: "0 1px 4px rgba(46,45,41,0.06), 0 4px 16px rgba(46,45,41,0.04)",
+  boxShadow: "0 1px 4px rgba(0,0,0,0.3), 0 16px 36px rgba(0,0,0,0.24)",
 };
 
 /* Shared field style */
@@ -61,7 +61,7 @@ export const btn = {
     padding: "10px 20px", fontSize: 14, fontWeight: 600, fontFamily: fonts.sans,
     background: tok.emerald, color: "#fff", border: "none",
     borderRadius: 12, cursor: "pointer",
-    boxShadow: `0 2px 8px ${tok.emerald}40`,
+    boxShadow: "0 10px 24px rgba(26,122,94,0.18)",
     transition: "opacity .15s, transform .1s",
   },
   muted: {
@@ -75,7 +75,7 @@ export const btn = {
     padding: "10px 20px", fontSize: 14, fontWeight: 600, fontFamily: fonts.sans,
     background: tok.rose, color: "#fff", border: "none",
     borderRadius: 12, cursor: "pointer",
-    boxShadow: `0 2px 8px ${tok.rose}40`,
+    boxShadow: "0 10px 24px rgba(192,57,43,0.18)",
     transition: "opacity .15s, transform .1s",
   },
 };

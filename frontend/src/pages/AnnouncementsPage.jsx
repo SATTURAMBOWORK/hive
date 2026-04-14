@@ -46,7 +46,9 @@ const CSS = `
     position: relative;
     border-radius: 16px;
     border: 1px solid rgba(200,145,74,0.12);
-    background: #111008;
+    background: rgba(17,16,8,0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     padding: 20px 20px 16px 24px;
     transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
     overflow: hidden;

@@ -30,7 +30,9 @@ const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600&display=swap');
 
   .pp-card {
-    background: ${T.surface};
+    background: rgba(17,16,8,0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid ${T.border};
     border-radius: 16px;
     transition: border-color 0.25s, box-shadow 0.25s;
