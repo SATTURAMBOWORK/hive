@@ -9,7 +9,9 @@
       "Bash(node --input-type=module --eval \"import './src/pages/LandingPage.jsx'\")",
       "Bash(timeout 30 npx vite build)",
       "Bash(node -e \"const l = require\\('./node_modules/lucide-react/dist/cjs/lucide-react.js'\\); const keys = Object.keys\\(l\\).filter\\(k => k.match\\(/Twitter|Github|Linkedin|Social|Share|Globe|Link/i\\)\\); console.log\\(keys\\);\")",
-      "Bash(timeout 45 npx vite build)"
+      "Bash(timeout 45 npx vite build)",
+      "Bash(npm run *)",
+      "Bash(node -e \"import\\('./node_modules/vite/dist/node/index.js'\\).then\\(\\(\\) => console.log\\('Vite OK'\\)\\).catch\\(e => console.log\\('Error:', e.message\\)\\)\")"
     ]
   }
 }

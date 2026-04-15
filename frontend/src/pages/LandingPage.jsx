@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import HeroShowcase from "./HeroShowcase";
 import {
   Shield, Bell, Users, BarChart3, ArrowRight, Sun, Moon,
   Menu, X, Star, CheckCircle, Package, Lock, ChevronRight,
@@ -301,10 +302,7 @@ function MobileMenu({ dark, setDark, close }) {
 }
 
 /* ─── Hero ────────────────────────────────────────────────── */
-function HeroSection({ visIdx }) {
-  const vis = VISITORS[visIdx];
-  const prev = VISITORS[(visIdx + VISITORS.length - 1) % VISITORS.length];
-
+function HeroSection() {
   return (
     <section style={{position:"relative",overflow:"hidden"}} className="lp-dot-grid">
       <div className="lp-orb1"/><div className="lp-orb2"/>
@@ -357,117 +355,8 @@ function HeroSection({ visIdx }) {
             </div>
           </motion.div>
 
-          {/* ── Right (hero visual) ── */}
-          <motion.div className="lp-hero-r" style={{position:"relative",height:520}}
-            initial={{opacity:0,scale:.94,y:20}} animate={{opacity:1,scale:1,y:0}}
-            transition={{duration:.85,delay:.18,ease:[.2,.8,.2,1]}}>
-
-            {/* Floating: approved notification */}
-            <div className="lp-card f1" style={{position:"absolute",top:14,right:-18,padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderRadius:14,minWidth:218,zIndex:10,boxShadow:"var(--sh2)"}}>
-              <div style={{width:32,height:32,borderRadius:9,background:"var(--grn-l)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                <CheckCircle size={16} color="var(--grn)"/>
-              </div>
-              <div>
-                <div style={{fontSize:12,fontWeight:700,color:"var(--txt)"}}>Visitor Approved</div>
-                <div style={{fontSize:11,color:"var(--txt2)"}}>{prev.name} · {prev.flat}</div>
-              </div>
-            </div>
-
-            {/* Floating: delivery alert */}
-            <div className="lp-card f2" style={{position:"absolute",bottom:90,left:-32,padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderRadius:14,minWidth:210,zIndex:10,boxShadow:"var(--sh2)"}}>
-              <div style={{width:32,height:32,borderRadius:9,background:"var(--ylw-l)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                <Package size={16} color="var(--ylw)"/>
-              </div>
-              <div>
-                <div style={{fontSize:12,fontWeight:700,color:"var(--txt)"}}>New Delivery</div>
-                <div style={{fontSize:11,color:"var(--txt2)"}}>Amazon · Block B · just now</div>
-              </div>
-            </div>
-
-            {/* Floating: gate status */}
-            <div className="lp-card f3" style={{position:"absolute",top:200,left:-38,padding:"10px 14px",display:"flex",alignItems:"center",gap:9,borderRadius:13,zIndex:10}}>
-              <div style={{width:28,height:28,borderRadius:8,background:"var(--blue-l)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                <Lock size={13} color="var(--blue)"/>
-              </div>
-              <div>
-                <div style={{fontSize:11,fontWeight:700,color:"var(--txt)"}}>Gate 1 Secured</div>
-                <div style={{display:"flex",alignItems:"center",gap:5,marginTop:2}}>
-                  <span className="lp-live-dot"/>
-                  <span style={{fontSize:10,color:"var(--txt2)"}}>Live monitoring</span>
-                </div>
-              </div>
-            </div>
-
-            {/* ── Main dashboard card ── */}
-            <div className="lp-card" style={{position:"absolute",top:50,left:16,right:16,bottom:20,borderRadius:20,overflow:"hidden",padding:0}}>
-
-              {/* Header */}
-              <div style={{padding:"14px 18px",borderBottom:"1px solid var(--bdr)",display:"flex",alignItems:"center",justifyContent:"space-between",background:"var(--bg-c)"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <div style={{width:28,height:28,borderRadius:8,background:"var(--blue)",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                    <Shield size={14} color="#fff"/>
-                  </div>
-                  <span style={{fontWeight:700,fontSize:14,color:"var(--txt)"}}>Security Hub</span>
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:5,fontSize:11,color:"var(--grn)",fontWeight:600}}>
-                  <span className="lp-live-dot"/> Live
-                </div>
-              </div>
-
-              {/* Stats row */}
-              <div style={{padding:"12px 14px",display:"flex",gap:8,borderBottom:"1px solid var(--bdr)"}}>
-                {[{l:"Today",v:"127",c:"var(--blue)"},{l:"Pending",v:"4",c:"var(--ylw)"},{l:"Online",v:"89",c:"var(--grn)"}].map(s=>(
-                  <div key={s.l} className="lp-db-stat">
-                    <div style={{fontSize:20,fontWeight:800,color:s.c,lineHeight:1}}>{s.v}</div>
-                    <div style={{fontSize:10,color:"var(--txt2)",marginTop:3}}>{s.l}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Visitor queue */}
-              <div style={{padding:"12px 14px",borderBottom:"1px solid var(--bdr)"}}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9}}>
-                  <span style={{fontSize:10.5,fontWeight:700,color:"var(--txt)",textTransform:"uppercase",letterSpacing:".6px"}}>Visitor Queue</span>
-                  <span style={{fontSize:10,color:"var(--txt2)"}}>4 waiting</span>
-                </div>
-                <AnimatePresence mode="wait">
-                  <motion.div key={visIdx}
-                    initial={{x:32,opacity:0}} animate={{x:0,opacity:1}} exit={{x:-32,opacity:0}}
-                    transition={{duration:.32,ease:[.2,.8,.2,1]}}
-                    style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:"var(--bg-s2)",borderRadius:12}}>
-                    <div className="lp-avatar" style={{background:vis.bg,color:vis.fg}}>{vis.i}</div>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:13,fontWeight:600,color:"var(--txt)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{vis.name}</div>
-                      <div style={{fontSize:11,color:"var(--txt2)"}}>Flat {vis.flat} · {vis.type}</div>
-                    </div>
-                    <div style={{display:"flex",gap:5}}>
-                      <button style={{width:27,height:27,borderRadius:8,background:"var(--grn-l)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--grn)"}}>
-                        <CheckCircle size={13}/>
-                      </button>
-                      <button style={{width:27,height:27,borderRadius:8,background:"var(--red-l)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--red)"}}>
-                        <X size={13}/>
-                      </button>
-                    </div>
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-
-              {/* Mini bar chart */}
-              <div style={{padding:"12px 14px"}}>
-                <div style={{fontSize:10.5,fontWeight:700,color:"var(--txt)",marginBottom:8,textTransform:"uppercase",letterSpacing:".6px"}}>Visitor Traffic · Today</div>
-                <div style={{display:"flex",alignItems:"flex-end",gap:3.5,height:42}}>
-                  {[.28,.45,.60,.38,.82,.55,.70,.95,.65,.50,.38,.55,.72,.44].map((h,i)=>(
-                    <div key={i} style={{flex:1,background:`rgba(37,99,235,${.18+h*.65})`,borderRadius:"3px 3px 0 0",height:`${h*100}%`,minHeight:4,animation:`lp-bar-grow .55s ${i*.035}s ease-out both`}}/>
-                  ))}
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
-                  {["6am","9am","12pm","3pm","6pm","9pm"].map(t=>(
-                    <span key={t} style={{fontSize:9,color:"var(--txt3)"}}>{t}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
+          {/* ── Right (hero visual) — rotating feature showcase ── */}
+          <HeroShowcase />
         </div>
       </div>
     </section>
@@ -1118,8 +1007,6 @@ export default function LandingPage() {
   const [dark, setDark]     = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [mob, setMob]       = useState(false);
-  const [visIdx, setVisIdx] = useState(0);
-
   /* Inject scoped styles + set body bg */
   useEffect(() => {
     const el = document.createElement("style");
@@ -1130,12 +1017,9 @@ export default function LandingPage() {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll);
 
-    const intv = setInterval(() => setVisIdx(i => (i + 1) % VISITORS.length), 3200);
-
     return () => {
       document.head.removeChild(el);
       window.removeEventListener("scroll", onScroll);
-      clearInterval(intv);
     };
   }, []);
 
@@ -1154,7 +1038,7 @@ export default function LandingPage() {
         {mob && <MobileMenu key="mob" dark={dark} setDark={setDark} close={() => setMob(false)}/>}
       </AnimatePresence>
 
-      <HeroSection visIdx={visIdx}/>
+      <HeroSection />
       <StatsStrip/>
       <FeaturesSection/>
       <DashboardPreview/>
