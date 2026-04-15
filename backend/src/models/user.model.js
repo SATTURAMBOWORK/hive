@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema(
     passwordHash: { type: String, required: true },
     role: {
       type: String,
-      enum: ["resident", "committee", "staff", "security", "super_admin"],
+      enum: ["resident", "committee",  "security", "super_admin"],
       default: "resident"
     },
     flatNumber: { type: String, default: "" },

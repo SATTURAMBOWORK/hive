@@ -288,7 +288,7 @@ export function RegisterPage() {
     setError(""); setSuccess("");
     setLoading(true);
     try {
-      const roleMap = { resident: "resident", security: "security", admin: "super_admin" };
+      const roleMap = { resident: "resident", committee: "committee", security: "security", admin: "super_admin" };
       const data = await register({ ...form, desiredRole: roleMap[selectedRole] });
       if (selectedRole === "admin" && data?.token) { navigate("/"); return; }
       setVerification(true);
@@ -449,9 +449,10 @@ export function RegisterPage() {
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                   {[
-                    { role: "resident", emoji: "🏠", title: "Resident",       sub: "I own or rent a flat" },
-                    { role: "security", emoji: "🛡️", title: "Security Guard", sub: "Gate security staff" },
-                    { role: "admin",    emoji: "⚙️", title: "Society Admin",  sub: "Manage the society" },
+                    { role: "resident",  emoji: "🏠", title: "Resident",         sub: "I own or rent a flat" },
+                    { role: "committee", emoji: "👥", title: "Committee Member", sub: "Society management board" },
+                    { role: "security",  emoji: "🛡️", title: "Security Guard",   sub: "Gate security staff" },
+                    { role: "admin",     emoji: "⚙️", title: "Society Admin",    sub: "Manage the society" },
                   ].map(({ role, emoji, title, sub }) => (
                     <button
                       key={role}
@@ -500,7 +501,7 @@ export function RegisterPage() {
                     ← Change role
                   </button>
                   <p style={{ color: "#c8914a", fontSize: "0.68rem", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "6px", fontWeight: 500 }}>
-                    {{resident:"Resident", security:"Security Guard", admin:"Society Admin"}[selectedRole]}
+                    {{resident:"Resident", committee:"Committee Member", security:"Security Guard", admin:"Society Admin"}[selectedRole]}
                   </p>
                   <h1 className="rp-display" style={{ color: "#f5f0e8", fontSize: "2rem", fontWeight: 600, lineHeight: 1.1, margin: 0 }}>
                     Create Account

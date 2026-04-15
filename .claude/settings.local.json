@@ -4,7 +4,12 @@
       "Bash(node -e \"import\\('cloudinary'\\).then\\(\\(\\)=>console.log\\('cloudinary ok'\\)\\).catch\\(e=>console.log\\('missing:',e.message\\)\\)\")",
       "Bash(node -e \"const l = require\\('./node_modules/lucide-react'\\); const icons = ['Shield','CreditCard','ArrowRight','Play','Building2','Bell','Calendar','QrCode','UserCheck','Users','ChevronRight','Zap','CheckCircle2','BadgeCheck','Lock','TrendingUp','Sparkles']; icons.forEach\\(i => console.log\\(i, !!l[i]\\)\\);\")",
       "Bash(node --input-type=module)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node --input-type=module --eval \"import './src/pages/LandingPage.jsx'\")",
+      "Bash(timeout 30 npx vite build)",
+      "Bash(node -e \"const l = require\\('./node_modules/lucide-react/dist/cjs/lucide-react.js'\\); const keys = Object.keys\\(l\\).filter\\(k => k.match\\(/Twitter|Github|Linkedin|Social|Share|Globe|Link/i\\)\\); console.log\\(keys\\);\")",
+      "Bash(timeout 45 npx vite build)"
     ]
   }
 }
