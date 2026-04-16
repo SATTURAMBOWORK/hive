@@ -1,59 +1,68 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../components/AuthContext";
-import { Eye, EyeOff, ArrowRight, Shield, Mail, ShieldCheck } from "lucide-react";
+import {
+  Eye, EyeOff, ArrowRight, Shield, Mail, ShieldCheck,
+  Home, Users, Building2, Bell, BarChart3, Calendar,
+  CheckCircle, Star, Zap,
+} from "lucide-react";
 
-/* ─── Injected styles ───────────────────────────────────────── */
+/* ─── Injected styles ─────────────────────────────────────────────────────── */
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
-  .rp-root *, .rp-root *::before, .rp-root *::after { box-sizing: border-box; }
-  .rp-root { font-family: 'DM Sans', sans-serif; }
-  .rp-display { font-family: 'Cormorant Garamond', serif !important; }
+  .reg-root *, .reg-root *::before, .reg-root *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  .reg-root {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    --bg:        #F7F9FF;
+    --blue:      #2563EB;
+    --blue-d:    #1D4ED8;
+    --blue-lt:   #EFF6FF;
+    --blue-mid:  #BFDBFE;
+    --txt:       #0F172A;
+    --txt2:      #64748B;
+    --txt3:      #94A3B8;
+    --border:    #E2E8F0;
+    --card:      #FFFFFF;
+  }
 
-  /* Input */
-  .rp-input {
+  /* Dot-grid page background */
+  .reg-bg {
+    background-color: var(--bg);
+    background-image: radial-gradient(circle, #CBD5E1 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  /* ── Inputs ── */
+  .reg-input {
     width: 100%;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(245,240,232,0.1);
-    border-radius: 12px;
-    padding: 13px 16px;
-    color: #f5f0e8;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.9rem;
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 14px;
+    color: var(--txt);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.875rem;
     outline: none;
-    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    transition: border-color 0.2s, box-shadow 0.2s;
   }
-  .rp-input::placeholder { color: rgba(245,240,232,0.28); }
-  .rp-input:focus {
-    border-color: #c8914a;
-    box-shadow: 0 0 0 3px rgba(200,145,74,0.15), 0 0 16px rgba(200,145,74,0.08);
+  .reg-input::placeholder { color: var(--txt3); }
+  .reg-input:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
   }
-  .rp-input.error-field { border-color: rgba(244,63,94,0.6); }
-  .rp-input.error-field:focus {
-    border-color: rgba(244,63,94,0.8);
-    box-shadow: 0 0 0 3px rgba(244,63,94,0.1);
-  }
+  .reg-input.err { border-color: #EF4444; }
+  .reg-input.err:focus { box-shadow: 0 0 0 3px rgba(239,68,68,0.1); }
 
-  /* Staggered field entrance */
-  @keyframes fieldSlideIn {
-    from { opacity: 0; transform: translateY(14px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  .rp-field {
-    opacity: 0;
-    animation: fieldSlideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  }
-
-  /* Gold button */
-  .rp-btn {
-    background: linear-gradient(135deg, #c8914a 0%, #e8c47a 100%);
-    color: #0a0907;
+  /* ── Blue CTA button ── */
+  .reg-btn {
+    background: var(--blue);
+    color: #fff;
     border: none;
-    border-radius: 12px;
-    padding: 14px 24px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.92rem;
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.9rem;
     font-weight: 600;
     width: 100%;
     cursor: pointer;
@@ -61,25 +70,26 @@ const CSS = `
     align-items: center;
     justify-content: center;
     gap: 8px;
-    box-shadow: 0 6px 24px rgba(200,145,74,0.35);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    box-shadow: 0 4px 14px rgba(37,99,235,0.3);
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
   }
-  .rp-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 32px rgba(200,145,74,0.5);
+  .reg-btn:hover:not(:disabled) {
+    background: var(--blue-d);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(37,99,235,0.42);
   }
-  .rp-btn:active:not(:disabled) { transform: translateY(0); }
-  .rp-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .reg-btn:active:not(:disabled) { transform: translateY(0); }
+  .reg-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-  /* Ghost button */
-  .rp-btn-ghost {
-    background: rgba(245,240,232,0.05);
-    color: rgba(245,240,232,0.7);
-    border: 1px solid rgba(245,240,232,0.1);
-    border-radius: 12px;
-    padding: 13px 24px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.9rem;
+  /* ── Ghost button ── */
+  .reg-btn-ghost {
+    background: #fff;
+    color: var(--txt2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 20px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.875rem;
     font-weight: 500;
     width: 100%;
     cursor: pointer;
@@ -87,178 +97,343 @@ const CSS = `
     align-items: center;
     justify-content: center;
     gap: 8px;
-    transition: background 0.2s, border-color 0.2s;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
   }
-  .rp-btn-ghost:hover {
-    background: rgba(245,240,232,0.09);
-    border-color: rgba(245,240,232,0.18);
+  .reg-btn-ghost:hover {
+    background: var(--blue-lt);
+    border-color: var(--blue-mid);
+    color: var(--blue);
   }
 
-  /* Role card */
-  .rp-role-card {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(245,240,232,0.08);
-    border-radius: 14px;
-    padding: 18px 16px;
+  /* ── Role card ── */
+  .reg-role-card {
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 14px;
     cursor: pointer;
     text-align: left;
-    transition: background 0.2s, border-color 0.2s, transform 0.2s;
     width: 100%;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
   }
-  .rp-role-card:hover {
-    background: rgba(200,145,74,0.07);
-    border-color: rgba(200,145,74,0.25);
+  .reg-role-card:hover {
+    border-color: var(--blue);
+    box-shadow: 0 4px 16px rgba(37,99,235,0.12);
     transform: translateY(-2px);
   }
 
-  /* Shift card */
-  .rp-shift-card {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(245,240,232,0.08);
-    border-radius: 12px;
-    padding: 14px 10px;
+  /* ── Shift card ── */
+  .reg-shift-card {
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 8px;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 5px;
-    transition: background 0.2s, border-color 0.2s;
+    gap: 4px;
     flex: 1;
+    transition: border-color 0.2s, box-shadow 0.2s;
   }
-  .rp-shift-card:hover {
-    background: rgba(200,145,74,0.07);
-    border-color: rgba(200,145,74,0.25);
+  .reg-shift-card:hover { border-color: var(--blue); box-shadow: 0 2px 8px rgba(37,99,235,0.1); }
+  .reg-shift-active { background: var(--blue-lt) !important; border-color: var(--blue) !important; }
+
+  /* ── Field entrance animation ── */
+  @keyframes reg-slide-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
-  .rp-shift-active {
-    background: rgba(200,145,74,0.12) !important;
-    border-color: #c8914a !important;
+  .reg-field {
+    opacity: 0;
+    animation: reg-slide-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 
-  /* Right panel shimmer */
-  @keyframes shimmerSweep {
-    0%   { transform: translateX(-100%) skewX(-15deg); }
-    100% { transform: translateX(300%) skewX(-15deg); }
+  /* ── Right panel animations ── */
+  @keyframes reg-float-a {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-9px); }
   }
-  .rp-shimmer-sweep {
-    position: absolute; top: 0; bottom: 0;
-    width: 40%;
-    background: linear-gradient(90deg, transparent, rgba(200,145,74,0.06), transparent);
-    animation: shimmerSweep 6s ease-in-out infinite;
-    pointer-events: none;
-    z-index: 3;
+  @keyframes reg-float-b {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(7px); }
   }
-
-  @keyframes pFloat1 {
-    0%,100% { transform: translate(0,0);    opacity: 0.18; }
-    50%      { transform: translate(14px,-20px); opacity: 0.42; }
+  @keyframes reg-float-c {
+    0%,100% { transform: translate(0, 0); }
+    50%      { transform: translate(6px, -6px); }
   }
-  @keyframes pFloat2 {
-    0%,100% { transform: translate(0,0);    opacity: 0.12; }
-    50%      { transform: translate(-18px,12px); opacity: 0.3; }
+  @keyframes reg-live {
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0.25; }
   }
-  @keyframes pFloat3 {
-    0%,100% { transform: translate(0,0);    opacity: 0.22; }
-    50%      { transform: translate(10px,18px);  opacity: 0.5; }
+  @keyframes reg-pulse-ring {
+    0%   { transform: scale(1); opacity: 0.5; }
+    100% { transform: scale(1.9); opacity: 0; }
   }
-  .rp-p1 { animation: pFloat1 7s ease-in-out infinite; }
-  .rp-p2 { animation: pFloat2 9s ease-in-out infinite 1.5s; }
-  .rp-p3 { animation: pFloat3 6s ease-in-out infinite 3s; }
-
-  @keyframes shimmerText {
-    0%   { background-position: -200% center; }
-    100% { background-position:  200% center; }
+  @keyframes reg-fade-slide {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
-  .rp-shimmer-text {
-    background: linear-gradient(90deg, #c8914a 0%, #f0d49a 40%, #c8914a 60%, #e8c47a 100%);
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    animation: shimmerText 4s linear infinite;
-  }
-
-  @keyframes goldLine {
-    from { width: 0; }
-    to   { width: 48px; }
-  }
-  .rp-goldline {
-    height: 2px;
-    background: linear-gradient(90deg, #c8914a, #e8c47a);
-    animation: goldLine 0.8s 0.3s ease forwards;
-    width: 0;
-    margin-bottom: 20px;
-  }
-
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* OTP input */
-  .rp-otp {
+  .reg-fa { animation: reg-float-a 4s ease-in-out infinite; }
+  .reg-fb { animation: reg-float-b 5.5s ease-in-out infinite 0.8s; }
+  .reg-fc { animation: reg-float-c 6s ease-in-out infinite 2s; }
+  .reg-live-dot { animation: reg-live 1.4s ease-in-out infinite; }
+  .reg-fade-in  { animation: reg-fade-slide 0.5s ease forwards; }
+
+  /* ── OTP input ── */
+  .reg-otp {
     width: 100%;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(245,240,232,0.1);
-    border-radius: 12px;
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
     padding: 16px;
-    color: #f5f0e8;
-    font-family: 'Cormorant Garamond', serif;
+    color: var(--txt);
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 2rem;
-    font-weight: 600;
+    font-weight: 700;
     text-align: center;
-    letter-spacing: 0.6em;
+    letter-spacing: 0.55em;
     outline: none;
-    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    transition: border-color 0.2s, box-shadow 0.2s;
   }
-  .rp-otp::placeholder { color: rgba(245,240,232,0.15); font-size: 1.2rem; letter-spacing: 0.4em; }
-  .rp-otp:focus {
-    border-color: #c8914a;
-    box-shadow: 0 0 0 3px rgba(200,145,74,0.15);
+  .reg-otp::placeholder { color: var(--txt3); font-size: 1.1rem; letter-spacing: 0.4em; }
+  .reg-otp:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
   }
 
   @media (max-width: 767px) {
-    .rp-right-visual { display: none !important; }
-    .rp-left-form { width: 100% !important; }
+    .reg-right { display: none !important; }
+    .reg-left  { width: 100% !important; border-radius: 16px !important; }
   }
 `;
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/* Password strength scoring */
+/* ── Password strength ─────────────────────────────────────────────────────── */
 function getStrength(pwd) {
   if (!pwd) return 0;
   let s = 0;
-  if (pwd.length >= 8)             s++;
-  if (pwd.length >= 12)            s++;
-  if (/[A-Z]/.test(pwd))           s++;
-  if (/[0-9]/.test(pwd))           s++;
-  if (/[^A-Za-z0-9]/.test(pwd))    s++;
-  return s; // 0–5
+  if (pwd.length >= 8)           s++;
+  if (pwd.length >= 12)          s++;
+  if (/[A-Z]/.test(pwd))         s++;
+  if (/[0-9]/.test(pwd))         s++;
+  if (/[^A-Za-z0-9]/.test(pwd))  s++;
+  return s;
 }
 function strengthMeta(score) {
-  if (score <= 1) return { label: "Weak",   color: "#f87171", pct: "20%" };
-  if (score <= 2) return { label: "Fair",   color: "#fb923c", pct: "40%" };
-  if (score <= 3) return { label: "Good",   color: "#fbbf24", pct: "65%" };
-  if (score <= 4) return { label: "Strong", color: "#4ade80", pct: "85%" };
-  return             { label: "Excellent", color: "#22c55e", pct: "100%" };
+  if (score <= 1) return { label: "Weak",      color: "#EF4444", pct: "20%" };
+  if (score <= 2) return { label: "Fair",      color: "#F97316", pct: "40%" };
+  if (score <= 3) return { label: "Good",      color: "#F59E0B", pct: "65%" };
+  if (score <= 4) return { label: "Strong",    color: "#22C55E", pct: "85%" };
+  return             { label: "Excellent", color: "#10B981", pct: "100%" };
 }
 
-/* Stagger delay helper */
-const delay = (n) => `${n * 70}ms`;
+const delay = (n) => `${n * 65}ms`;
 
+/* ── Right-panel visual ─────────────────────────────────────────────────────── */
+const RECENT = [
+  { name: "Priya S.", action: "joined as Resident",   ago: "2m ago" },
+  { name: "Rajan M.", action: "joined as Committee",  ago: "9m ago" },
+  { name: "Amit K.",  action: "joined as Admin",      ago: "18m ago" },
+];
+
+const CHIPS = [
+  { icon: Bell,     label: "Announcements", cls: "reg-fa", style: { top: "22%", left: "10%" } },
+  { icon: BarChart3, label: "Polls",        cls: "reg-fb", style: { top: "38%", right: "8%" } },
+  { icon: Calendar,  label: "Events",      cls: "reg-fc", style: { bottom: "30%", left: "8%" } },
+  { icon: Zap,       label: "Amenities",   cls: "reg-fa", style: { bottom: "18%", right: "10%", animationDelay: "1.5s" } },
+];
+
+function RegisterVisual({ step, role }) {
+  const [recentIdx, setRecentIdx] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setRecentIdx((i) => (i + 1) % RECENT.length), 2200);
+    return () => clearInterval(id);
+  }, []);
+
+  const roleContext = {
+    resident:  { icon: Home,     color: "#10B981", bg: "#ECFDF5", label: "Resident",        desc: "Access visitor logs, book amenities & stay updated" },
+    committee: { icon: Users,    color: "#8B5CF6", bg: "#F5F3FF", label: "Committee Member", desc: "Manage society decisions, polls & announcements" },
+    security:  { icon: Shield,   color: "#2563EB", bg: "#EFF6FF", label: "Security Guard",   desc: "Monitor gate activity & manage visitor approvals" },
+    admin:     { icon: Building2,color: "#F59E0B", bg: "#FFFBEB", label: "Society Admin",    desc: "Full control over your society's digital infrastructure" },
+  };
+
+  const ctx = role ? roleContext[role] : null;
+
+  return (
+    <div
+      className="reg-right"
+      style={{
+        width: "46%",
+        flexShrink: 0,
+        background: "linear-gradient(145deg, #1E3A8A 0%, #2563EB 55%, #3B82F6 100%)",
+        position: "relative",
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        padding: "40px 36px",
+      }}
+    >
+      {/* Decorative circles */}
+      <div style={{ position: "absolute", top: "-60px", right: "-60px", width: 240, height: 240, borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", bottom: "-80px", left: "-40px", width: 280, height: 280, borderRadius: "50%", background: "rgba(255,255,255,0.04)", pointerEvents: "none" }} />
+
+      {/* Floating feature chips */}
+      {CHIPS.map(({ icon: Icon, label, cls, style }) => (
+        <div
+          key={label}
+          className={cls}
+          style={{
+            position: "absolute",
+            background: "rgba(255,255,255,0.12)",
+            backdropFilter: "blur(8px)",
+            border: "1px solid rgba(255,255,255,0.2)",
+            borderRadius: "20px",
+            padding: "6px 12px",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            zIndex: 2,
+            ...style,
+          }}
+        >
+          <Icon size={13} color="rgba(255,255,255,0.9)" />
+          <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "rgba(255,255,255,0.9)", whiteSpace: "nowrap" }}>{label}</span>
+        </div>
+      ))}
+
+      {/* Top: Logo */}
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", zIndex: 3 }}>
+        <div style={{ width: 34, height: 34, borderRadius: 9, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Shield size={16} color="#fff" strokeWidth={2.5} />
+        </div>
+        <span style={{ color: "#fff", fontSize: "1.05rem", fontWeight: 700, letterSpacing: "-0.01em" }}>AptHive</span>
+      </div>
+
+      {/* Middle: Main card */}
+      <div style={{ zIndex: 3 }}>
+        {/* Role context card — shown after role is selected */}
+        {ctx && (
+          <div
+            className="reg-fade-in"
+            style={{
+              background: "rgba(255,255,255,0.12)",
+              backdropFilter: "blur(12px)",
+              border: "1px solid rgba(255,255,255,0.2)",
+              borderRadius: 16,
+              padding: "18px 20px",
+              marginBottom: "18px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "10px" }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: ctx.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <ctx.icon size={18} color={ctx.color} />
+              </div>
+              <div>
+                <p style={{ color: "rgba(255,255,255,0.65)", fontSize: "0.7rem", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.08em" }}>Joining as</p>
+                <p style={{ color: "#fff", fontSize: "0.95rem", fontWeight: 700 }}>{ctx.label}</p>
+              </div>
+            </div>
+            <p style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.8rem", lineHeight: 1.55 }}>{ctx.desc}</p>
+          </div>
+        )}
+
+        {/* Community stats card */}
+        <div
+          style={{
+            background: "rgba(255,255,255,0.1)",
+            backdropFilter: "blur(10px)",
+            border: "1px solid rgba(255,255,255,0.18)",
+            borderRadius: 16,
+            padding: "20px",
+            marginBottom: "18px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#4ADE80" }} className="reg-live-dot" />
+            <span style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.75rem", fontWeight: 600 }}>Community Growing</span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+            {[
+              { value: "500+", label: "Residents" },
+              { value: "50+",  label: "Societies" },
+              { value: "12",   label: "Features" },
+            ].map(({ value, label }) => (
+              <div key={label} style={{ textAlign: "center" }}>
+                <p style={{ color: "#fff", fontSize: "1.4rem", fontWeight: 800, lineHeight: 1 }}>{value}</p>
+                <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.7rem", marginTop: "4px", fontWeight: 500 }}>{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Recent join activity */}
+        <div
+          style={{
+            background: "rgba(255,255,255,0.08)",
+            border: "1px solid rgba(255,255,255,0.14)",
+            borderRadius: 12,
+            padding: "13px 16px",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+          }}
+        >
+          <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#818CF8,#C084FC)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <span style={{ color: "#fff", fontSize: "0.75rem", fontWeight: 700 }}>
+              {RECENT[recentIdx].name.charAt(0)}
+            </span>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ color: "#fff", fontSize: "0.82rem", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {RECENT[recentIdx].name}
+            </p>
+            <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.72rem" }}>{RECENT[recentIdx].action}</p>
+          </div>
+          <span style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.7rem", flexShrink: 0 }}>{RECENT[recentIdx].ago}</span>
+        </div>
+      </div>
+
+      {/* Bottom: Tagline */}
+      <div style={{ zIndex: 3 }}>
+        <div style={{ display: "flex", gap: "4px", marginBottom: "8px" }}>
+          {[...Array(5)].map((_, i) => (
+            <Star key={i} size={12} fill="#FDE68A" color="#FDE68A" />
+          ))}
+        </div>
+        <p style={{ color: "rgba(255,255,255,0.9)", fontSize: "1.05rem", fontWeight: 700, lineHeight: 1.35 }}>
+          "A smarter way to<br />run your society."
+        </p>
+        <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.78rem", marginTop: "6px" }}>
+          Trusted by communities across India
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ── Main component ─────────────────────────────────────────────────────────── */
 export function RegisterPage() {
   const { register, verifyRegistration, resendRegistrationOtp } = useAuth();
   const navigate = useNavigate();
 
-  const [roleStep, setRoleStep]               = useState(true);
-  const [selectedRole, setSelectedRole]       = useState(null);
-  const [verificationStep, setVerification]   = useState(false);
-  const [otpCode, setOtpCode]                 = useState("");
-  const [error, setError]                     = useState("");
-  const [success, setSuccess]                 = useState("");
-  const [emailError, setEmailErr]             = useState("");
-  const [confirmPassword, setConfirmPw]       = useState("");
-  const [confirmError, setConfirmErr]         = useState("");
-  const [showPassword, setShowPw]             = useState(false);
-  const [showConfirm, setShowConfirm]         = useState(false);
-  const [isLoading, setLoading]               = useState(false);
+  const [roleStep,        setRoleStep]       = useState(true);
+  const [selectedRole,    setSelectedRole]   = useState(null);
+  const [verificationStep, setVerification]  = useState(false);
+  const [otpCode,         setOtpCode]        = useState("");
+  const [error,           setError]          = useState("");
+  const [success,         setSuccess]        = useState("");
+  const [emailError,      setEmailErr]       = useState("");
+  const [confirmPassword, setConfirmPw]      = useState("");
+  const [confirmError,    setConfirmErr]     = useState("");
+  const [showPassword,    setShowPw]         = useState(false);
+  const [showConfirm,     setShowConfirm]    = useState(false);
+  const [isLoading,       setLoading]        = useState(false);
   const [form, setForm] = useState({
     fullName: "", email: "", password: "",
     tenantSlug: "", flatNumber: "", phone: "",
@@ -266,14 +441,14 @@ export function RegisterPage() {
     shift: "",
   });
 
-  function field(key) {
-    return (e) => setForm((p) => ({ ...p, [key]: e.target.value }));
-  }
+  function field(key) { return (e) => setForm((p) => ({ ...p, [key]: e.target.value })); }
+
   function handleEmailChange(e) {
     const v = e.target.value;
     setForm((p) => ({ ...p, email: v }));
     setEmailErr(v && !EMAIL_REGEX.test(v) ? "Enter a valid email address." : "");
   }
+
   function handleConfirmChange(e) {
     const v = e.target.value;
     setConfirmPw(v);
@@ -285,8 +460,7 @@ export function RegisterPage() {
     if (emailError) return;
     if (form.password !== confirmPassword) { setConfirmErr("Passwords do not match."); return; }
     if (selectedRole === "security" && !form.shift) { setError("Please select a shift."); return; }
-    setError(""); setSuccess("");
-    setLoading(true);
+    setError(""); setSuccess(""); setLoading(true);
     try {
       const roleMap = { resident: "resident", committee: "committee", security: "security", admin: "super_admin" };
       const data = await register({ ...form, desiredRole: roleMap[selectedRole] });
@@ -302,8 +476,7 @@ export function RegisterPage() {
 
   async function handleVerify(e) {
     e.preventDefault();
-    setError(""); setSuccess("");
-    setLoading(true);
+    setError(""); setSuccess(""); setLoading(true);
     try {
       await verifyRegistration({ email: form.email, tenantSlug: form.tenantSlug, otp: otpCode });
       navigate("/");
@@ -324,130 +497,113 @@ export function RegisterPage() {
     }
   }
 
-  /* ── Shared styles ── */
+  /* ── Shared UI helpers ── */
   const labelStyle = {
     display: "block",
-    color: "rgba(245,240,232,0.55)",
-    fontSize: "0.78rem",
-    marginBottom: "6px",
-    letterSpacing: "0.04em",
-    fontWeight: 500,
+    color: "#475569",
+    fontSize: "0.8rem",
+    fontWeight: 600,
+    marginBottom: "5px",
+    letterSpacing: "0.01em",
   };
-  const errorMsg = (msg) => msg ? (
-    <p style={{ color: "#fca5a5", fontSize: "0.75rem", marginTop: "5px" }}>{msg}</p>
+
+  const errMsg = (msg) => msg ? (
+    <p style={{ color: "#EF4444", fontSize: "0.75rem", marginTop: "4px", fontWeight: 500 }}>{msg}</p>
   ) : null;
 
   const errBox = (msg) => msg ? (
-    <div
-      style={{
-        background: "rgba(244,63,94,0.08)",
-        border: "1px solid rgba(244,63,94,0.25)",
-        borderRadius: "10px",
-        padding: "12px 16px",
-        color: "#fca5a5",
-        fontSize: "0.86rem",
-        lineHeight: 1.5,
-      }}
-    >
+    <div style={{
+      background: "#FEF2F2", border: "1px solid #FECACA",
+      borderRadius: 10, padding: "11px 14px",
+      color: "#DC2626", fontSize: "0.84rem", lineHeight: 1.5,
+    }}>
       {msg}
     </div>
   ) : null;
 
   const successBox = (msg) => msg ? (
-    <div
-      style={{
-        background: "rgba(34,197,94,0.08)",
-        border: "1px solid rgba(34,197,94,0.2)",
-        borderRadius: "10px",
-        padding: "12px 16px",
-        color: "#86efac",
-        fontSize: "0.86rem",
-        lineHeight: 1.5,
-      }}
-    >
+    <div style={{
+      background: "#F0FDF4", border: "1px solid #BBF7D0",
+      borderRadius: 10, padding: "11px 14px",
+      color: "#16A34A", fontSize: "0.84rem", lineHeight: 1.5,
+    }}>
       {msg}
     </div>
   ) : null;
 
-  /* Strength bar */
   const pwStrength = strengthMeta(getStrength(form.password));
 
-  /* Spinner element */
   const spinner = (
-    <span
-      style={{
-        width: 14, height: 14,
-        border: "2px solid rgba(10,9,7,0.3)",
-        borderTopColor: "#0a0907",
-        borderRadius: "50%",
-        animation: "spin 0.7s linear infinite",
-        display: "inline-block",
-      }}
-    />
+    <span style={{
+      width: 14, height: 14,
+      border: "2px solid rgba(255,255,255,0.35)",
+      borderTopColor: "#fff",
+      borderRadius: "50%",
+      animation: "spin 0.7s linear infinite",
+      display: "inline-block",
+    }} />
   );
 
-  /* ── Right visual panel particles ── */
-  const PARTICLES = [
-    { cls: "rp-p1", style: { top: "18%", left: "20%",  width: 6, height: 6 } },
-    { cls: "rp-p2", style: { top: "45%", left: "75%",  width: 4, height: 4 } },
-    { cls: "rp-p3", style: { top: "72%", left: "32%",  width: 7, height: 7 } },
-    { cls: "rp-p1", style: { top: "28%", left: "60%",  width: 5, height: 5 } },
-    { cls: "rp-p2", style: { top: "85%", left: "65%",  width: 4, height: 4 } },
-  ];
+  /* Determine which "step" we're on for the visual */
+  const currentStep = verificationStep ? "otp" : roleStep ? "role" : "form";
 
   return (
     <>
       <style>{CSS}</style>
       <div
-        className="rp-root"
+        className="reg-root reg-bg"
         style={{
           minHeight: "100vh",
-          background: "#0a0907",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           padding: "24px 16px",
         }}
       >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: "960px",
-            display: "flex",
-            borderRadius: "20px",
-            overflow: "hidden",
-            boxShadow: "0 40px 120px rgba(0,0,0,0.7), 0 0 0 1px rgba(200,145,74,0.12)",
-          }}
-        >
-          {/* ══════════ LEFT PANEL — Form ══════════ */}
+        <div style={{
+          width: "100%",
+          maxWidth: 980,
+          display: "flex",
+          borderRadius: 20,
+          overflow: "hidden",
+          boxShadow: "0 8px 40px rgba(15,23,42,0.12), 0 0 0 1px rgba(226,232,240,0.8)",
+        }}>
+
+          {/* ════════════ LEFT PANEL — Form ════════════ */}
           <div
-            className="rp-left-form"
+            className="reg-left"
             style={{
-              width: "55%",
-              background: "#0d0b09",
-              padding: "48px 44px",
+              width: "54%",
+              background: "#fff",
+              padding: "44px 44px",
               display: "flex",
               flexDirection: "column",
               justifyContent: "center",
-              minHeight: "600px",
+              minHeight: 620,
             }}
           >
+
             {/* ─── STEP 1: Role selection ─── */}
             {roleStep && !selectedRole && (
               <>
-                <div style={{ marginBottom: "28px" }}>
-                  <p style={{ color: "#c8914a", fontSize: "0.68rem", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "8px", fontWeight: 500 }}>
-                    Get started
-                  </p>
-                  <h1 className="rp-display" style={{ color: "#f5f0e8", fontSize: "2.2rem", fontWeight: 600, lineHeight: 1.1, margin: 0 }}>
+                {/* Header */}
+                <div style={{ marginBottom: "26px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
+                    <div style={{ width: 30, height: 30, borderRadius: 8, background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Shield size={14} color="#2563EB" strokeWidth={2.5} />
+                    </div>
+                    <span style={{ color: "#2563EB", fontSize: "0.8rem", fontWeight: 700, letterSpacing: "0.02em" }}>AptHive</span>
+                  </div>
+                  <h1 style={{ color: "#0F172A", fontSize: "1.75rem", fontWeight: 800, lineHeight: 1.15, letterSpacing: "-0.02em" }}>
                     Join AptHive
                   </h1>
-                  <p style={{ color: "rgba(245,240,232,0.4)", fontSize: "0.88rem", marginTop: "6px", fontWeight: 300 }}>
+                  <p style={{ color: "#64748B", fontSize: "0.875rem", marginTop: "6px", lineHeight: 1.55 }}>
                     Select the role that best describes you
                   </p>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                {/* Role grid */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                   {[
                     { role: "resident",  emoji: "🏠", title: "Resident",         sub: "I own or rent a flat" },
                     { role: "committee", emoji: "👥", title: "Committee Member", sub: "Society management board" },
@@ -456,25 +612,20 @@ export function RegisterPage() {
                   ].map(({ role, emoji, title, sub }) => (
                     <button
                       key={role}
-                      className="rp-role-card"
+                      className="reg-role-card"
                       onClick={() => { setSelectedRole(role); setRoleStep(false); }}
                     >
-                      <span style={{ fontSize: "1.6rem", display: "block", marginBottom: "8px" }}>{emoji}</span>
-                      <p style={{ color: "#f5f0e8", fontSize: "0.9rem", fontWeight: 600, margin: 0 }}>{title}</p>
-                      <p style={{ color: "rgba(245,240,232,0.4)", fontSize: "0.75rem", marginTop: "3px" }}>{sub}</p>
+                      <span style={{ fontSize: "1.5rem", display: "block", marginBottom: "8px" }}>{emoji}</span>
+                      <p style={{ color: "#0F172A", fontSize: "0.875rem", fontWeight: 700 }}>{title}</p>
+                      <p style={{ color: "#94A3B8", fontSize: "0.75rem", marginTop: "3px" }}>{sub}</p>
                     </button>
                   ))}
                 </div>
 
-                <div style={{ marginTop: "28px", paddingTop: "24px", borderTop: "1px solid rgba(245,240,232,0.06)", textAlign: "center" }}>
-                  <p style={{ color: "rgba(245,240,232,0.38)", fontSize: "0.86rem" }}>
+                <div style={{ marginTop: "26px", paddingTop: "20px", borderTop: "1px solid #F1F5F9", textAlign: "center" }}>
+                  <p style={{ color: "#64748B", fontSize: "0.85rem" }}>
                     Already have an account?{" "}
-                    <Link
-                      to="/login"
-                      style={{ color: "#c8914a", fontWeight: 600, textDecoration: "none" }}
-                      onMouseEnter={(e) => (e.target.style.color = "#e8c47a")}
-                      onMouseLeave={(e) => (e.target.style.color = "#c8914a")}
-                    >
+                    <Link to="/login" style={{ color: "#2563EB", fontWeight: 600, textDecoration: "none" }}>
                       Sign in
                     </Link>
                   </p>
@@ -485,45 +636,60 @@ export function RegisterPage() {
             {/* ─── STEP 2: Registration form ─── */}
             {!roleStep && !verificationStep && (
               <>
-                <div style={{ marginBottom: "24px" }}>
+                {/* Header */}
+                <div style={{ marginBottom: "22px" }}>
                   <button
-                    onClick={() => { setSelectedRole(null); setRoleStep(true); }}
+                    onClick={() => { setSelectedRole(null); setRoleStep(true); setError(""); }}
                     style={{
                       background: "none", border: "none", cursor: "pointer",
-                      color: "rgba(200,145,74,0.7)", fontSize: "0.8rem",
-                      padding: 0, marginBottom: "12px",
+                      color: "#64748B", fontSize: "0.8rem", fontWeight: 500,
+                      padding: 0, marginBottom: "14px",
                       display: "flex", alignItems: "center", gap: "4px",
                       transition: "color 0.2s",
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = "#c8914a")}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(200,145,74,0.7)")}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "#2563EB")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "#64748B")}
                   >
                     ← Change role
                   </button>
-                  <p style={{ color: "#c8914a", fontSize: "0.68rem", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "6px", fontWeight: 500 }}>
-                    {{resident:"Resident", committee:"Committee Member", security:"Security Guard", admin:"Society Admin"}[selectedRole]}
-                  </p>
-                  <h1 className="rp-display" style={{ color: "#f5f0e8", fontSize: "2rem", fontWeight: 600, lineHeight: 1.1, margin: 0 }}>
-                    Create Account
+
+                  {/* Role badge */}
+                  <div
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: "6px",
+                      background: "#EFF6FF", borderRadius: 20, padding: "4px 12px 4px 8px",
+                      marginBottom: "10px",
+                    }}
+                  >
+                    <span style={{ fontSize: "0.85rem" }}>
+                      {{ resident: "🏠", committee: "👥", security: "🛡️", admin: "⚙️" }[selectedRole]}
+                    </span>
+                    <span style={{ color: "#2563EB", fontSize: "0.75rem", fontWeight: 700 }}>
+                      {{ resident: "Resident", committee: "Committee Member", security: "Security Guard", admin: "Society Admin" }[selectedRole]}
+                    </span>
+                  </div>
+
+                  <h1 style={{ color: "#0F172A", fontSize: "1.6rem", fontWeight: 800, lineHeight: 1.15, letterSpacing: "-0.02em" }}>
+                    Create your account
                   </h1>
                 </div>
 
-                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "13px" }}>
                   {errBox(error)}
 
                   {/* Full Name */}
-                  <div className="rp-field" style={{ animationDelay: delay(0) }}>
+                  <div className="reg-field" style={{ animationDelay: delay(0) }}>
                     <label style={labelStyle}>Full Name</label>
-                    <input className="rp-input" placeholder="Your full name" value={form.fullName} onChange={field("fullName")} required />
+                    <input className="reg-input" placeholder="Your full name" value={form.fullName} onChange={field("fullName")} required />
                   </div>
 
                   {/* Society Code */}
-                  <div className="rp-field" style={{ animationDelay: delay(1) }}>
+                  <div className="reg-field" style={{ animationDelay: delay(1) }}>
                     <label style={labelStyle}>
-                      {selectedRole === "admin" ? "Choose a society code" : "Society Code"}
+                      {selectedRole === "admin" ? "Choose a Society Code" : "Society Code"}
                     </label>
                     <input
-                      className="rp-input"
+                      className="reg-input"
                       placeholder="e.g. green-heights"
                       value={form.tenantSlug}
                       onChange={field("tenantSlug")}
@@ -531,35 +697,35 @@ export function RegisterPage() {
                     />
                   </div>
 
-                  {/* Phone — for non-admin */}
+                  {/* Phone — non-admin */}
                   {selectedRole !== "admin" && (
-                    <div className="rp-field" style={{ animationDelay: delay(2) }}>
+                    <div className="reg-field" style={{ animationDelay: delay(2) }}>
                       <label style={labelStyle}>Phone Number</label>
-                      <input className="rp-input" placeholder="+91 98765 43210" value={form.phone} onChange={field("phone")} />
+                      <input className="reg-input" placeholder="+91 98765 43210" value={form.phone} onChange={field("phone")} />
                     </div>
                   )}
 
                   {/* Shift selector — security only */}
                   {selectedRole === "security" && (
-                    <div className="rp-field" style={{ animationDelay: delay(3) }}>
+                    <div className="reg-field" style={{ animationDelay: delay(3) }}>
                       <label style={labelStyle}>
-                        Shift <span style={{ color: "#fca5a5" }}>*</span>
+                        Shift <span style={{ color: "#EF4444" }}>*</span>
                       </label>
                       <div style={{ display: "flex", gap: "8px" }}>
                         {[
-                          { value: "morning", label: "Morning", time: "6am – 2pm",   emoji: "🌅" },
-                          { value: "evening", label: "Evening", time: "2pm – 10pm",  emoji: "🌆" },
-                          { value: "night",   label: "Night",   time: "10pm – 6am",  emoji: "🌙" },
+                          { value: "morning", label: "Morning", time: "6am – 2pm",  emoji: "🌅" },
+                          { value: "evening", label: "Evening", time: "2pm – 10pm", emoji: "🌆" },
+                          { value: "night",   label: "Night",   time: "10pm – 6am", emoji: "🌙" },
                         ].map((s) => (
                           <button
                             key={s.value}
                             type="button"
                             onClick={() => setForm((p) => ({ ...p, shift: s.value }))}
-                            className={`rp-shift-card${form.shift === s.value ? " rp-shift-active" : ""}`}
+                            className={`reg-shift-card${form.shift === s.value ? " reg-shift-active" : ""}`}
                           >
-                            <span style={{ fontSize: "1.3rem" }}>{s.emoji}</span>
-                            <span style={{ color: form.shift === s.value ? "#e8c47a" : "#f5f0e8", fontSize: "0.78rem", fontWeight: 600 }}>{s.label}</span>
-                            <span style={{ color: "rgba(245,240,232,0.35)", fontSize: "0.65rem" }}>{s.time}</span>
+                            <span style={{ fontSize: "1.2rem" }}>{s.emoji}</span>
+                            <span style={{ color: form.shift === s.value ? "#2563EB" : "#0F172A", fontSize: "0.78rem", fontWeight: 700 }}>{s.label}</span>
+                            <span style={{ color: "#94A3B8", fontSize: "0.65rem" }}>{s.time}</span>
                           </button>
                         ))}
                       </div>
@@ -568,46 +734,46 @@ export function RegisterPage() {
 
                   {/* Admin-specific fields */}
                   {selectedRole === "admin" && (
-                    <div className="rp-field" style={{ animationDelay: delay(3), display: "flex", flexDirection: "column", gap: "14px" }}>
+                    <div className="reg-field" style={{ animationDelay: delay(3), display: "flex", flexDirection: "column", gap: "13px" }}>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                         <div>
                           <label style={labelStyle}>Society Name</label>
-                          <input className="rp-input" placeholder="Green Heights" value={form.tenantName} onChange={field("tenantName")} required />
+                          <input className="reg-input" placeholder="Green Heights" value={form.tenantName} onChange={field("tenantName")} required />
                         </div>
                         <div>
                           <label style={labelStyle}>City</label>
-                          <input className="rp-input" placeholder="Bangalore" value={form.tenantCity} onChange={field("tenantCity")} required />
+                          <input className="reg-input" placeholder="Bangalore" value={form.tenantCity} onChange={field("tenantCity")} required />
                         </div>
                       </div>
                       <div>
                         <label style={labelStyle}>Admin Signup Key</label>
-                        <input className="rp-input" placeholder="••••••••" type="password" value={form.superAdminSignupKey} onChange={field("superAdminSignupKey")} required />
+                        <input className="reg-input" placeholder="••••••••" type="password" value={form.superAdminSignupKey} onChange={field("superAdminSignupKey")} required />
                       </div>
                     </div>
                   )}
 
                   {/* Email */}
-                  <div className="rp-field" style={{ animationDelay: delay(4) }}>
+                  <div className="reg-field" style={{ animationDelay: delay(4) }}>
                     <label style={labelStyle}>Email Address</label>
                     <input
                       type="email"
-                      className={`rp-input${emailError ? " error-field" : ""}`}
+                      className={`reg-input${emailError ? " err" : ""}`}
                       placeholder="you@example.com"
                       value={form.email}
                       onChange={handleEmailChange}
                       required
                     />
-                    {errorMsg(emailError)}
+                    {errMsg(emailError)}
                   </div>
 
-                  {/* Password + strength bar */}
-                  <div className="rp-field" style={{ animationDelay: delay(5) }}>
+                  {/* Password + strength */}
+                  <div className="reg-field" style={{ animationDelay: delay(5) }}>
                     <label style={labelStyle}>Password</label>
                     <div style={{ position: "relative" }}>
                       <input
                         type={showPassword ? "text" : "password"}
-                        className="rp-input"
-                        style={{ paddingRight: "44px" }}
+                        className="reg-input"
+                        style={{ paddingRight: "42px" }}
                         placeholder="••••••••"
                         value={form.password}
                         onChange={field("password")}
@@ -620,40 +786,30 @@ export function RegisterPage() {
                         style={{
                           position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)",
                           background: "none", border: "none", cursor: "pointer",
-                          color: "rgba(245,240,232,0.35)", padding: "4px",
-                          display: "flex", alignItems: "center",
+                          color: "#94A3B8", padding: "4px", display: "flex", alignItems: "center",
                           transition: "color 0.2s",
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = "#c8914a")}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(245,240,232,0.35)")}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "#2563EB")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "#94A3B8")}
                       >
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
 
-                    {/* Strength bar — only shown when typing */}
                     {form.password.length > 0 && (
-                      <div style={{ marginTop: "8px" }}>
-                        <div
-                          style={{
-                            height: "3px",
-                            borderRadius: "4px",
-                            background: "rgba(245,240,232,0.08)",
-                            overflow: "hidden",
-                          }}
-                        >
+                      <div style={{ marginTop: "7px" }}>
+                        <div style={{ height: 3, borderRadius: 4, background: "#F1F5F9", overflow: "hidden" }}>
                           <div
                             style={{
                               height: "100%",
                               width: pwStrength.pct,
                               background: pwStrength.color,
-                              borderRadius: "4px",
+                              borderRadius: 4,
                               transition: "width 0.4s ease, background 0.4s ease",
-                              boxShadow: `0 0 8px ${pwStrength.color}55`,
                             }}
                           />
                         </div>
-                        <p style={{ color: pwStrength.color, fontSize: "0.7rem", marginTop: "4px", fontWeight: 500 }}>
+                        <p style={{ color: pwStrength.color, fontSize: "0.7rem", marginTop: "4px", fontWeight: 600 }}>
                           {pwStrength.label}
                         </p>
                       </div>
@@ -661,13 +817,13 @@ export function RegisterPage() {
                   </div>
 
                   {/* Confirm Password */}
-                  <div className="rp-field" style={{ animationDelay: delay(6) }}>
+                  <div className="reg-field" style={{ animationDelay: delay(6) }}>
                     <label style={labelStyle}>Confirm Password</label>
                     <div style={{ position: "relative" }}>
                       <input
                         type={showConfirm ? "text" : "password"}
-                        className={`rp-input${confirmError ? " error-field" : ""}`}
-                        style={{ paddingRight: "44px" }}
+                        className={`reg-input${confirmError ? " err" : ""}`}
+                        style={{ paddingRight: "42px" }}
                         placeholder="••••••••"
                         value={confirmPassword}
                         onChange={handleConfirmChange}
@@ -680,39 +836,27 @@ export function RegisterPage() {
                         style={{
                           position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)",
                           background: "none", border: "none", cursor: "pointer",
-                          color: "rgba(245,240,232,0.35)", padding: "4px",
-                          display: "flex", alignItems: "center",
+                          color: "#94A3B8", padding: "4px", display: "flex", alignItems: "center",
                           transition: "color 0.2s",
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = "#c8914a")}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(245,240,232,0.35)")}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "#2563EB")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "#94A3B8")}
                       >
                         {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
-                    {errorMsg(confirmError)}
+                    {errMsg(confirmError)}
                   </div>
 
-                  {/* Submit */}
-                  <button
-                    type="submit"
-                    className="rp-btn"
-                    disabled={isLoading}
-                    style={{ marginTop: "4px" }}
-                  >
+                  <button type="submit" className="reg-btn" disabled={isLoading} style={{ marginTop: "4px" }}>
                     {isLoading ? <>{spinner} Creating account…</> : <>Create Account <ArrowRight size={15} /></>}
                   </button>
                 </form>
 
-                <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid rgba(245,240,232,0.06)", textAlign: "center" }}>
-                  <p style={{ color: "rgba(245,240,232,0.38)", fontSize: "0.86rem" }}>
+                <div style={{ marginTop: "20px", paddingTop: "18px", borderTop: "1px solid #F1F5F9", textAlign: "center" }}>
+                  <p style={{ color: "#64748B", fontSize: "0.85rem" }}>
                     Already have an account?{" "}
-                    <Link
-                      to="/login"
-                      style={{ color: "#c8914a", fontWeight: 600, textDecoration: "none" }}
-                      onMouseEnter={(e) => (e.target.style.color = "#e8c47a")}
-                      onMouseLeave={(e) => (e.target.style.color = "#c8914a")}
-                    >
+                    <Link to="/login" style={{ color: "#2563EB", fontWeight: 600, textDecoration: "none" }}>
                       Sign in
                     </Link>
                   </p>
@@ -723,35 +867,52 @@ export function RegisterPage() {
             {/* ─── STEP 3: OTP Verification ─── */}
             {verificationStep && (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-                {/* Icon */}
+                {/* Icon with pulse ring */}
+                <div style={{ position: "relative", marginBottom: "22px" }}>
+                  <div
+                    style={{
+                      position: "absolute", inset: -8, borderRadius: "50%",
+                      border: "2px solid rgba(37,99,235,0.3)",
+                      animation: "reg-pulse-ring 2s ease-out infinite",
+                    }}
+                  />
+                  <div
+                    style={{
+                      width: 60, height: 60, borderRadius: "50%",
+                      background: "#EFF6FF", border: "2px solid #BFDBFE",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    <Mail size={26} color="#2563EB" />
+                  </div>
+                </div>
+
                 <div
                   style={{
-                    width: 60, height: 60, borderRadius: 16,
-                    background: "rgba(200,145,74,0.1)",
-                    border: "1px solid rgba(200,145,74,0.25)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    marginBottom: "20px",
+                    display: "inline-flex", alignItems: "center", gap: "6px",
+                    background: "#F0FDF4", border: "1px solid #BBF7D0",
+                    borderRadius: 20, padding: "4px 12px",
+                    marginBottom: "14px",
                   }}
                 >
-                  <Mail size={26} style={{ color: "#c8914a" }} />
+                  <CheckCircle size={13} color="#16A34A" />
+                  <span style={{ color: "#16A34A", fontSize: "0.75rem", fontWeight: 600 }}>Account created</span>
                 </div>
-                <p style={{ color: "#c8914a", fontSize: "0.68rem", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "6px", fontWeight: 500 }}>
-                  Verify your email
-                </p>
-                <h1 className="rp-display" style={{ color: "#f5f0e8", fontSize: "1.9rem", fontWeight: 600, margin: 0, marginBottom: "8px" }}>
+
+                <h1 style={{ color: "#0F172A", fontSize: "1.65rem", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "8px" }}>
                   Check your inbox
                 </h1>
-                <p style={{ color: "rgba(245,240,232,0.4)", fontSize: "0.88rem", marginBottom: "28px", maxWidth: "280px" }}>
+                <p style={{ color: "#64748B", fontSize: "0.875rem", marginBottom: "28px", maxWidth: "280px", lineHeight: 1.6 }}>
                   We sent a 6-digit code to{" "}
-                  <span style={{ color: "#e8c47a", fontWeight: 500 }}>{form.email}</span>
+                  <span style={{ color: "#2563EB", fontWeight: 600 }}>{form.email}</span>
                 </p>
 
-                <form onSubmit={handleVerify} style={{ width: "100%", display: "flex", flexDirection: "column", gap: "14px" }}>
+                <form onSubmit={handleVerify} style={{ width: "100%", display: "flex", flexDirection: "column", gap: "13px" }}>
                   {errBox(error)}
                   {successBox(success)}
 
                   <input
-                    className="rp-otp"
+                    className="reg-otp"
                     placeholder="· · · · · ·"
                     maxLength={6}
                     value={otpCode}
@@ -759,11 +920,11 @@ export function RegisterPage() {
                     required
                   />
 
-                  <button type="submit" className="rp-btn" disabled={isLoading}>
+                  <button type="submit" className="reg-btn" disabled={isLoading}>
                     {isLoading ? <>{spinner} Verifying…</> : <><ShieldCheck size={16} /> Verify Account</>}
                   </button>
 
-                  <button type="button" className="rp-btn-ghost" onClick={handleResend}>
+                  <button type="button" className="reg-btn-ghost" onClick={handleResend}>
                     Resend code
                   </button>
                 </form>
@@ -771,117 +932,8 @@ export function RegisterPage() {
             )}
           </div>
 
-          {/* ══════════ RIGHT PANEL — Decorative ══════════ */}
-          <div
-            className="rp-right-visual"
-            style={{
-              width: "45%",
-              position: "relative",
-              overflow: "hidden",
-              flexShrink: 0,
-            }}
-          >
-            {/* BG image */}
-            <div
-              style={{
-                position: "absolute", inset: 0,
-                backgroundImage: "url('https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=900&q=80')",
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            />
-            {/* Dark overlay */}
-            <div
-              style={{
-                position: "absolute", inset: 0,
-                background: "linear-gradient(200deg, rgba(10,9,7,0.6) 0%, rgba(10,9,7,0.45) 40%, rgba(10,9,7,0.9) 100%)",
-              }}
-            />
-            {/* Gold radial */}
-            <div
-              style={{
-                position: "absolute", inset: 0,
-                background: "radial-gradient(ellipse 70% 50% at 60% 40%, rgba(200,145,74,0.1) 0%, transparent 70%)",
-              }}
-            />
-
-            {/* Shimmer sweep */}
-            <div className="rp-shimmer-sweep" />
-
-            {/* Particles */}
-            {PARTICLES.map((p, i) => (
-              <div
-                key={i}
-                className={p.cls}
-                style={{
-                  position: "absolute",
-                  borderRadius: "50%",
-                  background: "radial-gradient(circle, rgba(200,145,74,0.8) 0%, rgba(200,145,74,0.2) 100%)",
-                  zIndex: 4,
-                  ...p.style,
-                }}
-              />
-            ))}
-
-            {/* Content */}
-            <div
-              style={{
-                position: "absolute", inset: 0, zIndex: 5,
-                display: "flex", flexDirection: "column",
-                justifyContent: "space-between",
-                padding: "40px",
-              }}
-            >
-              {/* Logo */}
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <div
-                  style={{
-                    width: 36, height: 36, borderRadius: 10,
-                    background: "linear-gradient(135deg,#c8914a,#e8c47a)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    boxShadow: "0 4px 16px rgba(200,145,74,0.4)", flexShrink: 0,
-                  }}
-                >
-                  <Shield size={16} color="#0a0907" strokeWidth={2.5} />
-                </div>
-                <span className="rp-display" style={{ color: "#f5f0e8", fontSize: "1.15rem", fontWeight: 600, letterSpacing: "0.04em" }}>
-                  AptHive
-                </span>
-              </div>
-
-              {/* Quote */}
-              <div>
-                <div className="rp-goldline" />
-                <blockquote
-                  className="rp-display"
-                  style={{
-                    color: "#f5f0e8",
-                    fontSize: "clamp(1.6rem, 2.6vw, 2.2rem)",
-                    fontWeight: 600,
-                    lineHeight: 1.25,
-                    fontStyle: "italic",
-                    margin: 0,
-                  }}
-                >
-                  "A community
-                  <br />
-                  <span className="rp-shimmer-text">worth belonging to."</span>
-                </blockquote>
-                <p
-                  style={{
-                    color: "rgba(245,240,232,0.42)",
-                    fontSize: "0.85rem",
-                    marginTop: "14px",
-                    lineHeight: 1.65,
-                    maxWidth: "240px",
-                    fontWeight: 300,
-                  }}
-                >
-                  Join 500+ residents already living smarter — announcements, bookings, and more.
-                </p>
-              </div>
-            </div>
-          </div>
+          {/* ════════════ RIGHT PANEL — Visual ════════════ */}
+          <RegisterVisual step={currentStep} role={selectedRole} />
         </div>
       </div>
     </>
