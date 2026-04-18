@@ -3,7 +3,6 @@ import cors from "cors";
 import morgan from "morgan";
 import helmet from "helmet";
 import compression from "compression";
-import rateLimit from "express-rate-limit";
 
 import { env } from "./config/env.js";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
@@ -44,29 +43,6 @@ app.use(express.json({ limit: "50kb" }));
 
 // ── HTTP request logging ───────────────────────────────────────
 app.use(morgan("dev"));
-
-// ── Global rate limiter ────────────────────────────────────────
-// 200 requests per 15 minutes per IP — enough for normal usage,
-// stops automated hammering cold
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200,
-  standardHeaders: true,   // sends RateLimit-* headers to client
-  legacyHeaders: false,
-  message: { error: "Too many requests, please try again later." },
-});
-app.use("/api", globalLimiter);
-
-// ── Tighter limiter for auth routes ───────────────────────────
-// Login/register/OTP: 20 attempts per 15 min per IP
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Too many auth attempts, please try again in 15 minutes." },
-});
-app.use("/api/auth", authLimiter);
 
 // ── Routes ─────────────────────────────────────────────────────
 app.use("/api/health",        healthRouter);
