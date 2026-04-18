@@ -24,6 +24,8 @@ import { freqVisitorRouter } from "./routes/freq-visitor.routes.js";
 import { groupPassRouter } from "./routes/group-pass.routes.js";
 import { staffRouter } from "./routes/staff.routes.js";
 import { pollRouter } from "./routes/poll.routes.js";
+import { deliveryRouter } from "./routes/delivery.routes.js";
+import { deliveryPreRegRouter } from "./routes/delivery-prereg.routes.js";
 
 const app = express();
 
@@ -84,6 +86,8 @@ app.use("/api/freq-visitors", freqVisitorRouter);
 app.use("/api/group-passes",  groupPassRouter);
 app.use("/api/staff",         staffRouter);
 app.use("/api/polls",         pollRouter);
+app.use("/api/delivery",      deliveryRouter);
+app.use("/api/delivery-prereg", deliveryPreRegRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

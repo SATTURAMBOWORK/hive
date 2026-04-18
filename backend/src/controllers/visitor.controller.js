@@ -6,6 +6,7 @@ import { SocietyUnit } from "../models/society-unit.model.js";
 import { Notification } from "../models/notification.model.js";
 import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
+import { parseFlatNumber, findResidentForFlat } from "../utils/flat-lookup.js";
 
 const VALID_PURPOSES    = ["delivery", "guest", "contractor", "other"];
 const REQUEST_TTL_MS    = 15 * 60 * 1000; // 15 minutes
@@ -71,39 +72,6 @@ export async function listFlats(req, res, next) {
   }
 }
 
-// Parse "A-401" → { wingName: "A", unitNumber: "401" }
-// If no hyphen, wingName is null and the whole string is unitNumber
-function parseFlatNumber(flat) {
-  const idx = flat.indexOf("-");
-  if (idx === -1) return { wingName: null, unitNumber: flat };
-  return { wingName: flat.slice(0, idx).toUpperCase(), unitNumber: flat.slice(idx + 1) };
-}
-
-// Find the approved resident for a given flat number within a tenant
-async function findResidentForFlat(tenantId, flatNumber) {
-  const { wingName, unitNumber } = parseFlatNumber(flatNumber);
-
-  let unitQuery = { tenantId, unitNumber };
-
-  if (wingName) {
-    // Find the wing by name first
-    const wing = await SocietyWing.findOne({ tenantId, name: wingName });
-    if (!wing) return null;
-    unitQuery.wingId = wing._id;
-  }
-
-  const unit = await SocietyUnit.findOne(unitQuery);
-  if (!unit) return null;
-
-  // Find an approved resident in this unit
-  const membership = await Membership.findOne({
-    tenantId,
-    unitId: unit._id,
-    status: "approved"
-  });
-
-  return membership?.userId || null;
-}
 
 // GET /visitors — today's visitor log for this tenant
 export async function listVisitors(req, res, next) {

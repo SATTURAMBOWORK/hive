@@ -1,0 +1,82 @@
+AptHive Design System & Theme Guidelines
+Core Aesthetic: AptHive utilizes a modern, premium SaaS visual language with a highly interactive, "Stripe-like" feel. The aesthetic balances high-tech reliability with a welcoming, community-focused ("homely") vibe. It heavily relies on clean geometry, deep floating shadows, glassmorphism, and fluid micro-interactions to create a polished, high-end user experience.
+
+1. Typography
+Primary Font: Plus Jakarta Sans.
+
+Characteristics: Clean, geometric, and highly legible.
+
+Implementation: * Headings use heavy weights (font-weight: 800), tight tracking (letter-spacing: -1px to -2px), and tight line-heights (1.1 to 1.2) for a bold, modern look.
+
+Subtitles and tags often use uppercase styling with wide tracking (letter-spacing: .07em).
+
+Body text is highly readable with softer colors (var(--txt2)) and comfortable line heights (1.6).
+
+2. Color Palette
+The color system is highly semantic, using a stark, clean background paired with vibrant, functional accents to direct attention.
+
+Backgrounds: Airy and spacious.
+
+Base: #F7F9FF (Very soft blue-tinted white).
+
+Cards/Surfaces: Pure White (#FFFFFF) to pop against the background.
+
+Subtle Accents: #EEF2FF (Blue tint) and #F1F5F9 (Slate tint) for hover states and secondary cards.
+
+Text & Borders: * Text: Slate scale (#0F172A for primary, #64748B for secondary, #94A3B8 for tertiary).
+
+Borders: Soft dividers using #E2E8F0 and #CBD5E1.
+
+Semantic Accents (Vibrant & Playful):
+
+Brand/Primary: Blue (#2563EB) – Used for primary actions, branding, and active states.
+
+Success/Security: Emerald Green (#16A34A) – Used for approvals, live status, and security features.
+
+Warning/Pending: Amber (#D97706) – Used for deliveries and pending actions.
+
+Danger/Alerts: Red (#DC2626) – Used for denials and urgent notices.
+
+Community/Events: Purple (#7C3AED) – Used for polls, committee hubs, and announcements.
+
+3. Depth, Elevation & Glassmorphism
+The UI avoids flat design, instead opting for a layered, spatial feel.
+
+Shadows: Multi-layered, soft, and deep.
+
+Standard cards use a soft base shadow (--sh).
+
+Floating or active elements use deep, dispersed shadows (--sh2, --sh3) with slight color tints (e.g., blue-tinted shadows for primary buttons).
+
+Glassmorphism: Used strategically for persistent overlay elements. The navigation bar utilizes backdrop-filter: blur(20px) with a semi-transparent background to float seamlessly over page content.
+
+4. Component Geometry (Shapes & Borders)
+Radii: Extremely rounded, friendly corners are a hallmark of the theme.
+
+Buttons and small avatars: 8px to 12px.
+
+Standard Cards: 16px to 20px.
+
+Hero/Showcase containers: 28px to 36px.
+
+Pills/Badges: Fully rounded (9999px).
+
+Borders: Most structural elements (cards, containers, inputs) use a subtle 1px solid var(--bdr) to maintain crisp edges against the soft drop shadows.
+
+5. Motion & Micro-Interactions
+The interface is highly dynamic, relying on framer-motion and CSS keyframes to feel alive and responsive.
+
+Presence & Entrances: Components use spring physics (type: "spring", stiffness: 400, damping: 20) for snappy, realistic entrance animations (e.g., modals, toast notifications, approval checkmarks).
+
+Continuous Motion: Background elements (like gradient orbs) and floating UI badges use slow, infinite floating animations (ease-in-out loops) to add depth.
+
+Live Indicators: Heavy use of pulsing animations (e.g., a flashing green dot for "Live" status, or pulsing blue shadows on primary buttons) to emphasize real-time capabilities.
+
+Interactive Feedback: Buttons and cards scale down slightly on tap/click (whileTap={{scale: .97}}) and change border/background opacities on hover.
+
+6. Iconography & Imagery
+Icons: Relies on lucide-react for clean, consistent, stroke-based line icons.
+
+Emojis: Used functionally as quick, colorful visual anchors within UI widgets (e.g., 📦 for packages, 🏊 for pool), contributing to the "homely" and accessible feel.
+
+Avatars & Indicators: Users are represented by soft-colored initials (e.g., blue text on a light blue background) or rounded portrait images.

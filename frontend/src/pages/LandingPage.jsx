@@ -1191,7 +1191,7 @@ function FeaturesShowcase() {
 function TestimonialsSection() {
   const testimonials = [...ROW1_TESTIMONIALS, ...ROW2_TESTIMONIALS];
   const total = testimonials.length;
-  const [activeIndex, setActiveIndex] = useState(3);
+  const [activeIndex, setActiveIndex] = useState(2);
   const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
@@ -1213,42 +1213,37 @@ function TestimonialsSection() {
     return d;
   };
 
-  const waveform = [16, 26, 18, 34, 22, 14, 30, 38, 24, 16, 32, 20, 14, 28, 18, 24];
+  const waveform = [10, 16, 12, 20, 14, 10, 18, 22, 14, 10, 18, 12, 10, 16, 12, 14];
 
   return (
-    <section
-      style={{
-        padding: "95px 0",
-        background: "radial-gradient(1200px 520px at 0% 0%, rgba(251,113,133,.22) 0%, transparent 45%), radial-gradient(1100px 540px at 100% 100%, rgba(99,102,241,.22) 0%, transparent 50%), #F5F7FC",
-      }}
-    >
-      <div className="lp-section" style={{ maxWidth: 1220 }}>
+    <section style={{padding:"100px 0",background:"var(--bg)"}}>
+      <div className="lp-section" style={{maxWidth:1180}}>
         <div
           style={{
             borderRadius: 28,
-            border: "1px solid #E5E7EB",
-            background: "rgba(255,255,255,.82)",
-            backdropFilter: "blur(8px)",
-            boxShadow: "0 14px 48px rgba(15,23,42,.08)",
-            padding: "44px 32px 40px",
+            border: "1px solid var(--bdr)",
+            background: "var(--bg-c)",
+            boxShadow: "var(--sh2)",
+            padding: "42px 28px 34px",
             overflow: "hidden",
           }}
         >
-          <div style={{ textAlign: "center", maxWidth: 940, margin: "0 auto" }}>
+          <div style={{textAlign:"center",maxWidth:930,margin:"0 auto"}}>
             <div
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                border: "1px solid #E5E7EB",
+                border: "1px solid var(--bdr)",
                 borderRadius: 999,
-                background: "#F3F4F6",
-                color: "#334155",
-                fontSize: 13,
+                background: "var(--bg-s2)",
+                color: "var(--txt2)",
+                fontSize: 12,
                 fontWeight: 600,
-                letterSpacing: ".01em",
-                padding: "8px 16px",
-                marginBottom: 28,
+                letterSpacing: ".08em",
+                textTransform: "uppercase",
+                padding: "7px 14px",
+                marginBottom: 22,
               }}
             >
               Testimonials
@@ -1262,19 +1257,19 @@ function TestimonialsSection() {
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.28 }}
                 style={{
-                  fontSize: "clamp(28px,4vw,56px)",
-                  lineHeight: 1.32,
-                  letterSpacing: "-.035em",
-                  fontWeight: 700,
-                  color: "#111827",
-                  marginBottom: 28,
+                  fontSize: "clamp(26px,3.8vw,42px)",
+                  lineHeight: 1.36,
+                  letterSpacing: "-.02em",
+                  fontWeight: 800,
+                  color: "var(--txt)",
+                  marginBottom: 20,
                 }}
               >
-                Wow! what an amazing journey, <span style={{ color: "#A78BFA" }}>AptHive</span> made daily life a breeze. <span style={{ color: "#64748B", fontWeight: 600 }}>{active.q}</span>
+                AptHive helped our society operations feel effortless. <span style={{color:"var(--blue)"}}>Everything stayed smooth</span> from gate updates to resident communication. <span style={{color:"var(--txt2)",fontWeight:600}}>{active.q}</span>
               </motion.p>
             </AnimatePresence>
 
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 30 }}>
+            <div style={{display:"inline-flex",alignItems:"center",gap:4,marginBottom:26}}>
               {waveform.map((h, i) => (
                 <span
                   key={i}
@@ -1282,22 +1277,22 @@ function TestimonialsSection() {
                     width: 3,
                     height: h,
                     borderRadius: 6,
-                    background: i % 2 ? "#64748B" : "#94A3B8",
-                    opacity: i % 3 === 0 ? 1 : 0.7,
+                    background: i % 2 ? "var(--blue)" : "var(--bdr2)",
+                    opacity: i % 3 === 0 ? 1 : 0.78,
                   }}
                 />
               ))}
             </div>
           </div>
 
-          <div style={{ position: "relative", marginBottom: 18 }}>
-            <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 120, zIndex: 2, pointerEvents: "none", background: "linear-gradient(to right, rgba(255,255,255,.92), transparent)" }} />
-            <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 120, zIndex: 2, pointerEvents: "none", background: "linear-gradient(to left, rgba(255,255,255,.92), transparent)" }} />
+          <div style={{position:"relative",marginBottom:16}}>
+            <div style={{position:"absolute",left:0,top:0,bottom:0,width:82,zIndex:2,pointerEvents:"none",background:"linear-gradient(to right,var(--bg-c),transparent)"}} />
+            <div style={{position:"absolute",right:0,top:0,bottom:0,width:82,zIndex:2,pointerEvents:"none",background:"linear-gradient(to left,var(--bg-c),transparent)"}} />
 
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: 16, overflow: "hidden", padding: "0 20px" }}>
+            <div style={{display:"flex",justifyContent:"center",alignItems:"flex-end",gap:12,overflow:"hidden",padding:"0 8px"}}>
               {testimonials.map((t, index) => {
                 const d = getDistance(index);
-                if (Math.abs(d) > 4) return null;
+                if (Math.abs(d) > 3) return null;
 
                 const isActive = index === activeIndex;
                 return (
@@ -1313,22 +1308,22 @@ function TestimonialsSection() {
                     }}
                     transition={{ type: "spring", stiffness: 260, damping: 28 }}
                     style={{
-                      width: isActive ? 198 : 154,
-                      height: isActive ? 208 : 154,
-                      borderRadius: 20,
-                      border: isActive ? "3px solid #D8B4FE" : "1px solid #E5E7EB",
+                      width: isActive ? 188 : 120,
+                      height: isActive ? 194 : 120,
+                      borderRadius: isActive ? 18 : 16,
+                      border: isActive ? "2px solid rgba(37,99,235,.35)" : "1px solid var(--bdr)",
                       padding: 0,
                       cursor: "pointer",
-                      background: "#fff",
+                      background: "var(--bg-c)",
                       overflow: "hidden",
                       flexShrink: 0,
-                      boxShadow: isActive ? "0 14px 36px rgba(124,58,237,.18)" : "0 6px 18px rgba(15,23,42,.08)",
+                      boxShadow: isActive ? "var(--sh3)" : "var(--sh)",
                     }}
                   >
                     <img
                       src={t.img.replace("64", "400")}
                       alt={t.name}
-                      style={{ width: "100%", height: "100%", objectFit: "cover", filter: isActive ? "none" : "grayscale(.18) saturate(.85)" }}
+                      style={{width:"100%",height:"100%",objectFit:"cover",filter:isActive?"none":"grayscale(.15) saturate(.86) brightness(.95)"}}
                     />
                   </motion.button>
                 );
@@ -1343,37 +1338,37 @@ function TestimonialsSection() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.22 }}
-              style={{ textAlign: "center", marginBottom: 22 }}
+              style={{textAlign:"center",marginBottom:18}}
             >
-              <div style={{ fontSize: 33, fontWeight: 700, letterSpacing: "-.03em", color: "#0F172A", marginBottom: 4 }}>{active.name}</div>
-              <div style={{ fontSize: 14, color: "#64748B" }}>{active.role} · {active.soc}</div>
+              <div style={{fontSize:"clamp(22px,3vw,30px)",fontWeight:800,letterSpacing:"-.02em",color:"var(--txt)",marginBottom:5}}>{active.name}</div>
+              <div style={{fontSize:13,color:"var(--txt2)"}}>{active.role} · {active.soc}</div>
             </motion.div>
           </AnimatePresence>
 
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12 }}>
+          <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:10}}>
             <button
               type="button"
               onClick={goPrev}
-              style={{ width: 42, height: 42, borderRadius: "50%", border: "1px solid #D1D5DB", background: "#fff", color: "#334155", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+              style={{width:40,height:40,borderRadius:"50%",border:"1px solid var(--bdr)",background:"var(--bg-c)",color:"var(--txt2)",display:"inline-flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}
               aria-label="Previous testimonial"
             >
-              <ChevronLeft size={18} />
+              <ChevronLeft size={16} />
             </button>
             <button
               type="button"
               onClick={() => setIsPaused((p) => !p)}
-              style={{ width: 42, height: 42, borderRadius: "50%", border: "1px solid #D1D5DB", background: "#fff", color: "#334155", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+              style={{width:40,height:40,borderRadius:"50%",border:"1px solid var(--bdr)",background:"var(--bg-c)",color:isPaused?"var(--txt2)":"var(--blue)",display:"inline-flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}
               aria-label={isPaused ? "Play testimonial autoplay" : "Pause testimonial autoplay"}
             >
-              {isPaused ? <Play size={15} /> : <Pause size={15} />}
+              {isPaused ? <Play size={14} /> : <Pause size={14} />}
             </button>
             <button
               type="button"
               onClick={goNext}
-              style={{ width: 42, height: 42, borderRadius: "50%", border: "1px solid #D1D5DB", background: "#fff", color: "#334155", display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+              style={{width:40,height:40,borderRadius:"50%",border:"1px solid var(--bdr)",background:"var(--bg-c)",color:"var(--txt2)",display:"inline-flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}
               aria-label="Next testimonial"
             >
-              <ChevronRight size={18} />
+              <ChevronRight size={16} />
             </button>
           </div>
         </div>

@@ -1,0 +1,66 @@
+<svg width="1200" height="1600" viewBox="0 0 1200 1600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="1600" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EAF2FF"/>
+      <stop offset="1" stop-color="#C7DBFF"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="180" y1="320" x2="1020" y2="1320" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.10"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="320" y1="760" x2="880" y2="760" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(600 520) rotate(90) scale(470 470)">
+      <stop stop-color="#FFFFFF" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="1600" fill="url(#bg)"/>
+  <circle cx="860" cy="220" r="320" fill="#FFFFFF" fill-opacity="0.34"/>
+  <circle cx="260" cy="1240" r="420" fill="#FFFFFF" fill-opacity="0.18"/>
+  <circle cx="600" cy="760" r="470" fill="url(#glow)"/>
+
+  <rect x="140" y="180" width="920" height="1240" rx="56" fill="url(#glass)" stroke="#FFFFFF" stroke-opacity="0.36"/>
+
+  <rect x="238" y="308" width="724" height="850" rx="42" fill="#F8FBFF" opacity="0.78"/>
+  <path d="M238 1028C404 928 514 1000 604 970C694 940 806 810 962 886V1158H238V1028Z" fill="#D8E7FF" opacity="0.7"/>
+
+  <rect x="300" y="420" width="600" height="470" rx="28" fill="#FFFFFF" fill-opacity="0.88"/>
+  <rect x="328" y="448" width="544" height="414" rx="22" fill="#EAF2FF"/>
+  <rect x="360" y="478" width="480" height="270" rx="18" fill="url(#accent)"/>
+  <rect x="368" y="486" width="464" height="254" rx="14" fill="#2C4DA8" fill-opacity="0.14"/>
+
+  <rect x="394" y="528" width="168" height="168" rx="18" fill="#FFFFFF" fill-opacity="0.95"/>
+  <rect x="410" y="544" width="136" height="136" rx="14" fill="#F7F9FF"/>
+  <rect x="608" y="528" width="168" height="168" rx="18" fill="#FFFFFF" fill-opacity="0.95"/>
+  <rect x="624" y="544" width="136" height="136" rx="14" fill="#F7F9FF"/>
+
+  <rect x="446" y="598" width="64" height="26" rx="13" fill="#2563EB"/>
+  <circle cx="478" cy="560" r="22" fill="#F59E0B"/>
+  <path d="M458 560C458 548 467 538 479 538C491 538 500 548 500 560C500 572 491 582 479 582C467 582 458 572 458 560Z" fill="#FDE68A"/>
+  <rect x="656" y="598" width="64" height="26" rx="13" fill="#10B981"/>
+  <circle cx="688" cy="560" r="22" fill="#2563EB"/>
+  <path d="M668 560C668 548 677 538 689 538C701 538 710 548 710 560C710 572 701 582 689 582C677 582 668 572 668 560Z" fill="#BFDBFE"/>
+
+  <rect x="392" y="808" width="416" height="52" rx="26" fill="#FFFFFF"/>
+  <rect x="392" y="876" width="298" height="28" rx="14" fill="#FFFFFF" fill-opacity="0.72"/>
+  <rect x="392" y="920" width="342" height="28" rx="14" fill="#FFFFFF" fill-opacity="0.72"/>
+
+  <rect x="300" y="1040" width="600" height="186" rx="30" fill="#FFFFFF" fill-opacity="0.78"/>
+  <rect x="336" y="1076" width="128" height="128" rx="24" fill="#2563EB"/>
+  <circle cx="400" cy="1122" r="30" fill="#FFFFFF" fill-opacity="0.16"/>
+  <circle cx="400" cy="1114" r="18" fill="#FFFFFF" fill-opacity="0.85"/>
+  <rect x="376" y="1142" width="48" height="38" rx="19" fill="#FFFFFF" fill-opacity="0.85"/>
+
+  <rect x="492" y="1090" width="314" height="18" rx="9" fill="#0F172A" fill-opacity="0.20"/>
+  <rect x="492" y="1124" width="250" height="18" rx="9" fill="#0F172A" fill-opacity="0.14"/>
+  <rect x="492" y="1158" width="286" height="18" rx="9" fill="#0F172A" fill-opacity="0.14"/>
+
+  <rect x="336" y="1280" width="528" height="22" rx="11" fill="#2563EB" fill-opacity="0.22"/>
+  <rect x="336" y="1316" width="412" height="22" rx="11" fill="#2563EB" fill-opacity="0.16"/>
+
+  <text x="600" y="1510" text-anchor="middle" fill="#0F172A" fill-opacity="0.65" font-family="Plus Jakarta Sans, Arial, sans-serif" font-size="34" font-weight="700">Welcome to AptHive</text>
+</svg>

@@ -233,185 +233,55 @@ function strengthMeta(score) {
 
 const delay = (n) => `${n * 65}ms`;
 
-/* ── Right-panel visual ─────────────────────────────────────────────────────── */
-const RECENT = [
-  { name: "Priya S.", action: "joined as Resident",   ago: "2m ago" },
-  { name: "Rajan M.", action: "joined as Committee",  ago: "9m ago" },
-  { name: "Amit K.",  action: "joined as Admin",      ago: "18m ago" },
-];
-
-const CHIPS = [
-  { icon: Bell,     label: "Announcements", cls: "reg-fa", style: { top: "22%", left: "10%" } },
-  { icon: BarChart3, label: "Polls",        cls: "reg-fb", style: { top: "38%", right: "8%" } },
-  { icon: Calendar,  label: "Events",      cls: "reg-fc", style: { bottom: "30%", left: "8%" } },
-  { icon: Zap,       label: "Amenities",   cls: "reg-fa", style: { bottom: "18%", right: "10%", animationDelay: "1.5s" } },
-];
-
-function RegisterVisual({ step, role }) {
-  const [recentIdx, setRecentIdx] = useState(0);
-
-  useEffect(() => {
-    const id = setInterval(() => setRecentIdx((i) => (i + 1) % RECENT.length), 2200);
-    return () => clearInterval(id);
-  }, []);
-
-  const roleContext = {
-    resident:  { icon: Home,     color: "#10B981", bg: "#ECFDF5", label: "Resident",        desc: "Access visitor logs, book amenities & stay updated" },
-    committee: { icon: Users,    color: "#8B5CF6", bg: "#F5F3FF", label: "Committee Member", desc: "Manage society decisions, polls & announcements" },
-    security:  { icon: Shield,   color: "#2563EB", bg: "#EFF6FF", label: "Security Guard",   desc: "Monitor gate activity & manage visitor approvals" },
-    admin:     { icon: Building2,color: "#F59E0B", bg: "#FFFBEB", label: "Society Admin",    desc: "Full control over your society's digital infrastructure" },
-  };
-
-  const ctx = role ? roleContext[role] : null;
-
+  /* ── Right-panel visual ─────────────────────────────────────────────────────── */
+function RegisterVisual() {
   return (
     <div
       className="reg-right"
       style={{
         width: "46%",
         flexShrink: 0,
-        background: "linear-gradient(145deg, #1E3A8A 0%, #2563EB 55%, #3B82F6 100%)",
         position: "relative",
         overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        padding: "40px 36px",
+        minHeight: 680,
+        background: "#0F172A",
       }}
     >
-      {/* Decorative circles */}
-      <div style={{ position: "absolute", top: "-60px", right: "-60px", width: 240, height: 240, borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
-      <div style={{ position: "absolute", bottom: "-80px", left: "-40px", width: 280, height: 280, borderRadius: "50%", background: "rgba(255,255,255,0.04)", pointerEvents: "none" }} />
+      <img
+        src="/register-welcome.svg"
+        alt="Welcome to AptHive"
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+      />
 
-      {/* Floating feature chips */}
-      {CHIPS.map(({ icon: Icon, label, cls, style }) => (
-        <div
-          key={label}
-          className={cls}
-          style={{
-            position: "absolute",
-            background: "rgba(255,255,255,0.12)",
-            backdropFilter: "blur(8px)",
-            border: "1px solid rgba(255,255,255,0.2)",
-            borderRadius: "20px",
-            padding: "6px 12px",
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            zIndex: 2,
-            ...style,
-          }}
-        >
-          <Icon size={13} color="rgba(255,255,255,0.9)" />
-          <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "rgba(255,255,255,0.9)", whiteSpace: "nowrap" }}>{label}</span>
-        </div>
-      ))}
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(15,23,42,0.08) 0%, rgba(15,23,42,0.08) 40%, rgba(15,23,42,0.28) 100%)" }} />
 
-      {/* Top: Logo */}
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", zIndex: 3 }}>
-        <div style={{ width: 34, height: 34, borderRadius: 9, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Shield size={16} color="#fff" strokeWidth={2.5} />
-        </div>
-        <span style={{ color: "#fff", fontSize: "1.05rem", fontWeight: 700, letterSpacing: "-0.01em" }}>AptHive</span>
-      </div>
-
-      {/* Middle: Main card */}
-      <div style={{ zIndex: 3 }}>
-        {/* Role context card — shown after role is selected */}
-        {ctx && (
-          <div
-            className="reg-fade-in"
-            style={{
-              background: "rgba(255,255,255,0.12)",
-              backdropFilter: "blur(12px)",
-              border: "1px solid rgba(255,255,255,0.2)",
-              borderRadius: 16,
-              padding: "18px 20px",
-              marginBottom: "18px",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "10px" }}>
-              <div style={{ width: 38, height: 38, borderRadius: 10, background: ctx.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <ctx.icon size={18} color={ctx.color} />
-              </div>
-              <div>
-                <p style={{ color: "rgba(255,255,255,0.65)", fontSize: "0.7rem", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.08em" }}>Joining as</p>
-                <p style={{ color: "#fff", fontSize: "0.95rem", fontWeight: 700 }}>{ctx.label}</p>
-              </div>
-            </div>
-            <p style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.8rem", lineHeight: 1.55 }}>{ctx.desc}</p>
-          </div>
-        )}
-
-        {/* Community stats card */}
-        <div
-          style={{
-            background: "rgba(255,255,255,0.1)",
-            backdropFilter: "blur(10px)",
-            border: "1px solid rgba(255,255,255,0.18)",
-            borderRadius: 16,
-            padding: "20px",
-            marginBottom: "18px",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#4ADE80" }} className="reg-live-dot" />
-            <span style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.75rem", fontWeight: 600 }}>Community Growing</span>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
-            {[
-              { value: "500+", label: "Residents" },
-              { value: "50+",  label: "Societies" },
-              { value: "12",   label: "Features" },
-            ].map(({ value, label }) => (
-              <div key={label} style={{ textAlign: "center" }}>
-                <p style={{ color: "#fff", fontSize: "1.4rem", fontWeight: 800, lineHeight: 1 }}>{value}</p>
-                <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.7rem", marginTop: "4px", fontWeight: 500 }}>{label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent join activity */}
-        <div
-          style={{
-            background: "rgba(255,255,255,0.08)",
-            border: "1px solid rgba(255,255,255,0.14)",
-            borderRadius: 12,
-            padding: "13px 16px",
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-          }}
-        >
-          <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#818CF8,#C084FC)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <span style={{ color: "#fff", fontSize: "0.75rem", fontWeight: 700 }}>
-              {RECENT[recentIdx].name.charAt(0)}
-            </span>
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ color: "#fff", fontSize: "0.82rem", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {RECENT[recentIdx].name}
-            </p>
-            <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.72rem" }}>{RECENT[recentIdx].action}</p>
-          </div>
-          <span style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.7rem", flexShrink: 0 }}>{RECENT[recentIdx].ago}</span>
-        </div>
-      </div>
-
-      {/* Bottom: Tagline */}
-      <div style={{ zIndex: 3 }}>
-        <div style={{ display: "flex", gap: "4px", marginBottom: "8px" }}>
-          {[...Array(5)].map((_, i) => (
-            <Star key={i} size={12} fill="#FDE68A" color="#FDE68A" />
-          ))}
-        </div>
-        <p style={{ color: "rgba(255,255,255,0.9)", fontSize: "1.05rem", fontWeight: 700, lineHeight: 1.35 }}>
-          "A smarter way to<br />run your society."
+      <div style={{
+        position: "absolute",
+        left: 24,
+        right: 24,
+        bottom: 24,
+        padding: "18px 20px",
+        borderRadius: 22,
+        background: "rgba(15,23,42,0.24)",
+        border: "1px solid rgba(255,255,255,0.16)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        color: "#fff",
+        boxShadow: "0 18px 40px rgba(0,0,0,0.24)",
+      }}>
+        <p style={{ fontSize: 14, lineHeight: 1.6, color: "rgba(255,255,255,0.9)", marginBottom: 14 }}>
+          Welcome to a smarter society experience for residents, committees, and security teams.
         </p>
-        <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.78rem", marginTop: "6px" }}>
-          Trusted by communities across India
-        </p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>AptHive</div>
+            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.74)", marginTop: 4 }}>Community management, simplified</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "rgba(255,255,255,0.8)", fontSize: 13, fontWeight: 600 }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4ADE80", boxShadow: "0 0 0 6px rgba(74,222,128,0.16)" }} />
+            Live
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -933,7 +803,7 @@ export function RegisterPage() {
           </div>
 
           {/* ════════════ RIGHT PANEL — Visual ════════════ */}
-          <RegisterVisual step={currentStep} role={selectedRole} />
+          <RegisterVisual />
         </div>
       </div>
     </>

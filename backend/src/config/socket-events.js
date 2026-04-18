@@ -21,4 +21,8 @@ export const SOCKET_EVENTS = {
   POLL_CREATED:              "poll:created",
   POLL_UPDATED:              "poll:updated",
   POLL_DELETED:              "poll:deleted",
+  DELIVERY_INCOMING:         "delivery:incoming",
+  DELIVERY_APPROVED:         "delivery:approved",
+  DELIVERY_REJECTED:         "delivery:rejected",
+  DELIVERY_DELIVERED:        "delivery:delivered",
 };
