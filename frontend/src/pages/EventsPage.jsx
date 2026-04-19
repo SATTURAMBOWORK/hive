@@ -5,18 +5,18 @@ import { MapPin, Clock, Plus, RefreshCw, CalendarDays } from "lucide-react";
 
 /* ─── Design tokens ───────────────────────────────────────────── */
 const T = {
-  bg:           "#0a0907",
-  surface:      "#111008",
-  border:       "rgba(200,145,74,0.12)",
-  borderHover:  "rgba(200,145,74,0.32)",
-  gold:         "#c8914a",
-  goldLight:    "#e8c47a",
-  textPrimary:  "#f5f0e8",
-  textSecondary:"rgba(245,240,232,0.55)",
-  textMuted:    "rgba(245,240,232,0.3)",
+  bg:           "#FFFCF6",
+  surface:      "#FFFFFF",
+  border:       "#E7DDC8",
+  borderHover:  "#D8CDAE",
+  gold:         "#3D52A0",
+  goldLight:    "#2F3F7A",
+  textPrimary:  "#24324A",
+  textSecondary:"#5B6577",
+  textMuted:    "#8B95A8",
   green:        "#3d9e6e",
   red:          "#e85d5d",
-  amber:        "#d4a843",
+  amber:        "#D97706",
   blue:         "#4d8dd4",
 };
 
@@ -56,10 +56,10 @@ const CSS = `
   /* Card */
   .ev-card {
     position: relative;
-    background: rgba(17,16,8,0.8);
+    background: #ffffff;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(200,145,74,0.12);
+    border: 1px solid ${T.border};
     border-radius: 18px;
     overflow: hidden;
     transition: transform 0.28s cubic-bezier(0.22,1,0.36,1),
@@ -68,8 +68,8 @@ const CSS = `
   }
   .ev-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 20px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(200,145,74,0.22);
-    border-color: rgba(200,145,74,0.28);
+    box-shadow: 0 20px 60px rgba(36,50,74,0.14), 0 0 0 1px rgba(61,82,160,0.18);
+    border-color: ${T.borderHover};
   }
   .ev-card.past {
     opacity: 0.65;
@@ -82,14 +82,14 @@ const CSS = `
     object-fit: cover;
     display: block;
     transition: filter 0.35s ease, transform 0.35s ease;
-    filter: brightness(0.82);
+    filter: brightness(0.92);
   }
   .ev-card:hover .ev-cover {
-    filter: brightness(0.96);
+    filter: brightness(1);
     transform: scale(1.025);
   }
   .ev-card.past .ev-cover {
-    filter: grayscale(0.7) brightness(0.55);
+    filter: grayscale(0.4) brightness(0.9);
   }
 
   /* Gradient overlay over the cover */
@@ -100,9 +100,9 @@ const CSS = `
     aspect-ratio: 16/9;
     background: linear-gradient(
       to bottom,
-      rgba(10,9,7,0.0) 0%,
-      rgba(10,9,7,0.15) 55%,
-      rgba(17,16,8,0.98) 100%
+      rgba(255,255,255,0.0) 0%,
+      rgba(255,255,255,0.25) 55%,
+      rgba(255,255,255,0.98) 100%
     );
     pointer-events: none;
   }
@@ -131,8 +131,8 @@ const CSS = `
     justify-content: center;
     width: 50px; height: 52px;
     border-radius: 13px;
-    background: rgba(200,145,74,0.14);
-    border: 1px solid rgba(200,145,74,0.35);
+    background: #EEF2FF;
+    border: 1px solid #C7D2FE;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     z-index: 4;
@@ -148,9 +148,9 @@ const CSS = `
     flex: 1;
     padding: 7px 6px;
     border-radius: 100px;
-    border: 1px solid rgba(200,145,74,0.15);
-    background: rgba(255,255,255,0.03);
-    color: rgba(245,240,232,0.45);
+    border: 1px solid ${T.border};
+    background: #FAF6ED;
+    color: ${T.textSecondary};
     font-family: 'DM Sans', sans-serif;
     font-size: 0.72rem; font-weight: 600;
     cursor: pointer;
@@ -158,36 +158,36 @@ const CSS = `
     transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
   }
   .rsvp-pill:hover {
-    border-color: rgba(200,145,74,0.3);
-    color: rgba(245,240,232,0.75);
+    border-color: ${T.borderHover};
+    color: ${T.textPrimary};
     transform: translateY(-1px);
   }
   .rsvp-pill.active {
-    background: linear-gradient(135deg, #c8914a, #e8c47a);
+    background: linear-gradient(135deg, #3D52A0, #2F3F7A);
     border-color: transparent;
-    color: #0a0907;
-    box-shadow: 0 3px 12px rgba(200,145,74,0.35);
+    color: #FFFFFF;
+    box-shadow: 0 3px 12px rgba(61,82,160,0.28);
   }
   .rsvp-pill.active:hover { transform: translateY(-1px); }
 
   /* Form fields */
   .ev-input {
     width: 100%;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(200,145,74,0.1);
+    background: #FFFFFF;
+    border: 1px solid ${T.border};
     border-radius: 11px;
     padding: 12px 14px;
-    color: #f5f0e8;
+    color: ${T.textPrimary};
     font-family: 'DM Sans', sans-serif;
     font-size: 0.9rem;
     outline: none;
     resize: vertical;
     transition: border-color 0.2s, box-shadow 0.2s;
   }
-  .ev-input::placeholder { color: rgba(245,240,232,0.25); }
+  .ev-input::placeholder { color: ${T.textMuted}; }
   .ev-input:focus {
-    border-color: #c8914a;
-    box-shadow: 0 0 0 3px rgba(200,145,74,0.12);
+    border-color: ${T.borderHover};
+    box-shadow: 0 0 0 3px rgba(61,82,160,0.12);
   }
   input[type="datetime-local"].ev-input::-webkit-calendar-picker-indicator {
     filter: invert(0.6) sepia(1) saturate(2) hue-rotate(5deg);
@@ -198,27 +198,27 @@ const CSS = `
   /* Gold button */
   .ev-btn-gold {
     display: inline-flex; align-items: center; gap: 7px;
-    background: linear-gradient(135deg, #c8914a, #e8c47a);
-    color: #0a0907;
+    background: linear-gradient(135deg, #3D52A0, #2F3F7A);
+    color: #FFFFFF;
     border: none; border-radius: 11px;
     padding: 11px 20px;
     font-family: 'DM Sans', sans-serif;
     font-size: 0.88rem; font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 4px 18px rgba(200,145,74,0.3);
+    box-shadow: 0 4px 18px rgba(61,82,160,0.26);
     transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
   }
   .ev-btn-gold:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 7px 24px rgba(200,145,74,0.45);
+    box-shadow: 0 7px 24px rgba(61,82,160,0.36);
   }
   .ev-btn-gold:disabled { opacity: 0.55; cursor: not-allowed; }
 
   .ev-btn-ghost {
     display: inline-flex; align-items: center; gap: 6px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(200,145,74,0.15);
-    color: rgba(245,240,232,0.45);
+    background: #FFFFFF;
+    border: 1px solid ${T.border};
+    color: ${T.textSecondary};
     border-radius: 100px;
     padding: 7px 14px;
     font-family: 'DM Sans', sans-serif;
@@ -227,9 +227,9 @@ const CSS = `
     transition: border-color 0.2s, color 0.2s, background 0.2s;
   }
   .ev-btn-ghost:hover:not(:disabled) {
-    border-color: rgba(200,145,74,0.35);
-    color: #c8914a;
-    background: rgba(200,145,74,0.06);
+    border-color: ${T.borderHover};
+    color: ${T.blue};
+    background: #EEF2FF;
   }
   .ev-btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -250,9 +250,9 @@ const CSS = `
   }
   .ev-sk {
     background: linear-gradient(90deg,
-      rgba(255,255,255,0.04) 25%,
-      rgba(255,255,255,0.07) 50%,
-      rgba(255,255,255,0.04) 75%);
+      #F5EED9 25%,
+      #E7DDC8 50%,
+      #F5EED9 75%);
     background-size: 200% 100%;
     animation: skShimmer 1.6s ease-in-out infinite;
     border-radius: 10px;
@@ -262,14 +262,14 @@ const CSS = `
   .ev-section-label {
     font-size: 0.65rem; font-weight: 700;
     letter-spacing: 0.14em; text-transform: uppercase;
-    color: rgba(245,240,232,0.28);
+    color: ${T.textMuted};
     display: flex; align-items: center; gap: 12px;
     margin-bottom: 16px;
   }
   .ev-section-label::after {
     content: '';
     flex: 1; height: 1px;
-    background: rgba(200,145,74,0.1);
+    background: ${T.border};
   }
 
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -318,8 +318,8 @@ function ribbonColor(label) {
 function SkCard() {
   return (
     <div style={{
-      borderRadius: 18, border: "1px solid rgba(200,145,74,0.08)",
-      background: "#111008", overflow: "hidden",
+      borderRadius: 18, border: `1px solid ${T.border}`,
+      background: T.surface, overflow: "hidden",
     }}>
       <div className="ev-sk" style={{ width: "100%", aspectRatio: "16/9" }} />
       <div style={{ padding: "48px 18px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
@@ -391,13 +391,13 @@ function EventCard({ item, rsvp, onRsvp, delay }) {
             zIndex: 3,
           }}>
             <span style={{
-              background: "rgba(10,9,7,0.6)",
+              background: "rgba(255,252,246,0.92)",
               backdropFilter: "blur(4px)",
-              color: T.textMuted,
+              color: T.textSecondary,
               fontSize: "0.65rem", fontWeight: 700,
               letterSpacing: "0.12em", textTransform: "uppercase",
               padding: "5px 13px", borderRadius: "100px",
-              border: "1px solid rgba(245,240,232,0.1)",
+              border: `1px solid ${T.border}`,
             }}>
               Past Event
             </span>
@@ -465,7 +465,7 @@ function EventCard({ item, rsvp, onRsvp, delay }) {
           <span style={{
             display: "inline-flex", alignItems: "center", gap: 4,
             padding: "4px 9px", borderRadius: "100px",
-            background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`,
+            background: T.bg, border: `1px solid ${T.border}`,
             fontSize: "0.72rem", color: T.textMuted, fontWeight: 500,
           }}>
             <Clock size={11} style={{ color: T.gold, opacity: 0.7 }} />
@@ -475,7 +475,7 @@ function EventCard({ item, rsvp, onRsvp, delay }) {
             <span style={{
               display: "inline-flex", alignItems: "center", gap: 4,
               padding: "4px 9px", borderRadius: "100px",
-              background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`,
+              background: T.bg, border: `1px solid ${T.border}`,
               fontSize: "0.72rem", color: T.textMuted, fontWeight: 500,
             }}>
               <MapPin size={11} style={{ color: T.gold, opacity: 0.7 }} />
@@ -489,7 +489,7 @@ function EventCard({ item, rsvp, onRsvp, delay }) {
           <>
             <div style={{
               height: "1px",
-              background: "rgba(200,145,74,0.08)",
+              background: T.border,
               margin: "0 0 12px",
             }} />
             <div className="rsvp-row">
@@ -634,7 +634,7 @@ export function EventsPage() {
           {error && (
             <div style={{
               marginTop: 14, padding: "11px 16px",
-              background: "rgba(232,93,93,0.08)", border: "1px solid rgba(232,93,93,0.22)",
+              background: "#FEE2E2", border: "1px solid #FECACA",
               borderRadius: 12, fontSize: "0.85rem", color: T.red,
             }}>
               {error}
@@ -657,7 +657,7 @@ export function EventsPage() {
             {/* Gold strip */}
             <div style={{
               position: "absolute", top: 0, left: 0, right: 0, height: 2,
-              background: "linear-gradient(90deg,#c8914a,#e8c47a44)",
+              background: "linear-gradient(90deg,#3D52A0,#C9A84C66)",
               borderRadius: "18px 18px 0 0",
             }} />
 
@@ -724,8 +724,8 @@ export function EventsPage() {
             <div style={{ textAlign: "center", padding: "56px 32px" }}>
               <div style={{
                 width: 56, height: 56, borderRadius: 16,
-                background: "rgba(200,145,74,0.07)",
-                border: "1px solid rgba(200,145,74,0.15)",
+                background: "#EEF2FF",
+                border: "1px solid #C7D2FE",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 24, margin: "0 auto 14px",
               }}>

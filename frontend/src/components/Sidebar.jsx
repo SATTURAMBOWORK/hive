@@ -2,7 +2,7 @@ import { NavLink, Link } from "react-router-dom";
 import {
   Building2, LayoutDashboard, Megaphone, Ticket, Calendar,
   BarChart2, Dumbbell, Users, PackageCheck,
-  UserCog, ClipboardCheck, Settings, LogOut, Package,
+  UserCog, ClipboardCheck, Settings, LogOut, Package, PackageSearch,
 } from "lucide-react";
 import { useAuth } from "./AuthContext";
 
@@ -71,6 +71,7 @@ const NAV_GROUPS = [
       { to: "/events",        label: "Events",         Icon: Calendar,        roles: null },
       { to: "/amenities",     label: "Amenities",      Icon: Dumbbell,        roles: null },
       { to: "/polls",         label: "Polls",          Icon: BarChart2,       roles: ["resident","committee","super_admin"] },
+      { to: "/lost-found",    label: "Lost & Found",   Icon: PackageSearch,   roles: null },
     ],
   },
   {

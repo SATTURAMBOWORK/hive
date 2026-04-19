@@ -8,14 +8,15 @@ import { RefreshCw, Plus } from "lucide-react";
 
 // ── Design tokens ────────────────────────────────────────────────
 const T = {
-  surface:   "#111008",
-  border:    "rgba(200,145,74,0.15)",
-  borderHov: "rgba(200,145,74,0.35)",
-  gold:      "#c8914a",
-  goldLight: "#e8c47a",
-  text:      "#f5f0e8",
-  textSub:   "rgba(245,240,232,0.55)",
-  textMuted: "rgba(245,240,232,0.3)",
+  bg:        "#FFFCF6",
+  surface:   "#FFFFFF",
+  border:    "#E7DDC8",
+  borderHov: "#D8CDAE",
+  gold:      "#3D52A0",
+  goldLight: "#2F3F7A",
+  text:      "#24324A",
+  textSub:   "#5B6577",
+  textMuted: "#8B95A8",
   green:     "#3d9e6e",
   red:       "#e85d5d",
   amber:     "#d4a843",
@@ -39,7 +40,7 @@ const BOOKING_STATUS_CFG = {
 
 const inputStyle = {
   width: "100%", borderRadius: 12, border: `1px solid ${T.border}`,
-  background: "#0f0e0b", padding: "10px 14px",
+  background: "#ffffff", padding: "10px 14px",
   color: T.text, fontSize: 14, outline: "none",
   transition: "border-color 0.2s, box-shadow 0.2s", boxSizing: "border-box",
 };
@@ -51,7 +52,7 @@ function Label({ children }) {
 function FocusInput({ style: extraStyle = {}, ...props }) {
   return (
     <input style={{ ...inputStyle, ...extraStyle }}
-      onFocus={e => { e.target.style.borderColor = T.gold; e.target.style.boxShadow = `0 0 0 3px ${T.gold}22`; }}
+      onFocus={e => { e.target.style.borderColor = T.borderHov; e.target.style.boxShadow = `0 0 0 3px rgba(61,82,160,0.12)`; }}
       onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = "none"; }}
       {...props} />
   );
@@ -60,7 +61,7 @@ function FocusInput({ style: extraStyle = {}, ...props }) {
 function FocusTextarea({ style: extraStyle = {}, ...props }) {
   return (
     <textarea style={{ ...inputStyle, minHeight: 80, resize: "vertical", ...extraStyle }}
-      onFocus={e => { e.target.style.borderColor = T.gold; e.target.style.boxShadow = `0 0 0 3px ${T.gold}22`; }}
+      onFocus={e => { e.target.style.borderColor = T.borderHov; e.target.style.boxShadow = `0 0 0 3px rgba(61,82,160,0.12)`; }}
       onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = "none"; }}
       {...props} />
   );
@@ -146,7 +147,7 @@ export function AmenitiesPage() {
   useEffect(() => { loadAll(); }, []);
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 16px 64px", fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 16px 64px", fontFamily: "'DM Sans', sans-serif", background: "linear-gradient(180deg,#FFFCF6 0%,#F8F3E8 100%)", borderRadius: 20 }}>
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 28, flexWrap: "wrap" }}>
@@ -155,8 +156,8 @@ export function AmenitiesPage() {
           <p style={{ fontSize: 13, color: T.textMuted, marginTop: 4 }}>Book shared facilities in your society</p>
         </div>
         <button onClick={loadAll}
-          style={{ display: "flex", alignItems: "center", gap: 6, borderRadius: 12, border: `1px solid ${T.border}`, padding: "8px 14px", background: "transparent", cursor: "pointer", color: T.textSub, fontSize: 13, fontWeight: 600, transition: "all 0.2s" }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.color = T.gold; }}
+          style={{ display: "flex", alignItems: "center", gap: 6, borderRadius: 12, border: `1px solid ${T.border}`, padding: "8px 14px", background: "#fff", cursor: "pointer", color: T.textSub, fontSize: 13, fontWeight: 600, transition: "all 0.2s" }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = T.borderHov; e.currentTarget.style.color = T.gold; }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSub; }}>
           <RefreshCw size={14} /> Refresh
         </button>
@@ -213,7 +214,7 @@ export function AmenitiesPage() {
             </div>
 
             <button type="submit" disabled={isUploading}
-              style={{ display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 12, background: isUploading ? `${T.gold}44` : `linear-gradient(135deg, ${T.gold}, ${T.goldLight})`, padding: "11px 22px", fontSize: 13, fontWeight: 700, color: "#0a0907", border: "none", cursor: isUploading ? "not-allowed" : "pointer", transition: "all 0.2s", alignSelf: "flex-start" }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 12, background: isUploading ? "#C7D2FE" : `linear-gradient(135deg, ${T.gold}, ${T.goldLight})`, padding: "11px 22px", fontSize: 13, fontWeight: 700, color: "#ffffff", border: "none", cursor: isUploading ? "not-allowed" : "pointer", transition: "all 0.2s", alignSelf: "flex-start" }}
               onMouseEnter={e => { if (!isUploading) e.currentTarget.style.transform = "translateY(-1px)"; }}
               onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; }}>
               {isUploading ? "Uploading photos…" : "🏊 Add Amenity"}

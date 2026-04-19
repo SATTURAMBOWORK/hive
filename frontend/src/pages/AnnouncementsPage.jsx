@@ -8,16 +8,16 @@ import "react-quill/dist/quill.snow.css";
 
 /* ─── Design tokens — AptHive system ────────────────────────── */
 const T = {
-  bg:       "#F7F9FF",
+  bg:       "#FFFCF6",
   surface:  "#FFFFFF",
-  subtle:   "#F8FAFC",
-  subtle2:  "#F1F5F9",
-  border:   "#E2E8F0",
-  borderHv: "#CBD5E1",
-  ink:      "#0F172A",
-  ink2:     "#334155",
-  text2:    "#64748B",
-  text3:    "#94A3B8",
+  subtle:   "#FAF6ED",
+  subtle2:  "#F5EED9",
+  border:   "#E7DDC8",
+  borderHv: "#D8CDAE",
+  ink:      "#24324A",
+  ink2:     "#3D52A0",
+  text2:    "#5B6577",
+  text3:    "#8B95A8",
   green:    "#16A34A",
   greenL:   "#DCFCE7",
   red:      "#DC2626",
@@ -26,10 +26,10 @@ const T = {
   amberL:   "#FEF9C3",
   teal:     "#0F766E",
   tealL:    "#CCFBF1",
-  purple:   "#7C3AED",
-  purpleL:  "#EDE9FE",
-  sh:       "0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04)",
-  sh2:      "0 4px 20px rgba(15,23,42,.08), 0 1px 4px rgba(15,23,42,.04)",
+  purple:   "#3D52A0",
+  purpleL:  "#EEF2FF",
+  sh:       "0 1px 3px rgba(36,50,74,.05), 0 1px 2px rgba(36,50,74,.03)",
+  sh2:      "0 4px 20px rgba(36,50,74,.07), 0 1px 4px rgba(36,50,74,.03)",
 };
 
 /* ─── Category config — semantic colors only ─────────────────── */
@@ -60,6 +60,7 @@ const CSS = `
   .ann-root {
     font-family: 'DM Sans', sans-serif;
     color: ${T.ink};
+    background: linear-gradient(180deg, #FFFCF6 0%, #F8F3E8 100%);
     min-height: calc(100vh - 64px);
     padding: 28px 28px 80px;
   }
@@ -87,8 +88,8 @@ const CSS = `
     transform: translateY(-2px);
   }
   .ann-card.unread {
-    background: #FAFBFF;
-    border-color: #D1D9F0;
+    background: #FFFDF8;
+    border-color: #D8CDAE;
   }
 
   /* Left accent strip */
@@ -107,8 +108,8 @@ const CSS = `
 
   /* Unread dot */
   @keyframes dotPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(15,23,42,0.3); }
-    50%       { box-shadow: 0 0 0 5px rgba(15,23,42,0); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(61,82,160,0.3); }
+    50%       { box-shadow: 0 0 0 5px rgba(61,82,160,0); }
   }
   .unread-dot {
     width: 7px; height: 7px;
@@ -134,7 +135,7 @@ const CSS = `
     100% { background-position: -200% center; }
   }
   .ann-sk {
-    background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+    background: linear-gradient(90deg, #F5EED9 25%, #E7DDC8 50%, #F5EED9 75%);
     background-size: 200% 100%;
     animation: skShimmer 1.6s ease-in-out infinite;
     border-radius: 6px;
@@ -157,7 +158,7 @@ const CSS = `
   .ann-input::placeholder { color: ${T.text3}; }
   .ann-input:focus {
     border-color: ${T.borderHv};
-    box-shadow: 0 0 0 3px rgba(15,23,42,.07);
+    box-shadow: 0 0 0 3px rgba(61,82,160,.12);
   }
 
   .ann-select {
@@ -176,25 +177,25 @@ const CSS = `
   }
   .ann-select:focus {
     border-color: ${T.borderHv};
-    box-shadow: 0 0 0 3px rgba(15,23,42,.07);
+    box-shadow: 0 0 0 3px rgba(61,82,160,.12);
   }
 
-  /* Primary button — ink black */
+  /* Primary button */
   .ann-btn-primary {
     display: inline-flex; align-items: center; gap: 7px;
-    background: ${T.ink};
+    background: linear-gradient(135deg, #3D52A0, #2F3F7A);
     color: #FFFFFF;
     border: none; border-radius: 10px;
     padding: 10px 18px;
     font-family: 'DM Sans', sans-serif;
     font-size: 0.84rem; font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(15,23,42,.2);
+    box-shadow: 0 4px 12px rgba(61,82,160,.25);
     transition: background 0.18s, box-shadow 0.18s, transform 0.18s;
   }
   .ann-btn-primary:hover:not(:disabled) {
-    background: #000;
-    box-shadow: 0 6px 18px rgba(15,23,42,.28);
+    background: linear-gradient(135deg, #2F3F7A, #253364);
+    box-shadow: 0 6px 18px rgba(61,82,160,.32);
     transform: translateY(-1px);
   }
   .ann-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -215,7 +216,7 @@ const CSS = `
   .ann-btn-ghost:hover {
     border-color: ${T.borderHv};
     color: ${T.ink};
-    box-shadow: 0 0 0 3px rgba(15,23,42,.06);
+    box-shadow: 0 0 0 3px rgba(61,82,160,.1);
   }
   .ann-btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -235,7 +236,7 @@ const CSS = `
     flex-wrap: wrap;
     align-items: center;
     gap: 8px;
-    background: rgba(247,249,255,0.92);
+    background: rgba(255,252,246,0.92);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid ${T.border};
@@ -284,7 +285,7 @@ const CSS = `
   }
   .ann-search-wrap:focus-within {
     border-color: ${T.borderHv};
-    box-shadow: 0 0 0 3px rgba(15,23,42,.07);
+    box-shadow: 0 0 0 3px rgba(61,82,160,.12);
   }
   .ann-search-input {
     background: none;
@@ -498,7 +499,7 @@ function AnnCard({ item, unread, onRead }) {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{
             width: 22, height: 22, borderRadius: "50%",
-            background: "linear-gradient(135deg, #0F172A, #334155)",
+            background: "linear-gradient(135deg, #3D52A0, #2F3F7A)",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: "0.58rem", fontWeight: 800, color: "#fff",
             flexShrink: 0,
@@ -706,7 +707,7 @@ export function AnnouncementsPage() {
             {/* Top accent bar */}
             <div style={{
               position: "absolute", top: 0, left: 0, right: 0, height: 3,
-              background: "linear-gradient(90deg, #0F172A, #334155)",
+              background: "linear-gradient(90deg, #3D52A0, #2F3F7A)",
               borderRadius: "20px 20px 0 0",
             }} />
 

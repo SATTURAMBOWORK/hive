@@ -14,30 +14,30 @@ import { SecurityDashboard } from "./SecurityDashboard";
 
 /* ─── Design tokens — matching LandingPage exactly ────────────── */
 const T = {
-  bg:          "#F7F9FF",
+  bg:          "#FFFCF6",
   bgCard:      "#FFFFFF",
-  bgSubtle:    "#F8FAFC",
-  bgSubtle2:   "#F1F5F9",
-  border:      "#E2E8F0",
-  border2:     "#CBD5E1",
-  text:        "#0F172A",
-  text2:       "#64748B",
-  text3:       "#94A3B8",
-  blue:        "#0F172A",
-  blueH:       "#000000",
-  blueL:       "#F1F5F9",
-  blueM:       "#E2E8F0",
+  bgSubtle:    "#FAF6ED",
+  bgSubtle2:   "#F5EED9",
+  border:      "#E7DDC8",
+  border2:     "#D8CDAE",
+  text:        "#24324A",
+  text2:       "#5B6577",
+  text3:       "#8B95A8",
+  blue:        "#3D52A0",
+  blueH:       "#2F3F7A",
+  blueL:       "#EEF2FF",
+  blueM:       "#DDE4FF",
   green:       "#16A34A",
   greenL:      "#DCFCE7",
   amber:       "#D97706",
   amberL:      "#FEF9C3",
   red:         "#DC2626",
   redL:        "#FEE2E2",
-  purple:      "#334155",
-  purpleL:     "#F8FAFC",
-  sh:          "0 1px 2px rgba(15,23,42,.04), 0 4px 16px rgba(15,23,42,.06)",
-  sh2:         "0 4px 20px rgba(15,23,42,.08), 0 20px 48px rgba(15,23,42,.08)",
-  sh3:         "0 8px 32px rgba(15,23,42,.1), 0 24px 56px rgba(15,23,42,.08)",
+  purple:      "#C9A84C",
+  purpleL:     "#FFF8E8",
+  sh:          "0 1px 2px rgba(36,50,74,.04), 0 4px 16px rgba(36,50,74,.05)",
+  sh2:         "0 4px 20px rgba(36,50,74,.07), 0 20px 48px rgba(36,50,74,.07)",
+  sh3:         "0 8px 32px rgba(36,50,74,.09), 0 24px 56px rgba(36,50,74,.07)",
 };
 
 /* ─── CSS — mirrors LandingPage's lp class system ─────────────── */
@@ -48,6 +48,7 @@ const CSS = `
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   min-height: 100%;
   color: ${T.text};
+  background: linear-gradient(180deg, #FFFCF6 0%, #F8F3E8 100%);
 }
 .dp-root * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -59,8 +60,8 @@ const CSS = `
 
 /* ── Animations (same names as landing page) ── */
 @keyframes dp-pulse {
-  0%,100% { box-shadow: 0 0 0 0 rgba(15,23,42,.4); }
-  70%     { box-shadow: 0 0 0 10px rgba(15,23,42,0); }
+  0%,100% { box-shadow: 0 0 0 0 rgba(61,82,160,.22); }
+  70%     { box-shadow: 0 0 0 10px rgba(61,82,160,0); }
 }
 @keyframes dp-live {
   0%,100% { opacity: 1; transform: scale(1); }
@@ -111,7 +112,7 @@ const CSS = `
 
 /* ── Skeleton ── */
 .dp-sk {
-  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+  background: linear-gradient(90deg, #F5EED9 25%, #E7DDC8 50%, #F5EED9 75%);
   background-size: 200% 100%;
   animation: dp-skshimmer 1.6s ease-in-out infinite;
   border-radius: 6px;
@@ -163,7 +164,7 @@ const CSS = `
 .dp-qa-tile:hover {
   transform: translateY(-3px) scale(1.03);
   box-shadow: ${T.sh2};
-  border-color: rgba(15,23,42,.2);
+  border-color: rgba(61,82,160,.18);
   background: ${T.blueL};
 }
 
@@ -177,7 +178,7 @@ const CSS = `
 }
 .dp-admin-link:hover {
   background: ${T.blueL};
-  border-color: rgba(15,23,42,.15);
+  border-color: rgba(61,82,160,.18);
   box-shadow: ${T.sh};
 }
 
@@ -196,7 +197,7 @@ const CSS = `
 }
 .dp-view-all:hover {
   color: ${T.blue};
-  border-color: rgba(15,23,42,.2);
+  border-color: rgba(61,82,160,.2);
   background: ${T.blueL};
 }
 
@@ -215,8 +216,8 @@ const CSS = `
 }
 .dp-sync:hover {
   color: ${T.blue};
-  border-color: rgba(15,23,42,.3);
-  box-shadow: 0 0 0 3px rgba(15,23,42,.06);
+  border-color: rgba(61,82,160,.25);
+  box-shadow: 0 0 0 3px rgba(61,82,160,.08);
 }
 .dp-sync:disabled { opacity: .5; cursor: not-allowed; }
 
@@ -229,7 +230,7 @@ const CSS = `
 }
 .dp-booking:hover {
   background: ${T.blueL};
-  border-color: rgba(15,23,42,.12);
+  border-color: rgba(61,82,160,.15);
 }
 
 /* ── Timeline connector ── */
@@ -245,7 +246,7 @@ const CSS = `
   position: absolute;
   top: 0; bottom: 0;
   width: 20%;
-  background: linear-gradient(90deg, transparent, rgba(15,23,42,.02), rgba(15,23,42,.04), rgba(15,23,42,.02), transparent);
+  background: linear-gradient(90deg, transparent, rgba(61,82,160,.02), rgba(61,82,160,.04), rgba(61,82,160,.02), transparent);
   animation: dp-scan 11s ease-in-out infinite;
   pointer-events: none;
   z-index: 2;
@@ -307,24 +308,6 @@ function buildFeed(announcements, tickets, events) {
     .slice(0, 3)
     .forEach(e => items.push({ type: "event", date: e.startAt, data: e }));
   return items.sort((a, b) => new Date(b.date) - new Date(a.date));
-}
-
-/* ─── Count-up hook ───────────────────────────────────────────── */
-function useCountUp(target, duration = 900) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    if (!target) { setCount(0); return; }
-    let startTime = null, rafId;
-    function step(ts) {
-      if (!startTime) startTime = ts;
-      const p = Math.min((ts - startTime) / duration, 1);
-      setCount(Math.round((1 - Math.pow(1 - p, 3)) * target));
-      if (p < 1) rafId = requestAnimationFrame(step);
-    }
-    rafId = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(rafId);
-  }, [target, duration]);
-  return count;
 }
 
 /* ─── Skeleton ────────────────────────────────────────────────── */
@@ -397,8 +380,8 @@ function MiniWindowGrid() {
         <div key={i} style={{
           width: 15, height: 11, borderRadius: 2,
           background: !w.lit ? "#E2E8F0" : w.blue ? "#DBEAFE" : "#FEF9C3",
-          border: `1px solid ${!w.lit ? "#F1F5F9" : w.blue ? "rgba(15,23,42,.15)" : "rgba(234,179,8,.2)"}`,
-          boxShadow: w.lit ? (w.blue ? "0 0 5px rgba(15,23,42,.2)" : "0 0 5px rgba(234,179,8,.3)") : "none",
+          border: `1px solid ${!w.lit ? "#F8FAFC" : w.blue ? "rgba(61,82,160,.18)" : "rgba(234,179,8,.2)"}`,
+          boxShadow: w.lit ? (w.blue ? "0 0 5px rgba(61,82,160,.14)" : "0 0 5px rgba(234,179,8,.3)") : "none",
           animation: w.lit ? `dp-window ${w.dur} ease-in-out infinite ${w.delay}` : "none",
         }} />
       ))}
@@ -430,48 +413,9 @@ function SectionHeader({ eyebrow, title, linkTo, linkLabel, live = false }) {
   );
 }
 
-/* ─── Stat card (styled like landing page security hub stats) ─── */
-function StatCard({ label, value, accent, loading, delay, seed }) {
-  const count = useCountUp(loading ? 0 : value);
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20, scale: .97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay: delay / 1000, duration: .5, ease: [.22, 1, .36, 1] }}
-      className="dp-card"
-      style={{ flex: 1, padding: "20px 22px 18px", position: "relative", overflow: "hidden" }}
-    >
-      {/* Colored top bar */}
-      <div style={{
-        position: "absolute", top: 0, left: 0, right: 0, height: 3,
-        background: `linear-gradient(90deg, ${accent}, ${accent}44)`,
-        borderRadius: "20px 20px 0 0",
-      }} />
-      {/* Corner bg */}
-      <div style={{
-        position: "absolute", bottom: -20, right: -20,
-        width: 80, height: 80, borderRadius: "50%",
-        background: `radial-gradient(circle, ${accent}12 0%, transparent 70%)`,
-      }} />
-
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <p style={{ fontSize: ".72rem", fontWeight: 600, color: T.text3, letterSpacing: ".05em", textTransform: "uppercase" }}>
-          {label}
-        </p>
-      </div>
-
-      {loading
-        ? <Sk style={{ width: 52, height: 32 }} />
-        : <span style={{ fontSize: "2.2rem", fontWeight: 800, lineHeight: 1, color: accent }}>{count}</span>
-      }
-      {!loading && <Sparkline color={accent} seed={seed} />}
-    </motion.div>
-  );
-}
-
 /* ─── Status chip ─────────────────────────────────────────────── */
 const STATUS_CFG = {
-  open:        { bg: T.blueL,   color: T.blue,   border: "rgba(15,23,42,.18)"  },
+  open:        { bg: "#EEF2FF", color: T.blue,   border: "#C7D2FE"  },
   in_progress: { bg: T.amberL,  color: T.amber,  border: "rgba(217,119,6,.25)"  },
   resolved:    { bg: T.greenL,  color: T.green,  border: "rgba(22,163,74,.25)"  },
   closed:      { bg: T.bgSubtle2, color: T.text3, border: T.border },
@@ -639,7 +583,7 @@ function TimelineEvent({ event, index, isLast }) {
           <div style={{
             width: 38, height: 38, borderRadius: 10, flexShrink: 0,
             background: isSoon ? T.blueL : T.bgSubtle2,
-            border: `1px solid ${isSoon ? "rgba(15,23,42,.18)" : T.border}`,
+            border: `1px solid ${isSoon ? "#C7D2FE" : T.border}`,
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
           }}>
             <span style={{ fontSize: ".95rem", fontWeight: 800, lineHeight: 1, color: isSoon ? T.blue : T.text }}>
@@ -783,7 +727,6 @@ export function DashboardPage() {
   /* ── Derived ── */
   const userId         = user?._id || user?.id || "";
   const { word, first } = greeting(user?.fullName);
-  const openTickets    = useMemo(() => tickets.filter(t => !["resolved","closed"].includes(t.status)), [tickets]);
   const upcomingEvents = useMemo(() =>
     events.filter(e => new Date(e.startAt) >= new Date())
           .sort((a, b) => new Date(a.startAt) - new Date(b.startAt)),
@@ -811,7 +754,7 @@ export function DashboardPage() {
         {/* ── Ambient orbs ── */}
         <div style={{
           position: "absolute", width: 600, height: 600, borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(15,23,42,.04) 0%, transparent 65%)",
+          background: "radial-gradient(circle, rgba(61,82,160,.04) 0%, transparent 65%)",
           top: -200, right: -100, pointerEvents: "none", zIndex: 0,
         }} />
         <div style={{
@@ -908,7 +851,7 @@ export function DashboardPage() {
                   display: "inline-flex", alignItems: "center", gap: 6,
                   padding: "6px 14px", borderRadius: 100,
                   fontSize: ".75rem", fontWeight: 700,
-                  background: T.blueL, border: `1px solid rgba(15,23,42,.15)`,
+                  background: "#EEF2FF", border: "1px solid #C7D2FE",
                   color: T.blue,
                 }}>
                   <Shield size={12} />
@@ -937,14 +880,14 @@ export function DashboardPage() {
               style={{ animation: "dp-float2 6s ease-in-out infinite", flexShrink: 0 }}
             >
               <div style={{
-                background: "#0B1426",
-                border: "1px solid rgba(255,255,255,.08)",
+                background: "linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)",
+                border: "1px solid #E2E8F0",
                 borderRadius: 18, padding: "16px 18px",
                 boxShadow: T.sh3,
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: T.green, animation: "dp-live 1.6s ease-in-out infinite" }} />
-                  <p style={{ fontSize: ".62rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "rgba(255,255,255,.5)", margin: 0 }}>
+                  <p style={{ fontSize: ".62rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: T.text3, margin: 0 }}>
                     Green Heights
                   </p>
                 </div>
@@ -952,10 +895,10 @@ export function DashboardPage() {
                 <div style={{
                   marginTop: 10, display: "flex", alignItems: "center", justifyContent: "space-between",
                   padding: "6px 8px", borderRadius: 8,
-                  background: "rgba(15,23,42,.2)", border: "1px solid rgba(255,255,255,.12)",
+                  background: T.bgSubtle2, border: `1px solid ${T.border}`,
                 }}>
-                  <span style={{ fontSize: ".58rem", color: "rgba(255,255,255,.6)", fontWeight: 500 }}>Residents online</span>
-                  <span style={{ fontSize: ".72rem", color: "#93C5FD", fontWeight: 800 }}>248</span>
+                  <span style={{ fontSize: ".58rem", color: T.text2, fontWeight: 500 }}>Residents online</span>
+                  <span style={{ fontSize: ".72rem", color: T.blue, fontWeight: 800 }}>248</span>
                 </div>
               </div>
             </motion.div>
@@ -967,14 +910,6 @@ export function DashboardPage() {
               Sync
             </button>
           </motion.div>
-
-          {/* ══ STATS ═════════════════════════════════════════════ */}
-          <div className="dp-stats" style={{ display: "flex", gap: 12, marginBottom: 14 }}>
-            <StatCard label="Notices"      value={announcements.length}  accent={T.blue}   loading={loading} delay={80}  seed={1} />
-            <StatCard label="Open Tickets" value={openTickets.length}    accent={T.red}    loading={loading} delay={140} seed={2} />
-            <StatCard label="Events"       value={upcomingEvents.length} accent={T.green}  loading={loading} delay={200} seed={3} />
-            <StatCard label="Bookings"     value={myBookings.length}     accent={T.amber}  loading={loading} delay={260} seed={4} />
-          </div>
 
           {/* ══ ADMIN ALERT ═══════════════════════════════════════ */}
           {isAdmin && pendingApprovals > 0 && (
@@ -1035,7 +970,7 @@ export function DashboardPage() {
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "52px 0", textAlign: "center" }}>
                     <div style={{
                       width: 52, height: 52, borderRadius: 15,
-                      background: T.blueL, border: `1px solid rgba(15,23,42,.12)`,
+                      background: "#EEF2FF", border: "1px solid #C7D2FE",
                       display: "flex", alignItems: "center", justifyContent: "center",
                       fontSize: 22, marginBottom: 12,
                     }}>
@@ -1218,7 +1153,7 @@ export function DashboardPage() {
                     <div style={{
                       position: "absolute", top: -40, right: -40, width: 140, height: 140,
                       borderRadius: "50%",
-                      background: `radial-gradient(circle, rgba(15,23,42,.04) 0%, transparent 70%)`,
+                      background: `radial-gradient(circle, rgba(61,82,160,.04) 0%, transparent 70%)`,
                       pointerEvents: "none",
                     }} />
                     <p style={{ fontSize: ".65rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: T.blue, marginBottom: 3, position: "relative" }}>
@@ -1238,8 +1173,8 @@ export function DashboardPage() {
                           </div>
                           {badge ? (
                             <span style={{
-                              background: T.blueL, color: T.blue,
-                              border: `1px solid rgba(15,23,42,.18)`,
+                              background: "#EEF2FF", color: T.blue,
+                              border: "1px solid #C7D2FE",
                               padding: "2px 9px", borderRadius: 100,
                               fontSize: ".7rem", fontWeight: 700,
                             }}>

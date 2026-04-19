@@ -25,4 +25,7 @@ export const SOCKET_EVENTS = {
   DELIVERY_APPROVED:         "delivery:approved",
   DELIVERY_REJECTED:         "delivery:rejected",
   DELIVERY_DELIVERED:        "delivery:delivered",
+  LOST_FOUND_CREATED:        "lost_found:created",
+  LOST_FOUND_CLAIMED:        "lost_found:claimed",
+  LOST_FOUND_RESOLVED:       "lost_found:resolved",
 };
