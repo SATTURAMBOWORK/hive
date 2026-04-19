@@ -1,287 +1,161 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  BookOpen,
-  XCircle, RefreshCw, Plus, ChevronRight,
-  CheckCircle, Zap, Users, ArrowRight,
-  Shield, BarChart3, MapPin,
+  Bell, Search, Users, FileText, Calendar, Megaphone,
+  Plus, BookOpen, UserCheck, BarChart2, ChevronRight,
+  CheckCircle, XCircle, RefreshCw, ArrowRight, Package,
+  MapPin, Clock,
 } from "lucide-react";
 import { useAuth } from "../components/AuthContext";
 import { apiRequest } from "../components/api";
 import { getSocket } from "../components/socket";
 import { SecurityDashboard } from "./SecurityDashboard";
 
-/* ─── Design tokens — matching LandingPage exactly ────────────── */
+/* ─── Design tokens — warm amber SaaS palette ───────────────── */
 const T = {
-  bg:          "#FFFCF6",
-  bgCard:      "#FFFFFF",
-  bgSubtle:    "#FAF6ED",
-  bgSubtle2:   "#F5EED9",
-  border:      "#E7DDC8",
-  border2:     "#D8CDAE",
-  text:        "#24324A",
-  text2:       "#5B6577",
-  text3:       "#8B95A8",
-  blue:        "#3D52A0",
-  blueH:       "#2F3F7A",
-  blueL:       "#EEF2FF",
-  blueM:       "#DDE4FF",
-  green:       "#16A34A",
-  greenL:      "#DCFCE7",
-  amber:       "#D97706",
-  amberL:      "#FEF9C3",
-  red:         "#DC2626",
-  redL:        "#FEE2E2",
-  purple:      "#C9A84C",
-  purpleL:     "#FFF8E8",
-  sh:          "0 1px 2px rgba(36,50,74,.04), 0 4px 16px rgba(36,50,74,.05)",
-  sh2:         "0 4px 20px rgba(36,50,74,.07), 0 20px 48px rgba(36,50,74,.07)",
-  sh3:         "0 8px 32px rgba(36,50,74,.09), 0 24px 56px rgba(36,50,74,.07)",
+  bg:      "#F7F8FA",
+  surface: "#FFFFFF",
+  border:  "#F0F0F0",
+  border2: "#E5E7EB",
+  ink:     "#111827",
+  ink2:    "#374151",
+  text2:   "#6B7280",
+  text3:   "#9CA3AF",
+  amber:   "#E8890C",
+  amberH:  "#C97508",
+  amberL:  "#FFF8F0",
+  amberM:  "#FDECC8",
+  green:   "#16A34A",
+  greenL:  "#DCFCE7",
+  red:     "#DC2626",
+  redL:    "#FEE2E2",
+  blue:    "#2563EB",
+  blueL:   "#EFF6FF",
+  purple:  "#7C3AED",
+  purpleL: "#F3E8FF",
+  sh:      "0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)",
+  sh2:     "0 4px 16px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)",
 };
 
-/* ─── CSS — mirrors LandingPage's lp class system ─────────────── */
+/* ─── CSS ────────────────────────────────────────────────────── */
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
 
-.dp-root {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  min-height: 100%;
-  color: ${T.text};
-  background: linear-gradient(180deg, #FFFCF6 0%, #F8F3E8 100%);
-}
-.dp-root * { box-sizing: border-box; margin: 0; padding: 0; }
+  .dp-root { font-family: 'DM Sans', sans-serif; color: ${T.ink}; background: ${T.bg}; min-height: 100%; }
+  .dp-root * { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── Dot grid ── */
-.dp-dot-grid {
-  background-image: radial-gradient(circle, ${T.border} 1px, transparent 1px);
-  background-size: 26px 26px;
-}
+  .dp-stat {
+    background: ${T.surface}; border: 1px solid ${T.border};
+    border-radius: 16px; padding: 22px; box-shadow: ${T.sh};
+    transition: box-shadow .2s, transform .2s;
+  }
+  .dp-stat:hover { box-shadow: ${T.sh2}; transform: translateY(-2px); }
 
-/* ── Animations (same names as landing page) ── */
-@keyframes dp-pulse {
-  0%,100% { box-shadow: 0 0 0 0 rgba(61,82,160,.22); }
-  70%     { box-shadow: 0 0 0 10px rgba(61,82,160,0); }
-}
-@keyframes dp-live {
-  0%,100% { opacity: 1; transform: scale(1); }
-  50%     { opacity: .3; transform: scale(1.5); }
-}
-@keyframes dp-float {
-  0%,100% { transform: translateY(0); }
-  50%     { transform: translateY(-6px); }
-}
-@keyframes dp-float2 {
-  0%,100% { transform: translateY(0) rotate(-.3deg); }
-  50%     { transform: translateY(-8px) rotate(.6deg); }
-}
-@keyframes dp-shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position:  200% center; }
-}
-@keyframes dp-bar {
-  from { transform: scaleY(0); opacity: 0; }
-  to   { transform: scaleY(1); opacity: 1; }
-}
-@keyframes dp-scan {
-  0%   { left: -25%; opacity: 0; }
-  8%   { opacity: 1; }
-  92%  { opacity: 1; }
-  100% { left: 125%; opacity: 0; }
-}
-@keyframes dp-spin { to { transform: rotate(360deg); } }
-@keyframes dp-pulse-ring {
-  0%   { transform: scale(1); opacity: .7; }
-  100% { transform: scale(2.6); opacity: 0; }
-}
-@keyframes dp-breathe {
-  0%,100% { border-color: rgba(220,38,38,.25); box-shadow: 0 0 0 0 rgba(220,38,38,0); }
-  50%     { border-color: rgba(220,38,38,.45); box-shadow: 0 0 18px rgba(220,38,38,.08); }
-}
-@keyframes dp-window {
-  0%,100% { opacity: 1; }
-  45%,55% { opacity: .1; }
-}
-@keyframes dp-skshimmer {
-  0%   { background-position:  200% center; }
-  100% { background-position: -200% center; }
-}
-@keyframes dp-bar-progress {
-  from { width: 0; }
-}
+  .dp-act {
+    display: flex; align-items: flex-start; gap: 14px;
+    background: ${T.surface}; border: 1px solid ${T.border};
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 8px;
+    transition: box-shadow .18s, border-color .18s, transform .18s;
+    cursor: default; overflow: hidden;
+  }
+  .dp-act:hover { box-shadow: ${T.sh2}; border-color: ${T.border2}; transform: translateY(-1px); }
 
-/* ── Skeleton ── */
-.dp-sk {
-  background: linear-gradient(90deg, #F5EED9 25%, #E7DDC8 50%, #F5EED9 75%);
-  background-size: 200% 100%;
-  animation: dp-skshimmer 1.6s ease-in-out infinite;
-  border-radius: 6px;
-}
+  .dp-qa {
+    display: flex; align-items: center; gap: 11px;
+    padding: 12px 14px; border-radius: 12px;
+    border: 1px solid ${T.border}; background: ${T.surface};
+    text-decoration: none; box-shadow: ${T.sh}; margin-bottom: 8px;
+    transition: box-shadow .18s, border-color .18s, background .18s, transform .15s;
+  }
+  .dp-qa:hover { box-shadow: ${T.sh2}; border-color: ${T.border2}; background: ${T.bg}; transform: translateY(-1px); }
+  .dp-qa:last-child { margin-bottom: 0; }
 
-/* ── Card ── */
-.dp-card {
-  background: ${T.bgCard};
-  border: 1px solid ${T.border};
-  border-radius: 20px;
-  box-shadow: ${T.sh};
-}
+  .dp-admin-link {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 14px; border-radius: 10px;
+    background: ${T.surface}; border: 1px solid ${T.border};
+    margin-bottom: 7px; text-decoration: none; box-shadow: ${T.sh};
+    transition: background .15s, border-color .15s, box-shadow .15s;
+  }
+  .dp-admin-link:hover { background: ${T.amberL}; border-color: ${T.amberM}; box-shadow: ${T.sh2}; }
+  .dp-admin-link:last-child { margin-bottom: 0; }
 
-/* ── Feed item ── */
-.dp-feed-item {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 14px 14px 14px 18px;
-  border-radius: 14px;
-  border: 1px solid ${T.border};
-  background: ${T.bgCard};
-  position: relative;
-  transition: box-shadow .2s, border-color .2s, transform .2s;
-  cursor: default;
-}
-.dp-feed-item:hover {
-  transform: translateY(-2px);
-  box-shadow: ${T.sh2};
-  border-color: ${T.border2};
-}
+  .dp-search {
+    background: ${T.surface}; border: 1.5px solid ${T.border};
+    border-radius: 10px; padding: 9px 14px 9px 36px;
+    font-family: 'DM Sans', sans-serif; font-size: .84rem; color: ${T.ink};
+    width: 210px; outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  .dp-search:focus { border-color: ${T.amber}; box-shadow: 0 0 0 3px ${T.amberL}; }
 
-/* ── Quick action tile ── */
-.dp-qa-tile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 20px 12px;
-  border-radius: 16px;
-  border: 1.5px solid ${T.border};
-  background: ${T.bgCard};
-  text-decoration: none;
-  box-shadow: ${T.sh};
-  transition: transform .2s, box-shadow .2s, border-color .2s, background .2s;
-  cursor: pointer;
-}
-.dp-qa-tile:hover {
-  transform: translateY(-3px) scale(1.03);
-  box-shadow: ${T.sh2};
-  border-color: rgba(61,82,160,.18);
-  background: ${T.blueL};
-}
+  .dp-sync {
+    display: flex; align-items: center; gap: 5px;
+    background: ${T.surface}; border: 1.5px solid ${T.border};
+    border-radius: 9px; padding: 8px 13px;
+    font-family: 'DM Sans', sans-serif; font-size: .78rem; font-weight: 600; color: ${T.text2};
+    cursor: pointer; box-shadow: ${T.sh}; transition: border-color .15s, color .15s;
+  }
+  .dp-sync:hover { border-color: ${T.border2}; color: ${T.ink}; }
+  .dp-sync:disabled { opacity: .5; cursor: not-allowed; }
 
-/* ── Admin link ── */
-.dp-admin-link {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 14px; border-radius: 12px;
-  background: ${T.bgSubtle2}; border: 1px solid ${T.border};
-  margin-bottom: 8px; text-decoration: none;
-  transition: background .2s, border-color .2s, box-shadow .2s;
-}
-.dp-admin-link:hover {
-  background: ${T.blueL};
-  border-color: rgba(61,82,160,.18);
-  box-shadow: ${T.sh};
-}
+  .dp-icon-btn {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: ${T.surface}; border: 1.5px solid ${T.border};
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; box-shadow: ${T.sh}; transition: border-color .15s, background .15s;
+    position: relative;
+  }
+  .dp-icon-btn:hover { background: ${T.bg}; border-color: ${T.border2}; }
 
-/* ── Section "view all" ── */
-.dp-view-all {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: .72rem; font-weight: 600;
-  color: ${T.text3};
-  text-decoration: none;
-  padding: 5px 12px;
-  border-radius: 100px;
-  border: 1px solid ${T.border};
-  background: ${T.bgSubtle2};
-  display: flex; align-items: center; gap: 4px;
-  transition: color .2s, border-color .2s, background .2s;
-}
-.dp-view-all:hover {
-  color: ${T.blue};
-  border-color: rgba(61,82,160,.2);
-  background: ${T.blueL};
-}
+  .dp-section {
+    background: ${T.surface}; border: 1px solid ${T.border};
+    border-radius: 18px; padding: 22px; box-shadow: ${T.sh};
+  }
 
-/* ── Sync button ── */
-.dp-sync {
-  display: flex; align-items: center; gap: 6px;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: .76rem; font-weight: 600;
-  color: ${T.text2};
-  background: ${T.bgCard};
-  border: 1.5px solid ${T.border};
-  padding: 7px 14px; border-radius: 100px;
-  cursor: pointer;
-  box-shadow: ${T.sh};
-  transition: color .2s, border-color .2s, box-shadow .2s;
-}
-.dp-sync:hover {
-  color: ${T.blue};
-  border-color: rgba(61,82,160,.25);
-  box-shadow: 0 0 0 3px rgba(61,82,160,.08);
-}
-.dp-sync:disabled { opacity: .5; cursor: not-allowed; }
+  .dp-view-all {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: .72rem; font-weight: 600; color: ${T.text3};
+    text-decoration: none; padding: 5px 10px;
+    border-radius: 8px; border: 1px solid ${T.border}; background: ${T.bg};
+    transition: color .15s, border-color .15s;
+  }
+  .dp-view-all:hover { color: ${T.amber}; border-color: ${T.amberM}; }
 
-/* ── Booking row ── */
-.dp-booking {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  padding: 12px 14px; border-radius: 12px; margin-bottom: 8px;
-  background: ${T.bgSubtle2}; border: 1px solid ${T.border};
-  transition: background .2s, border-color .2s;
-}
-.dp-booking:hover {
-  background: ${T.blueL};
-  border-color: rgba(61,82,160,.15);
-}
+  .dp-sk {
+    background: linear-gradient(90deg, #F3F4F6 25%, #E9EAEC 50%, #F3F4F6 75%);
+    background-size: 200% 100%;
+    animation: dp-shimmer 1.5s ease-in-out infinite;
+    border-radius: 7px;
+  }
+  @keyframes dp-shimmer { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
+  @keyframes dp-breathe { 0%,100% { border-color: rgba(220,38,38,.2); } 50% { border-color: rgba(220,38,38,.5); } }
+  .dp-visitor-wrap { animation: dp-breathe 3s ease-in-out infinite; }
+  @keyframes dp-blink { 0%,100% { opacity: 1; } 50% { opacity: .2; } }
+  @keyframes dp-spin { to { transform: rotate(360deg); } }
 
-/* ── Timeline connector ── */
-.dp-tl-line {
-  width: 2px;
-  background: linear-gradient(to bottom, ${T.border2}, transparent);
-  flex-shrink: 0;
-  animation: dp-skshimmer 0s; /* forces repaint */
-}
-
-/* ── Live hero scan ── */
-.dp-hero-scan {
-  position: absolute;
-  top: 0; bottom: 0;
-  width: 20%;
-  background: linear-gradient(90deg, transparent, rgba(61,82,160,.02), rgba(61,82,160,.04), rgba(61,82,160,.02), transparent);
-  animation: dp-scan 11s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 2;
-}
-
-/* ── Visitor breathe ── */
-.dp-visitor-card {
-  animation: dp-breathe 3s ease-in-out infinite;
-}
-
-@media (max-width: 860px) {
-  .dp-grid { grid-template-columns: 1fr !important; }
-  .dp-stats { flex-wrap: wrap; }
-  .dp-stats > * { min-width: calc(50% - 6px); }
-  .dp-hero-right { display: none !important; }
-}
-@media (max-width: 520px) {
-  .dp-stats > * { min-width: 100%; }
-}
+  @media (max-width: 940px) {
+    .dp-main-grid { grid-template-columns: 1fr !important; }
+    .dp-stat-row  { grid-template-columns: repeat(2, 1fr) !important; }
+  }
+  @media (max-width: 520px) {
+    .dp-stat-row { grid-template-columns: 1fr !important; }
+    .dp-topbar   { flex-direction: column; align-items: flex-start !important; }
+  }
 `;
 
-/* ─── Helpers ─────────────────────────────────────────────────── */
+/* ─── Helpers ────────────────────────────────────────────────── */
 function greeting(name) {
   const h = new Date().getHours();
-  const word = h < 12 ? "Morning" : h < 17 ? "Afternoon" : "Evening";
-  return { word, first: name?.split(" ")[0] || "there" };
+  const w = h < 12 ? "Morning" : h < 17 ? "Afternoon" : "Evening";
+  return { word: w, first: name?.split(" ")[0] || "there" };
 }
 function timeAgo(date) {
   if (!date) return "";
   const s = Math.floor((Date.now() - new Date(date)) / 1000);
   if (s < 60) return "just now";
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
+  const m = Math.floor(s / 60); if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60); if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
 }
 function fmtDate(d) {
@@ -297,358 +171,158 @@ function fmtMonth(d) { return new Date(d).toLocaleDateString("en-IN", { month: "
 
 function buildFeed(announcements, tickets, events) {
   const items = [];
-  announcements.slice(0, 5).forEach(a =>
+  announcements.slice(0, 6).forEach(a =>
     items.push({ type: "announcement", date: a.createdAt, data: a }));
-  tickets
-    .filter(t => !["resolved", "closed"].includes(t.status))
-    .slice(0, 5)
+  tickets.filter(t => !["resolved", "closed"].includes(t.status)).slice(0, 6)
     .forEach(t => items.push({ type: "ticket", date: t.createdAt, data: t }));
-  events
-    .filter(e => new Date(e.startAt) >= new Date())
-    .slice(0, 3)
+  events.filter(e => new Date(e.startAt) >= new Date()).slice(0, 3)
     .forEach(e => items.push({ type: "event", date: e.startAt, data: e }));
   return items.sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
-/* ─── Skeleton ────────────────────────────────────────────────── */
-function Sk({ style = {} }) {
-  return <div className="dp-sk" style={style} />;
-}
-
-/* ─── Live dot (matches landing page) ────────────────────────── */
-function LiveDot({ label = "LIVE" }) {
-  return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 5,
-      padding: 0,
-      fontSize: ".64rem", fontWeight: 700, letterSpacing: ".12em",
-      textTransform: "uppercase",
-      color: T.text2,
-    }}>
-      <span style={{
-        width: 5, height: 5, borderRadius: "50%", background: T.green,
-        display: "inline-block", animation: "dp-live 1.6s ease-in-out infinite",
-      }} />
-      {label}
-    </span>
-  );
-}
-
-/* ─── Pulse ring (visitor alert) ─────────────────────────────── */
-function PulseRing({ color }) {
-  return (
-    <div style={{ position: "relative", width: 10, height: 10, flexShrink: 0 }}>
-      <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: color, animation: "dp-pulse-ring 2s ease-out infinite" }} />
-      <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: color, animation: "dp-pulse-ring 2s ease-out infinite .7s" }} />
-      <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: color }} />
-    </div>
-  );
-}
-
-/* ─── Sparkline ───────────────────────────────────────────────── */
-function Sparkline({ color, seed }) {
-  const bars = Array.from({ length: 7 }, (_, i) => {
-    return Math.round(Math.abs(Math.sin(seed * 13 + i * 2.1)) * 60 + 25);
-  });
-  return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 24 }}>
-      {bars.map((h, i) => (
-        <div key={i} style={{
-          flex: 1, borderRadius: 2,
-          background: i === 6 ? color : `${color}40`,
-          height: `${h}%`,
-          animation: `dp-bar .5s ease-out ${i * .05}s both`,
-          transformOrigin: "bottom",
-        }} />
-      ))}
-    </div>
-  );
-}
-
-/* ─── Mini window grid (hero decoration, referencing login scene) */
-const WIN_DATA = Array.from({ length: 20 }, (_, i) => ({
-  lit:   (i * 7 + 3) % 5 !== 0,
-  blue:  i % 7 === 0,
-  delay: `${((i * 1.37) % 3.5).toFixed(1)}s`,
-  dur:   `${(2 + (i % 3) * .7).toFixed(1)}s`,
-}));
-
-function MiniWindowGrid() {
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gridTemplateRows: "repeat(4,1fr)", gap: 5 }}>
-      {WIN_DATA.map((w, i) => (
-        <div key={i} style={{
-          width: 15, height: 11, borderRadius: 2,
-          background: !w.lit ? "#E2E8F0" : w.blue ? "#DBEAFE" : "#FEF9C3",
-          border: `1px solid ${!w.lit ? "#F8FAFC" : w.blue ? "rgba(61,82,160,.18)" : "rgba(234,179,8,.2)"}`,
-          boxShadow: w.lit ? (w.blue ? "0 0 5px rgba(61,82,160,.14)" : "0 0 5px rgba(234,179,8,.3)") : "none",
-          animation: w.lit ? `dp-window ${w.dur} ease-in-out infinite ${w.delay}` : "none",
-        }} />
-      ))}
-    </div>
-  );
-}
-
-/* ─── Section header ──────────────────────────────────────────── */
-function SectionHeader({ eyebrow, title, linkTo, linkLabel, live = false }) {
-  return (
-    <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 18 }}>
-      <div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-          <p style={{ fontSize: ".65rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: T.blue, margin: 0 }}>
-            {eyebrow}
-          </p>
-          {live && <LiveDot />}
-        </div>
-        <h2 style={{ fontSize: "1.15rem", color: T.text, fontWeight: 800, lineHeight: 1.2, margin: 0 }}>
-          {title}
-        </h2>
-      </div>
-      {linkTo && (
-        <Link to={linkTo} className="dp-view-all">
-          {linkLabel || "View all"} <ChevronRight size={11} />
-        </Link>
-      )}
-    </div>
-  );
-}
-
-/* ─── Status chip ─────────────────────────────────────────────── */
-const STATUS_CFG = {
-  open:        { bg: "#EEF2FF", color: T.blue,   border: "#C7D2FE"  },
-  in_progress: { bg: T.amberL,  color: T.amber,  border: "rgba(217,119,6,.25)"  },
-  resolved:    { bg: T.greenL,  color: T.green,  border: "rgba(22,163,74,.25)"  },
-  closed:      { bg: T.bgSubtle2, color: T.text3, border: T.border },
-};
-
-function StatusChip({ status }) {
-  const s = STATUS_CFG[status] || STATUS_CFG.open;
-  return (
-    <span style={{
-      padding: "3px 9px", borderRadius: 100,
-      fontSize: ".62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em",
-      background: s.bg, color: s.color, border: `1px solid ${s.border}`,
-    }}>
-      {status?.replace("_", " ")}
-    </span>
-  );
-}
-
-/* ─── Feed type config ────────────────────────────────────────── */
+/* ─── Feed config ────────────────────────────────────────────── */
 const FEED_CFG = {
-  announcement: { label: "Notice", color: T.blue,   bg: T.blueL,   borderL: T.blue,   emoji: "📢" },
-  ticket:       { label: "Ticket", color: T.red,    bg: T.redL,    borderL: T.red,    emoji: "🎫" },
-  event:        { label: "Event",  color: T.green,  bg: T.greenL,  borderL: T.green,  emoji: "📅" },
+  announcement: { label: "Notice", color: T.amber, bg: T.amberL, border: T.amberM, dot: T.amber },
+  ticket:       { label: "Ticket", color: T.red,   bg: T.redL,   border: "#FECACA", dot: T.red  },
+  event:        { label: "Event",  color: T.green,  bg: T.greenL, border: "#BBF7D0", dot: T.green },
+};
+const STATUS_CFG = {
+  open:        { bg: T.blueL,   color: T.blue,  label: "Open"        },
+  in_progress: { bg: T.amberL,  color: T.amber, label: "In Progress" },
+  resolved:    { bg: T.greenL,  color: T.green, label: "Resolved"    },
+  closed:      { bg: "#F3F4F6", color: T.text3, label: "Closed"      },
 };
 
-function TypeBadge({ type }) {
-  const cfg = FEED_CFG[type];
+/* ─── Skeleton ───────────────────────────────────────────────── */
+function Sk({ style = {} }) { return <div className="dp-sk" style={style} />; }
+
+/* ─── StatCard ───────────────────────────────────────────────── */
+function StatCard({ label, value, icon: Icon, iconBg, iconColor, trend, loading, index }) {
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 4,
-      padding: "3px 9px", borderRadius: 100,
-      fontSize: ".6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em",
-      background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}30`,
-    }}>
-      {cfg.emoji} {cfg.label}
-    </span>
+    <motion.div
+      className="dp-stat"
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.05 + index * 0.07, duration: 0.4, ease: [.22, 1, .36, 1] }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+        <p style={{ fontSize: ".68rem", fontWeight: 700, color: T.text2, textTransform: "uppercase", letterSpacing: ".09em", lineHeight: 1.3 }}>
+          {label}
+        </p>
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Icon size={16} style={{ color: iconColor }} />
+        </div>
+      </div>
+      {loading
+        ? <Sk style={{ height: 40, width: 80, marginBottom: 10 }} />
+        : <p style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "2.2rem", fontWeight: 800, color: T.ink, lineHeight: 1, marginBottom: 10 }}>{value ?? 0}</p>
+      }
+      {loading
+        ? <Sk style={{ height: 12, width: 120 }} />
+        : trend && <p style={{ fontSize: ".72rem", color: T.text3, lineHeight: 1.4 }}>{trend}</p>
+      }
+    </motion.div>
   );
 }
 
-function MetaPill({ children }) {
-  return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 4,
-      padding: "3px 9px", borderRadius: 8,
-      background: T.bgSubtle2, border: `1px solid ${T.border}`,
-      fontSize: ".7rem", fontWeight: 500, color: T.text2,
-    }}>
-      {children}
-    </span>
-  );
-}
-
-/* ─── Feed item ───────────────────────────────────────────────── */
-function FeedItem({ item, isLast, index }) {
+/* ─── ActivityCard ───────────────────────────────────────────── */
+function ActivityCard({ item, index }) {
   const cfg = FEED_CFG[item.type];
   const d   = item.data;
+  const raw = d.createdBy?.fullName || d.organizer?.fullName || d.postedBy?.fullName || "";
+  const initials = raw.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "?";
+
   return (
     <motion.div
-      initial={{ opacity: 0, x: -16 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * .07, duration: .4, ease: [.22, 1, .36, 1] }}
-      className="dp-feed-item"
-      style={{
-        marginBottom: isLast ? 0 : 8,
-        borderLeft: `3px solid ${cfg.borderL}`,
-      }}
+      className="dp-act"
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1 + index * 0.045, duration: 0.32 }}
+      style={{ borderLeft: `3px solid ${cfg.dot}` }}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
-        <TypeBadge type={item.type} />
-        <span style={{ fontSize: ".67rem", color: T.text3, whiteSpace: "nowrap", flexShrink: 0 }}>
-          {timeAgo(item.date)}
-        </span>
-      </div>
-      <p style={{ fontSize: ".9rem", fontWeight: 700, color: T.text, lineHeight: 1.4 }}>
-        {d.title || d.amenityName || "—"}
-      </p>
-      {item.type === "announcement" && d.body && (
-        <p style={{ fontSize: ".8rem", color: T.text2, lineHeight: 1.55 }}>
-          {d.body.length > 100 ? d.body.slice(0, 100) + "…" : d.body}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
+          <span style={{ padding: "3px 9px", borderRadius: 100, fontSize: ".63rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+            {cfg.label}
+          </span>
+          {item.type === "ticket" && d.status && (() => {
+            const s = STATUS_CFG[d.status] || STATUS_CFG.open;
+            return <span style={{ padding: "3px 9px", borderRadius: 100, fontSize: ".63rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", background: s.bg, color: s.color, border: `1px solid ${s.color}25` }}>{s.label}</span>;
+          })()}
+          {item.type === "ticket" && d.category && (
+            <span style={{ padding: "3px 9px", borderRadius: 100, fontSize: ".63rem", fontWeight: 600, background: "#F3F4F6", color: T.text2, border: `1px solid ${T.border}` }}>{d.category}</span>
+          )}
+        </div>
+        <p style={{ fontSize: ".88rem", fontWeight: 700, color: T.ink, marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {d.title || "Untitled"}
         </p>
-      )}
-      {item.type === "ticket" && (
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {d.category && <MetaPill>{d.category}</MetaPill>}
-          {d.status && <StatusChip status={d.status} />}
-        </div>
-      )}
-      {item.type === "event" && (
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <MetaPill>📅 {fmtDate(d.startAt)} · {fmtTime(d.startAt)}</MetaPill>
-          {d.location && <MetaPill>📍 {d.location}</MetaPill>}
-        </div>
-      )}
-    </motion.div>
-  );
-}
-
-/* ─── Magnetic quick action (framer-motion magnetic pull) ─────── */
-function MagneticQuickAction({ to, Icon, label, accent }) {
-  const mx = useMotionValue(0);
-  const my = useMotionValue(0);
-  const sx = useSpring(mx, { stiffness: 250, damping: 25 });
-  const sy = useSpring(my, { stiffness: 250, damping: 25 });
-
-  function onMove(e) {
-    const r = e.currentTarget.getBoundingClientRect();
-    mx.set((e.clientX - (r.left + r.width  / 2)) * .25);
-    my.set((e.clientY - (r.top  + r.height / 2)) * .25);
-  }
-  function onLeave() { mx.set(0); my.set(0); }
-
-  return (
-    <Link to={to} className="dp-qa-tile" onMouseMove={onMove} onMouseLeave={onLeave} style={{ textDecoration: "none" }}>
-      <motion.div style={{ x: sx, y: sy, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-        <motion.div
-          whileHover={{ scale: 1.18, rotate: 8 }}
-          transition={{ type: "spring", stiffness: 300, damping: 18 }}
-          style={{
-            width: 44, height: 44, borderRadius: 13,
-            background: `${accent}15`, border: `1.5px solid ${accent}30`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-        >
-          <Icon size={19} style={{ color: accent }} />
-        </motion.div>
-        <span style={{ fontSize: ".73rem", fontWeight: 700, color: T.text2, textAlign: "center", lineHeight: 1.3 }}>
-          {label}
-        </span>
-      </motion.div>
-    </Link>
-  );
-}
-
-/* ─── Timeline event (matches landing page's event card style) ── */
-function TimelineEvent({ event, index, isLast }) {
-  const now = new Date();
-  const diff = Math.floor((new Date(event.startAt) - now) / 86400000);
-  const isSoon = diff >= 0 && diff <= 2;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 16 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * .1, duration: .4, ease: [.22, 1, .36, 1] }}
-      style={{ display: "flex", gap: 0 }}
-    >
-      {/* Spine */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 22, flexShrink: 0, marginRight: 12 }}>
-        <div style={{
-          width: 10, height: 10, borderRadius: "50%", marginTop: 6,
-          background: isSoon ? T.blue : T.border2,
-          border: `2px solid ${isSoon ? T.blue : T.border}`,
-          boxShadow: isSoon ? `0 0 10px ${T.blue}55` : "none",
-          animation: isSoon ? "dp-live 2s ease-in-out infinite" : "none",
-          flexShrink: 0,
-        }} />
-        {!isLast && (
-          <div className="dp-tl-line" style={{ flex: 1, minHeight: 26, marginTop: 4 }} />
+        {item.type !== "event" && (d.body || d.description) && (
+          <p style={{ fontSize: ".78rem", color: T.text2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {(d.body || d.description || "").replace(/<[^>]+>/g, "")}
+          </p>
+        )}
+        {item.type === "event" && (
+          <p style={{ fontSize: ".78rem", color: T.text2, display: "flex", alignItems: "center", gap: 5 }}>
+            <Clock size={11} /> {fmtDate(d.startAt)} · {fmtTime(d.startAt)}
+            {d.location && <><MapPin size={11} style={{ marginLeft: 4 }} />{d.location}</>}
+          </p>
         )}
       </div>
-
-      {/* Content */}
-      <div style={{ flex: 1, paddingBottom: isLast ? 0 : 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{
-            width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-            background: isSoon ? T.blueL : T.bgSubtle2,
-            border: `1px solid ${isSoon ? "#C7D2FE" : T.border}`,
-            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-          }}>
-            <span style={{ fontSize: ".95rem", fontWeight: 800, lineHeight: 1, color: isSoon ? T.blue : T.text }}>
-              {fmtDay(event.startAt)}
-            </span>
-            <span style={{ fontSize: ".5rem", fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: isSoon ? T.blue : T.text3 }}>
-              {fmtMonth(event.startAt)}
-            </span>
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <p style={{ fontSize: ".86rem", fontWeight: 700, color: T.text, margin: "0 0 2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {event.title}
-            </p>
-            <p style={{ fontSize: ".7rem", color: T.text2, margin: 0 }}>
-              {event.location ? `📍 ${event.location} · ` : ""}{fmtTime(event.startAt)}
-              {isSoon && (
-                <span style={{ marginLeft: 6, background: T.blueL, color: T.blue, padding: "1px 7px", borderRadius: 100, fontSize: ".6rem", fontWeight: 700 }}>
-                  {diff === 0 ? "Today!" : "Tomorrow"}
-                </span>
-              )}
-            </p>
-          </div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 9, flexShrink: 0 }}>
+        <span style={{ fontSize: ".67rem", color: T.text3, whiteSpace: "nowrap" }}>{timeAgo(item.date)}</span>
+        <div style={{ width: 29, height: 29, borderRadius: "50%", background: `linear-gradient(135deg, ${T.amber}, ${T.amberH})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: ".58rem", fontWeight: 800, color: "#fff" }}>
+          {initials}
         </div>
       </div>
     </motion.div>
   );
 }
 
-/* ─── Booking row ─────────────────────────────────────────────── */
-const BK_CFG = {
-  approved: { bg: T.greenL,  color: T.green,  border: "rgba(22,163,74,.25)"  },
-  pending:  { bg: T.amberL,  color: T.amber,  border: "rgba(217,119,6,.25)"  },
-  rejected: { bg: T.redL,    color: T.red,    border: "rgba(220,38,38,.25)"  },
-};
-
-function BookingRow({ b, index }) {
-  const s = BK_CFG[b.status] || BK_CFG.pending;
+/* ─── QuickAction ────────────────────────────────────────────── */
+function QuickAction({ to, icon: Icon, label, iconBg, iconColor, delay = 0 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * .08, duration: .35 }}
-      className="dp-booking"
-    >
-      <div style={{ minWidth: 0 }}>
-        <p style={{ fontSize: ".85rem", fontWeight: 700, color: T.text, margin: "0 0 2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {b.amenityName}
-        </p>
-        <p style={{ fontSize: ".7rem", color: T.text2, margin: 0 }}>
-          {b.date} · {b.startTime}–{b.endTime}
-        </p>
-      </div>
-      <span style={{
-        padding: "3px 9px", borderRadius: 100, flexShrink: 0,
-        fontSize: ".62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em",
-        background: s.bg, color: s.color, border: `1px solid ${s.border}`,
-      }}>
-        {b.status}
-      </span>
+    <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay, duration: 0.35, ease: [.22, 1, .36, 1] }}>
+      <Link to={to} className="dp-qa">
+        <div style={{ width: 34, height: 34, borderRadius: 9, background: iconBg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Icon size={15} style={{ color: iconColor }} />
+        </div>
+        <span style={{ fontSize: ".83rem", fontWeight: 600, color: T.ink2, flex: 1 }}>{label}</span>
+        <ChevronRight size={14} style={{ color: T.text3, flexShrink: 0 }} />
+      </Link>
     </motion.div>
   );
 }
 
-/* ══════════════════════════════════════════════════════════════
-   MAIN DASHBOARD
-══════════════════════════════════════════════════════════════ */
+/* ─── EventRow ───────────────────────────────────────────────── */
+function EventRow({ event, index, isLast }) {
+  const diff = Math.floor((new Date(event.startAt) - new Date()) / 86400000);
+  const soon = diff >= 0 && diff <= 2;
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.12 + index * 0.08, duration: 0.35 }}
+      style={{ display: "flex", gap: 12, paddingBottom: isLast ? 0 : 16, position: "relative" }}
+    >
+      {!isLast && <div style={{ position: "absolute", left: 17, top: 38, bottom: 0, width: 1, background: T.border }} />}
+      <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, background: soon ? T.amberL : "#F5F5F5", border: `1px solid ${soon ? T.amberM : T.border}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ fontSize: ".92rem", fontWeight: 800, lineHeight: 1, color: soon ? T.amber : T.ink2 }}>{fmtDay(event.startAt)}</span>
+        <span style={{ fontSize: ".46rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", color: soon ? T.amber : T.text3 }}>{fmtMonth(event.startAt)}</span>
+      </div>
+      <div style={{ minWidth: 0, paddingTop: 2 }}>
+        <p style={{ fontSize: ".85rem", fontWeight: 700, color: T.ink, marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{event.title}</p>
+        <p style={{ fontSize: ".72rem", color: T.text2, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+          {fmtTime(event.startAt)}
+          {event.location && <><span style={{ color: T.border2 }}>·</span>{event.location}</>}
+          {soon && <span style={{ background: T.amberL, color: T.amber, border: `1px solid ${T.amberM}`, padding: "1px 7px", borderRadius: 100, fontSize: ".6rem", fontWeight: 700 }}>{diff === 0 ? "Today!" : "Tomorrow"}</span>}
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+═══════════════════════════════════════════════════════════════ */
 export function DashboardPage() {
   const { token, user, membership } = useAuth();
 
@@ -657,41 +331,33 @@ export function DashboardPage() {
   const isAdmin    = ["committee", "super_admin"].includes(user?.role);
   const isResident = user?.role === "resident";
 
-  /* ── State ── */
   const [announcements,    setAnnouncements]    = useState([]);
   const [tickets,          setTickets]          = useState([]);
   const [events,           setEvents]           = useState([]);
-  const [bookings,         setBookings]         = useState([]);
   const [pendingApprovals, setPendingApprovals] = useState(0);
   const [visitorRequests,  setVisitorRequests]  = useState([]);
   const [respondingId,     setRespondingId]     = useState(null);
   const [loading,          setLoading]          = useState(true);
   const [error,            setError]            = useState("");
 
-  /* ── Data load ── */
   const load = useCallback(async () => {
     if (!token) return;
     setLoading(true); setError("");
     try {
       const calls = [
-        apiRequest("/announcements",      { token }),
-        apiRequest("/tickets",            { token }),
-        apiRequest("/events",             { token }),
-        apiRequest("/amenities/bookings", { token }),
+        apiRequest("/announcements",   { token }),
+        apiRequest("/tickets",         { token }),
+        apiRequest("/events",          { token }),
       ];
       if (isAdmin)    calls.push(apiRequest("/admin/pending-approvals", { token }));
       if (isResident) calls.push(apiRequest("/visitors/my-requests",   { token }));
-
       const results = await Promise.allSettled(calls);
       const get = r => r.status === "fulfilled" ? r.value : null;
       setAnnouncements(get(results[0])?.items || []);
       setTickets(get(results[1])?.items || []);
       setEvents(get(results[2])?.items || []);
-      setBookings(get(results[3])?.items || []);
-      if (isAdmin)    setPendingApprovals((get(results[4])?.items || []).length);
-      if (isResident) setVisitorRequests(get(results[isAdmin ? 5 : 4])?.items || []);
-      const failed = results.filter(r => r.status === "rejected");
-      if (failed.length) setError(`${failed.length} section(s) failed to load — showing partial data`);
+      if (isAdmin)    setPendingApprovals((get(results[3])?.items || []).length);
+      if (isResident) setVisitorRequests(get(results[isAdmin ? 4 : 3])?.items || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -701,7 +367,6 @@ export function DashboardPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  /* ── Socket ── */
   useEffect(() => {
     if (!isResident) return;
     const socket = getSocket();
@@ -711,485 +376,238 @@ export function DashboardPage() {
     return () => socket.off("visitor:request_incoming", onIncoming);
   }, [isResident]);
 
-  /* ── Visitor respond ── */
   async function respondToVisitor(visitorId, decision) {
     setRespondingId(visitorId);
     try {
       await apiRequest(`/visitors/${visitorId}/respond`, { token, method: "PATCH", body: { decision } });
       setVisitorRequests(prev => prev.filter(v => v._id !== visitorId));
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setRespondingId(null);
-    }
+    } catch (err) { setError(err.message); }
+    finally { setRespondingId(null); }
   }
 
-  /* ── Derived ── */
-  const userId         = user?._id || user?.id || "";
   const { word, first } = greeting(user?.fullName);
+  const today = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" });
+  const initials = (user?.fullName || "?").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+
   const upcomingEvents = useMemo(() =>
     events.filter(e => new Date(e.startAt) >= new Date())
-          .sort((a, b) => new Date(a.startAt) - new Date(b.startAt)),
-    [events]);
-  const myBookings = useMemo(() =>
-    bookings.filter(b => (b.requestedBy?._id || b.requestedBy) === userId).slice(0, 3),
-    [bookings, userId]);
-  const feed = useMemo(() => buildFeed(announcements, tickets, events), [announcements, tickets, events]);
+          .sort((a, b) => new Date(a.startAt) - new Date(b.startAt)), [events]);
 
+  const openTickets = useMemo(() =>
+    tickets.filter(t => ["open", "in_progress"].includes(t.status)).length, [tickets]);
+
+  const thisMonthEvents = useMemo(() => {
+    const now = new Date();
+    return events.filter(e => { const d = new Date(e.startAt); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).length;
+  }, [events]);
+
+  const feed = useMemo(() => buildFeed(announcements, tickets, events), [announcements, tickets, events]);
   const flatLabel = membership?.wingId?.name && membership?.unitId?.unitNumber
     ? `${membership.wingId.name}-${membership.unitId.unitNumber}` : null;
-  const today = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short" });
 
-  /* ── Spinner for submit buttons ── */
   const Spinner = (
-    <span style={{ width: 13, height: 13, border: "2px solid rgba(255,255,255,.4)", borderTopColor: "#fff", borderRadius: "50%", animation: "dp-spin .7s linear infinite", display: "inline-block" }} />
+    <span style={{ width: 12, height: 12, display: "inline-block", borderRadius: "50%", border: "2px solid rgba(255,255,255,.35)", borderTopColor: "#fff", animation: "dp-spin .7s linear infinite" }} />
   );
 
   return (
     <>
       <style>{CSS}</style>
+      <div className="dp-root" style={{ padding: "28px 32px 60px" }}>
 
-      <div className="dp-root" style={{ position: "relative" }}>
-
-        {/* ── Ambient orbs ── */}
-        <div style={{
-          position: "absolute", width: 600, height: 600, borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(61,82,160,.04) 0%, transparent 65%)",
-          top: -200, right: -100, pointerEvents: "none", zIndex: 0,
-        }} />
-        <div style={{
-          position: "absolute", width: 400, height: 400, borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(124,58,237,.04) 0%, transparent 65%)",
-          bottom: 0, left: -80, pointerEvents: "none", zIndex: 0,
-        }} />
-
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "28px 28px 60px", position: "relative", zIndex: 1 }}>
-
-          {/* ── Error ── */}
-          {error && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-              style={{
-                display: "flex", alignItems: "center", gap: 12, marginBottom: 20,
-                background: T.redL, border: `1px solid rgba(220,38,38,.25)`,
-                borderRadius: 14, padding: "13px 18px",
-                fontSize: ".87rem", color: T.red,
-              }}>
-              <XCircle size={16} /> {error}
-            </motion.div>
-          )}
-
-          {/* ══ HERO ══════════════════════════════════════════════ */}
-          <motion.div
-            initial={{ opacity: 0, y: 28 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: .65, ease: [.22, 1, .36, 1] }}
-            className="dp-card"
-            style={{
-              position: "relative", overflow: "hidden",
-              marginBottom: 16,
-              padding: "36px 40px",
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              gap: 24,
-              /* Subtle blue gradient inside card */
-              background: "linear-gradient(135deg, #ffffff 0%, #F0F5FF 100%)",
-              boxShadow: T.sh3,
-            }}
-          >
-            {/* Scan line */}
-            <div className="dp-hero-scan" />
-
-            {/* Blue top accent bar */}
-            <div style={{
-              position: "absolute", top: 0, left: 0, right: 0, height: 4,
-              background: `linear-gradient(90deg, ${T.blue}, ${T.purple})`,
-              borderRadius: "20px 20px 0 0",
-            }} />
-
-            {/* LEFT */}
-            <div style={{ position: "relative", zIndex: 3 }}>
-              {/* Top row: live badge + date */}
-              <motion.div
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: .15, duration: .4 }}
-                style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}
-              >
-                <span style={{ fontSize: ".72rem", fontWeight: 500, color: T.text3 }}>
-                  {today}
-                </span>
-              </motion.div>
-
-              {/* Greeting */}
-              <motion.div
-                initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: .22, duration: .55, ease: [.22, 1, .36, 1] }}
-              >
-                <p style={{ fontSize: ".9rem", fontWeight: 600, color: T.text2, marginBottom: 4 }}>
-                  Good {word},
-                </p>
-                <h1 style={{ fontSize: "clamp(1.8rem,3.5vw,2.8rem)", fontWeight: 800, color: T.text, lineHeight: 1.08, letterSpacing: "-1.5px", marginBottom: 18 }}>
-                  Welcome back,{" "}
-                  <span style={{
-                    background: `linear-gradient(90deg, ${T.blue} 0%, ${T.purple} 50%, ${T.blue} 100%)`,
-                    backgroundSize: "200% auto",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                    animation: "dp-shimmer 3s linear infinite",
-                  }}>
-                    {first}.
-                  </span>
-                </h1>
-              </motion.div>
-
-              {/* Pills */}
-              <motion.div
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: .35, duration: .4 }}
-                style={{ display: "flex", gap: 8, flexWrap: "wrap" }}
-              >
-                <span style={{
-                  display: "inline-flex", alignItems: "center", gap: 6,
-                  padding: "6px 14px", borderRadius: 100,
-                  fontSize: ".75rem", fontWeight: 700,
-                  background: "#EEF2FF", border: "1px solid #C7D2FE",
-                  color: T.blue,
-                }}>
-                  <Shield size={12} />
-                  {user?.role?.replace("_", " ")}
-                </span>
-                {flatLabel && (
-                  <span style={{
-                    display: "inline-flex", alignItems: "center", gap: 6,
-                    padding: "6px 14px", borderRadius: 100,
-                    fontSize: ".75rem", fontWeight: 600,
-                    background: T.bgSubtle2, border: `1px solid ${T.border}`,
-                    color: T.text2,
-                  }}>
-                    🏠 {flatLabel}
-                  </span>
-                )}
-              </motion.div>
-            </div>
-
-            {/* RIGHT: Mini window grid — references login page's apartment scene */}
-            <motion.div
-              className="dp-hero-right"
-              initial={{ opacity: 0, scale: .88, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ delay: .45, duration: .6, ease: [.22, 1, .36, 1] }}
-              style={{ animation: "dp-float2 6s ease-in-out infinite", flexShrink: 0 }}
-            >
-              <div style={{
-                background: "linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)",
-                border: "1px solid #E2E8F0",
-                borderRadius: 18, padding: "16px 18px",
-                boxShadow: T.sh3,
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: T.green, animation: "dp-live 1.6s ease-in-out infinite" }} />
-                  <p style={{ fontSize: ".62rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: T.text3, margin: 0 }}>
-                    Green Heights
-                  </p>
-                </div>
-                <MiniWindowGrid />
-                <div style={{
-                  marginTop: 10, display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "6px 8px", borderRadius: 8,
-                  background: T.bgSubtle2, border: `1px solid ${T.border}`,
-                }}>
-                  <span style={{ fontSize: ".58rem", color: T.text2, fontWeight: 500 }}>Residents online</span>
-                  <span style={{ fontSize: ".72rem", color: T.blue, fontWeight: 800 }}>248</span>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Sync button */}
-            <button onClick={load} disabled={loading} className="dp-sync"
-              style={{ position: "absolute", top: 20, right: 24, zIndex: 4 }}>
-              <RefreshCw size={12} style={{ animation: loading ? "dp-spin 1s linear infinite" : "none" }} />
-              Sync
-            </button>
+        {/* ══ TOPBAR ══ */}
+        <div className="dp-topbar" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 20, marginBottom: 32, flexWrap: "wrap" }}>
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [.22, 1, .36, 1] }}>
+            <p style={{ fontSize: ".82rem", color: T.text3, marginBottom: 5, fontWeight: 500 }}>
+              Good {word} · {today}
+            </p>
+            <h1 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "clamp(1.7rem,3vw,2.4rem)", fontWeight: 800, color: T.ink, letterSpacing: "-1.2px", lineHeight: 1.1, marginBottom: 6 }}>
+              Hello, <span style={{ color: T.amber }}>{first}.</span>
+            </h1>
+            <p style={{ fontSize: ".8rem", color: T.text2 }}>
+              {flatLabel ? `🏠 Flat ${flatLabel} · ` : ""}Let's get things done!
+            </p>
           </motion.div>
 
-          {/* ══ ADMIN ALERT ═══════════════════════════════════════ */}
-          {isAdmin && pendingApprovals > 0 && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .3 }}>
-              <Link to="/admin/approvals" style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
-                background: T.amberL, border: `1px solid rgba(217,119,6,.3)`,
-                borderRadius: 14, padding: "14px 20px", marginBottom: 14,
-                textDecoration: "none",
-                boxShadow: T.sh,
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(217,119,6,.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
-                    ⚠️
-                  </div>
-                  <div>
-                    <p style={{ fontSize: ".88rem", fontWeight: 700, color: T.amber, margin: "0 0 2px" }}>
-                      {pendingApprovals} membership {pendingApprovals === 1 ? "request" : "requests"} pending
-                    </p>
-                    <p style={{ fontSize: ".75rem", color: "rgba(217,119,6,.7)", margin: 0 }}>
-                      Action required to approve new residents
-                    </p>
-                  </div>
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }} style={{ display: "flex", alignItems: "center", gap: 9, flexShrink: 0, flexWrap: "wrap" }}>
+            <div style={{ position: "relative" }}>
+              <Search size={14} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: T.text3, pointerEvents: "none" }} />
+              <input className="dp-search" placeholder="Search…" />
+            </div>
+            <button className="dp-icon-btn">
+              <Bell size={15} style={{ color: T.text2 }} />
+              {pendingApprovals > 0 && <span style={{ position: "absolute", top: 8, right: 8, width: 7, height: 7, borderRadius: "50%", background: T.red, border: "2px solid #fff" }} />}
+            </button>
+            <button onClick={load} disabled={loading} className="dp-sync">
+              <RefreshCw size={12} style={{ animation: loading ? "dp-spin 1s linear infinite" : "none" }} /> Sync
+            </button>
+            <div style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: `linear-gradient(135deg, ${T.amber} 0%, ${T.amberH} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: ".72rem", fontWeight: 800, color: "#fff", boxShadow: `0 2px 10px ${T.amberM}` }}>
+              {initials}
+            </div>
+          </motion.div>
+        </div>
+
+        {/* ══ ERROR ══ */}
+        {error && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, background: T.redL, border: "1px solid #FECACA", borderRadius: 12, padding: "12px 16px", fontSize: ".85rem", color: T.red }}>
+            <XCircle size={15} /> {error}
+            <button onClick={() => setError("")} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: T.red, display: "flex" }}><XCircle size={14} /></button>
+          </div>
+        )}
+
+        {/* ══ ADMIN ALERT ══ */}
+        {isAdmin && pendingApprovals > 0 && (
+          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
+            <Link to="/admin/approvals" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, background: T.amberL, border: `1px solid ${T.amberM}`, borderRadius: 14, padding: "13px 18px", marginBottom: 22, textDecoration: "none", boxShadow: T.sh }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: T.amberM, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }}>⚠️</div>
+                <div>
+                  <p style={{ fontSize: ".87rem", fontWeight: 700, color: T.amberH, margin: "0 0 2px" }}>
+                    {pendingApprovals} membership {pendingApprovals === 1 ? "request" : "requests"} awaiting your approval
+                  </p>
+                  <p style={{ fontSize: ".73rem", color: T.amber, margin: 0 }}>Click to review and approve new residents</p>
                 </div>
-                <ArrowRight size={16} style={{ color: T.amber, flexShrink: 0 }} />
-              </Link>
+              </div>
+              <ArrowRight size={16} style={{ color: T.amber, flexShrink: 0 }} />
+            </Link>
+          </motion.div>
+        )}
+
+        {/* ══ STAT CARDS ══ */}
+        <div className="dp-stat-row" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 24 }}>
+          <StatCard index={0} label="Active Visitors"    value={visitorRequests.length} icon={Users}    iconBg={T.amberL} iconColor={T.amber} trend={visitorRequests.length > 0 ? `${visitorRequests.length} waiting at gate` : "No visitors right now"} loading={loading} />
+          <StatCard index={1} label="Open Tickets"       value={openTickets}            icon={FileText} iconBg={T.redL}   iconColor={T.red}   trend={`${tickets.length} total raised`}                                                                        loading={loading} />
+          <StatCard index={2} label="Events This Month"  value={thisMonthEvents}        icon={Calendar} iconBg={T.greenL} iconColor={T.green} trend={upcomingEvents.length > 0 ? `Next: ${fmtDate(upcomingEvents[0]?.startAt)}` : "No upcoming events"}        loading={loading} />
+          <StatCard index={3} label="Announcements"      value={announcements.length}   icon={Megaphone} iconBg={T.blueL} iconColor={T.blue}  trend="Community notices"                                                                                        loading={loading} />
+        </div>
+
+        {/* ══ MAIN GRID ══ */}
+        <div className="dp-main-grid" style={{ display: "grid", gridTemplateColumns: "1fr 310px", gap: 18, alignItems: "start" }}>
+
+          {/* ── LEFT: Activity feed ── */}
+          <div>
+            <motion.div className="dp-section" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18, duration: 0.45, ease: [.22, 1, .36, 1] }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.green, display: "inline-block", animation: "dp-blink 1.8s ease-in-out infinite" }} />
+                    <span style={{ fontSize: ".6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: T.amber }}>Live Feed</span>
+                  </div>
+                  <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "1.05rem", fontWeight: 800, color: T.ink }}>Recent Activity</h2>
+                </div>
+                <Link to="/announcements" className="dp-view-all">View all <ChevronRight size={11} /></Link>
+              </div>
+
+              {loading ? (
+                [...Array(4)].map((_, i) => (
+                  <div key={i} style={{ marginBottom: 8, padding: "14px 16px", borderRadius: 12, border: `1px solid ${T.border}`, background: T.surface }}>
+                    <div style={{ display: "flex", gap: 8, marginBottom: 8 }}><Sk style={{ width: 58, height: 18, borderRadius: 100 }} /><Sk style={{ width: 74, height: 18, borderRadius: 100 }} /></div>
+                    <Sk style={{ height: 15, width: "64%", marginBottom: 7 }} />
+                    <Sk style={{ height: 12, width: "48%" }} />
+                  </div>
+                ))
+              ) : feed.length === 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "52px 0", textAlign: "center" }}>
+                  <div style={{ width: 52, height: 52, borderRadius: 15, background: T.amberL, border: `1px solid ${T.amberM}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, marginBottom: 14 }}>🔔</div>
+                  <p style={{ fontSize: ".92rem", fontWeight: 700, color: T.ink, marginBottom: 5 }}>All caught up!</p>
+                  <p style={{ fontSize: ".8rem", color: T.text2 }}>No activity in your community yet.</p>
+                </div>
+              ) : (
+                <AnimatePresence>
+                  {feed.map((item, i) => <ActivityCard key={`${item.type}-${item.data._id}`} item={item} index={i} />)}
+                </AnimatePresence>
+              )}
             </motion.div>
-          )}
 
-          {/* ══ MAIN GRID ══════════════════════════════════════════ */}
-          <div className="dp-grid" style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 14 }}>
-
-            {/* ── LEFT: Activity Feed ── */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: .12, duration: .55, ease: [.22, 1, .36, 1] }}
-            >
-              <div className="dp-card" style={{ padding: 24 }}>
-                <SectionHeader
-                  eyebrow="Live Updates"
-                  title="Recent Activity"
-                  linkTo="/announcements"
-                  linkLabel="View all"
-                  live={true}
-                />
-                {loading ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {[...Array(4)].map((_, i) => (
-                      <div key={i} style={{ display: "flex", flexDirection: "column", gap: 8, padding: "14px 0", borderBottom: `1px solid ${T.border}` }}>
-                        <Sk style={{ height: 13, width: "28%" }} />
-                        <Sk style={{ height: 16, width: "65%" }} />
-                        <Sk style={{ height: 11, width: "45%" }} />
-                      </div>
-                    ))}
+            {/* Visitor requests */}
+            {isResident && visitorRequests.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.4 }} style={{ marginTop: 16 }}>
+                <div className="dp-visitor-wrap dp-section" style={{ border: "1px solid rgba(220,38,38,.25)", background: "#FFF8F8" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: T.red, display: "inline-block", animation: "dp-blink 1s ease-in-out infinite" }} />
+                    <span style={{ fontSize: ".6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: T.red }}>Action Required</span>
                   </div>
-                ) : feed.length === 0 ? (
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "52px 0", textAlign: "center" }}>
-                    <div style={{
-                      width: 52, height: 52, borderRadius: 15,
-                      background: "#EEF2FF", border: "1px solid #C7D2FE",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 22, marginBottom: 12,
-                    }}>
-                      🔔
-                    </div>
-                    <p style={{ fontSize: ".92rem", fontWeight: 700, color: T.text, margin: "0 0 4px" }}>All caught up</p>
-                    <p style={{ fontSize: ".8rem", color: T.text2, margin: 0 }}>No new activity in your community.</p>
-                  </div>
-                ) : (
+                  <h3 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "1rem", fontWeight: 800, color: T.ink, marginBottom: 16 }}>Visitor at Gate</h3>
                   <AnimatePresence>
-                    {feed.map((item, i) => (
-                      <FeedItem
-                        key={`${item.type}-${item.data._id}-${i}`}
-                        item={item}
-                        isLast={i === feed.length - 1}
-                        index={i}
-                      />
+                    {visitorRequests.map(v => (
+                      <motion.div key={v._id} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }}
+                        style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: 14, marginBottom: 10 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 13 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 10, background: T.redL, border: "1px solid #FECACA", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>👤</div>
+                          <div style={{ minWidth: 0 }}>
+                            <p style={{ fontSize: ".86rem", fontWeight: 700, color: T.ink, marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.visitorName}</p>
+                            <p style={{ fontSize: ".72rem", color: T.text2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.purpose}{v.visitorPhone ? ` · ${v.visitorPhone}` : ""}</p>
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                          <button onClick={() => respondToVisitor(v._id, "rejected")} disabled={respondingId === v._id}
+                            style={{ padding: "9px", borderRadius: 9, fontSize: ".78rem", fontWeight: 700, background: T.redL, color: T.red, border: "1px solid #FECACA", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontFamily: "'DM Sans', sans-serif", opacity: respondingId === v._id ? 0.6 : 1 }}>
+                            {respondingId === v._id ? Spinner : <><XCircle size={13} /> Reject</>}
+                          </button>
+                          <button onClick={() => respondToVisitor(v._id, "approved")} disabled={respondingId === v._id}
+                            style={{ padding: "9px", borderRadius: 9, fontSize: ".78rem", fontWeight: 700, background: T.green, color: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontFamily: "'DM Sans', sans-serif", boxShadow: "0 2px 8px rgba(22,163,74,.3)", opacity: respondingId === v._id ? 0.6 : 1 }}>
+                            {respondingId === v._id ? Spinner : <><CheckCircle size={13} /> Approve</>}
+                          </button>
+                        </div>
+                      </motion.div>
                     ))}
                   </AnimatePresence>
-                )}
+                </div>
+              </motion.div>
+            )}
+          </div>
+
+          {/* ── RIGHT column ── */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+            {/* Quick Actions */}
+            <motion.div className="dp-section" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15, duration: 0.4, ease: [.22, 1, .36, 1] }}>
+              <div style={{ marginBottom: 14 }}>
+                <p style={{ fontSize: ".6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: T.amber, marginBottom: 3 }}>Shortcuts</p>
+                <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "1.05rem", fontWeight: 800, color: T.ink }}>Quick Actions</h2>
               </div>
+              <QuickAction delay={0.18} to="/tickets"         icon={Plus}      label="Raise a Ticket"  iconBg={T.redL}    iconColor={T.red}    />
+              <QuickAction delay={0.21} to="/amenities"       icon={BookOpen}  label="Book Amenity"    iconBg={T.greenL}  iconColor={T.green}  />
+              <QuickAction delay={0.24} to="/visitors/prereg" icon={UserCheck} label="Pre-reg Visitor" iconBg={T.amberL}  iconColor={T.amber}  />
+              <QuickAction delay={0.27} to="/polls"           icon={BarChart2} label="View Polls"      iconBg={T.blueL}   iconColor={T.blue}   />
+              <QuickAction delay={0.30} to="/lost-found"      icon={Package}   label="Lost & Found"    iconBg={T.purpleL} iconColor={T.purple} />
             </motion.div>
 
-            {/* ── RIGHT column ── */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-
-              {/* Visitor requests */}
-              {isResident && visitorRequests.length > 0 && (
-                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: .18, duration: .5 }}>
-                  <div
-                    className="dp-visitor-card dp-card"
-                    style={{ padding: 20, background: T.redL, border: `1px solid rgba(220,38,38,.25)` }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                      <PulseRing color={T.red} />
-                      <p style={{ fontSize: ".65rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: T.red, margin: 0 }}>
-                        Action Required
-                      </p>
-                    </div>
-                    <h3 style={{ fontSize: "1.15rem", fontWeight: 800, color: T.text, margin: "0 0 14px" }}>
-                      Visitor at Gate
-                    </h3>
-                    <AnimatePresence>
-                      {visitorRequests.map(v => (
-                        <motion.div
-                          key={v._id}
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: .35 }}
-                          style={{
-                            background: T.bgCard, border: `1px solid ${T.border}`,
-                            borderRadius: 14, padding: 14, marginBottom: 10,
-                            boxShadow: T.sh,
-                          }}
-                        >
-                          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                            <div style={{
-                              width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                              background: T.redL, border: `1px solid rgba(220,38,38,.2)`,
-                              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
-                            }}>
-                              👤
-                            </div>
-                            <div style={{ minWidth: 0 }}>
-                              <p style={{ fontSize: ".87rem", fontWeight: 700, color: T.text, margin: "0 0 2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {v.visitorName}
-                              </p>
-                              <p style={{ fontSize: ".7rem", color: T.text2, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {v.purpose}{v.visitorPhone ? ` · ${v.visitorPhone}` : ""}
-                              </p>
-                            </div>
-                          </div>
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                            <button
-                              onClick={() => respondToVisitor(v._id, "rejected")}
-                              disabled={respondingId === v._id}
-                              style={{
-                                minHeight: 40, borderRadius: 10, fontSize: ".78rem", fontWeight: 700,
-                                background: T.redL, color: T.red, border: `1px solid rgba(220,38,38,.3)`,
-                                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
-                                opacity: respondingId === v._id ? .5 : 1,
-                                transition: "background .2s",
-                                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                              }}
-                              onMouseEnter={e => e.currentTarget.style.background = "rgba(220,38,38,.2)"}
-                              onMouseLeave={e => e.currentTarget.style.background = T.redL}
-                            >
-                              {respondingId === v._id ? Spinner : <><XCircle size={13}/> Reject</>}
-                            </button>
-                            <button
-                              onClick={() => respondToVisitor(v._id, "approved")}
-                              disabled={respondingId === v._id}
-                              style={{
-                                minHeight: 40, borderRadius: 10, fontSize: ".78rem", fontWeight: 700,
-                                background: T.green, color: "#fff", border: "none",
-                                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
-                                opacity: respondingId === v._id ? .5 : 1,
-                                boxShadow: "0 4px 12px rgba(22,163,74,.3)",
-                                transition: "background .2s, box-shadow .2s",
-                                fontFamily: "'Plus Jakarta Sans', sans-serif",
-                              }}
-                              onMouseEnter={e => { e.currentTarget.style.background = "#15803D"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(22,163,74,.4)"; }}
-                              onMouseLeave={e => { e.currentTarget.style.background = T.green; e.currentTarget.style.boxShadow = "0 4px 12px rgba(22,163,74,.3)"; }}
-                            >
-                              {respondingId === v._id ? Spinner : <><CheckCircle size={13}/> Approve</>}
-                            </button>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Quick Actions */}
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: .2, duration: .5 }}>
-                <div className="dp-card" style={{ padding: 24 }}>
-                  <SectionHeader eyebrow="Shortcuts" title="Quick Actions" />
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <MagneticQuickAction to="/tickets"         Icon={Plus}     label="Raise Ticket"    accent={T.blue}   />
-                    <MagneticQuickAction to="/amenities"       Icon={BookOpen} label="Book Amenity"    accent={T.green}  />
-                    <MagneticQuickAction to="/visitors/prereg" Icon={Users}    label="Pre-reg Visitor" accent={T.amber}  />
-                    <MagneticQuickAction to="/polls"           Icon={Zap}      label="View Polls"      accent={T.purple} />
-                  </div>
+            {/* Upcoming Events */}
+            <motion.div className="dp-section" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.22, duration: 0.4, ease: [.22, 1, .36, 1] }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <div>
+                  <p style={{ fontSize: ".6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: T.amber, marginBottom: 3 }}>Schedule</p>
+                  <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "1.05rem", fontWeight: 800, color: T.ink }}>Upcoming</h2>
                 </div>
+                <Link to="/events" className="dp-view-all">See all <ChevronRight size={11} /></Link>
+              </div>
+              {loading ? <><Sk style={{ height: 54, marginBottom: 10 }} /><Sk style={{ height: 54 }} /></>
+                : upcomingEvents.length === 0
+                  ? <div style={{ borderRadius: 10, border: `1.5px dashed ${T.border}`, background: T.bg, padding: "18px 14px", textAlign: "center", fontSize: ".82rem", color: T.text3, fontWeight: 500 }}>No upcoming events yet.</div>
+                  : upcomingEvents.slice(0, 3).map((e, i) => <EventRow key={e._id} event={e} index={i} isLast={i === Math.min(upcomingEvents.length, 3) - 1} />)
+              }
+            </motion.div>
+
+            {/* Admin workspace */}
+            {isAdmin && (
+              <motion.div className="dp-section" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.28, duration: 0.4, ease: [.22, 1, .36, 1] }} style={{ borderTop: `3px solid ${T.amber}` }}>
+                <p style={{ fontSize: ".6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: T.amber, marginBottom: 3 }}>Admin</p>
+                <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "1.05rem", fontWeight: 800, color: T.ink, marginBottom: 14 }}>Workspace</h2>
+                {[
+                  { to: "/admin/approvals",     emoji: "👥", label: "Pending Approvals", badge: pendingApprovals || null },
+                  { to: "/admin/society-setup", emoji: "⚙️", label: "Society Setup" },
+                ].map(({ to, emoji, label, badge }) => (
+                  <Link key={to} to={to} className="dp-admin-link">
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: ".84rem", fontWeight: 600, color: T.ink2 }}>
+                      <span>{emoji}</span> {label}
+                    </div>
+                    {badge
+                      ? <span style={{ background: T.amberL, color: T.amber, border: `1px solid ${T.amberM}`, padding: "2px 9px", borderRadius: 100, fontSize: ".7rem", fontWeight: 700 }}>{badge}</span>
+                      : <ChevronRight size={13} style={{ color: T.text3 }} />}
+                  </Link>
+                ))}
               </motion.div>
-
-              {/* Upcoming Events */}
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: .26, duration: .5 }}>
-                <div className="dp-card" style={{ padding: 24 }}>
-                  <SectionHeader eyebrow="Schedule" title="Upcoming" linkTo="/events" linkLabel="See all" />
-                  {loading ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      <Sk style={{ height: 58 }} />
-                      <Sk style={{ height: 58 }} />
-                    </div>
-                  ) : upcomingEvents.length === 0 ? (
-                    <div style={{
-                      borderRadius: 12, border: `1.5px dashed ${T.border}`,
-                      background: T.bgSubtle2, padding: "22px 16px", textAlign: "center",
-                      fontSize: ".82rem", color: T.text3, fontWeight: 500,
-                    }}>
-                      No upcoming events yet.
-                    </div>
-                  ) : (
-                    <div style={{ paddingLeft: 2 }}>
-                      {upcomingEvents.slice(0, 3).map((e, i) => (
-                        <TimelineEvent
-                          key={e._id} event={e} index={i}
-                          isLast={i === Math.min(upcomingEvents.length, 3) - 1}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-
-              {/* My Bookings */}
-              {!loading && myBookings.length > 0 && (
-                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: .32, duration: .5 }}>
-                  <div className="dp-card" style={{ padding: 24 }}>
-                    <SectionHeader eyebrow="Reservations" title="My Bookings" linkTo="/amenities" linkLabel="Manage" />
-                    {myBookings.map((b, i) => <BookingRow key={b._id} b={b} index={i} />)}
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Admin workspace */}
-              {isAdmin && (
-                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: .36, duration: .5 }}>
-                  <div className="dp-card" style={{ padding: 22, overflow: "hidden", position: "relative" }}>
-                    {/* Blue top accent */}
-                    <div style={{
-                      position: "absolute", top: 0, left: 0, right: 0, height: 3,
-                      background: `linear-gradient(90deg, ${T.blue}, ${T.purple})`,
-                      borderRadius: "20px 20px 0 0",
-                    }} />
-                    {/* Ambient bg orb */}
-                    <div style={{
-                      position: "absolute", top: -40, right: -40, width: 140, height: 140,
-                      borderRadius: "50%",
-                      background: `radial-gradient(circle, rgba(61,82,160,.04) 0%, transparent 70%)`,
-                      pointerEvents: "none",
-                    }} />
-                    <p style={{ fontSize: ".65rem", fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: T.blue, marginBottom: 3, position: "relative" }}>
-                      Admin
-                    </p>
-                    <h3 style={{ fontSize: "1.15rem", fontWeight: 800, color: T.text, margin: "0 0 16px", position: "relative" }}>
-                      Workspace
-                    </h3>
-                    <div style={{ position: "relative", zIndex: 1 }}>
-                      {[
-                        { to: "/admin/approvals",     emoji: "👥", label: "Pending Approvals", badge: pendingApprovals > 0 ? pendingApprovals : null },
-                        { to: "/admin/society-setup", emoji: "⚙️", label: "Society Setup" },
-                      ].map(({ to, emoji, label, badge }) => (
-                        <Link key={to} to={to} className="dp-admin-link">
-                          <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: ".85rem", fontWeight: 600, color: T.text2 }}>
-                            <span style={{ fontSize: "1rem" }}>{emoji}</span> {label}
-                          </div>
-                          {badge ? (
-                            <span style={{
-                              background: "#EEF2FF", color: T.blue,
-                              border: "1px solid #C7D2FE",
-                              padding: "2px 9px", borderRadius: 100,
-                              fontSize: ".7rem", fontWeight: 700,
-                            }}>
-                              {badge}
-                            </span>
-                          ) : (
-                            <ChevronRight size={14} style={{ color: T.text3 }} />
-                          )}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </div>

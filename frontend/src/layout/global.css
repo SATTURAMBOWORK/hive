@@ -22,6 +22,209 @@
 }
 
 @layer components {
+  :root {
+    --ah-btn-text: #202124;
+    --ah-btn-fill: linear-gradient(180deg, #ffffff 0%, #f5f6fa 100%);
+    --ah-btn-rim: linear-gradient(
+      90deg,
+      rgba(244, 114, 182, 0.96) 0%,
+      rgba(251, 191, 36, 0.96) 18%,
+      rgba(52, 211, 153, 0.96) 36%,
+      rgba(56, 189, 248, 0.96) 56%,
+      rgba(129, 140, 248, 0.96) 74%,
+      rgba(244, 114, 182, 0.96) 100%
+    );
+    --ah-btn-shadow: 0 1px 0 rgba(255, 255, 255, 0.95) inset, 0 12px 24px rgba(17, 24, 39, 0.14), 0 1px 0 rgba(15, 23, 42, 0.08);
+  }
+
+  @keyframes ah-rim-pan {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+
+  /*
+   * Signature AptHive action button style.
+   * Apply to primary action classes across pages while preserving tiny icon controls.
+   */
+  .btn-primary,
+  .btn-muted,
+  .btn-danger,
+  .lgi-btn,
+  .reg-btn,
+  .reg-btn-ghost,
+  .lp-btn,
+  .ann-btn-primary,
+  .ann-btn-ghost,
+  .ev-btn-gold,
+  .ev-btn-ghost,
+  .pp-btn-gold,
+  .pp-btn-ghost,
+  .pp-btn-danger,
+  .pp-btn-amber,
+  .lf-btn-primary,
+  .lf-btn-ghost,
+  .dp-sync,
+  .tn-btn,
+  .ap-btn {
+    position: relative !important;
+    isolation: isolate;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    min-height: 56px;
+    padding: 12px 24px !important;
+    border-radius: 999px !important;
+    border: 2px solid transparent !important;
+    background: var(--ah-btn-fill) padding-box, var(--ah-btn-rim) border-box !important;
+    color: var(--ah-btn-text) !important;
+    font-family: "DM Sans", "Segoe UI", sans-serif !important;
+    font-size: 1.05rem;
+    font-weight: 700 !important;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    text-decoration: none !important;
+    cursor: pointer;
+    box-shadow: var(--ah-btn-shadow) !important;
+    transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease;
+    overflow: hidden;
+  }
+
+  .btn-primary::before,
+  .btn-muted::before,
+  .btn-danger::before,
+  .lgi-btn::before,
+  .reg-btn::before,
+  .reg-btn-ghost::before,
+  .lp-btn::before,
+  .ann-btn-primary::before,
+  .ann-btn-ghost::before,
+  .ev-btn-gold::before,
+  .ev-btn-ghost::before,
+  .pp-btn-gold::before,
+  .pp-btn-ghost::before,
+  .pp-btn-danger::before,
+  .pp-btn-amber::before,
+  .lf-btn-primary::before,
+  .lf-btn-ghost::before,
+  .dp-sync::before,
+  .tn-btn::before,
+  .ap-btn::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    padding: 2px;
+    background: var(--ah-btn-rim);
+    background-size: 220% 100%;
+    animation: ah-rim-pan 11s linear infinite;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    opacity: 1;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .btn-primary > *,
+  .btn-muted > *,
+  .btn-danger > *,
+  .lgi-btn > *,
+  .reg-btn > *,
+  .reg-btn-ghost > *,
+  .lp-btn > *,
+  .ann-btn-primary > *,
+  .ann-btn-ghost > *,
+  .ev-btn-gold > *,
+  .ev-btn-ghost > *,
+  .pp-btn-gold > *,
+  .pp-btn-ghost > *,
+  .pp-btn-danger > *,
+  .pp-btn-amber > *,
+  .lf-btn-primary > *,
+  .lf-btn-ghost > *,
+  .dp-sync > *,
+  .tn-btn > *,
+  .ap-btn > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .btn-primary:hover,
+  .btn-muted:hover,
+  .btn-danger:hover,
+  .lgi-btn:hover,
+  .reg-btn:hover,
+  .reg-btn-ghost:hover,
+  .lp-btn:hover,
+  .ann-btn-primary:hover,
+  .ann-btn-ghost:hover,
+  .ev-btn-gold:hover,
+  .ev-btn-ghost:hover,
+  .pp-btn-gold:hover,
+  .pp-btn-ghost:hover,
+  .pp-btn-danger:hover,
+  .pp-btn-amber:hover,
+  .lf-btn-primary:hover,
+  .lf-btn-ghost:hover,
+  .dp-sync:hover,
+  .tn-btn:hover,
+  .ap-btn:hover {
+    transform: translateY(-1px) scale(1.04);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.96) inset, 0 18px 34px rgba(17, 24, 39, 0.18), 0 1px 0 rgba(15, 23, 42, 0.08) !important;
+    filter: brightness(1.02);
+  }
+
+  .btn-primary:active,
+  .btn-muted:active,
+  .btn-danger:active,
+  .lgi-btn:active,
+  .reg-btn:active,
+  .reg-btn-ghost:active,
+  .lp-btn:active,
+  .ann-btn-primary:active,
+  .ann-btn-ghost:active,
+  .ev-btn-gold:active,
+  .ev-btn-ghost:active,
+  .pp-btn-gold:active,
+  .pp-btn-ghost:active,
+  .pp-btn-danger:active,
+  .pp-btn-amber:active,
+  .lf-btn-primary:active,
+  .lf-btn-ghost:active,
+  .dp-sync:active,
+  .tn-btn:active,
+  .ap-btn:active {
+    transform: translateY(0) scale(0.97);
+  }
+
+  .btn-primary:disabled,
+  .btn-muted:disabled,
+  .btn-danger:disabled,
+  .lgi-btn:disabled,
+  .reg-btn:disabled,
+  .reg-btn-ghost:disabled,
+  .lp-btn:disabled,
+  .ann-btn-primary:disabled,
+  .ann-btn-ghost:disabled,
+  .ev-btn-gold:disabled,
+  .ev-btn-ghost:disabled,
+  .pp-btn-gold:disabled,
+  .pp-btn-ghost:disabled,
+  .pp-btn-danger:disabled,
+  .pp-btn-amber:disabled,
+  .lf-btn-primary:disabled,
+  .lf-btn-ghost:disabled,
+  .dp-sync:disabled,
+  .tn-btn:disabled,
+  .ap-btn:disabled {
+    opacity: 0.55 !important;
+    cursor: not-allowed !important;
+    filter: grayscale(0.2);
+    transform: none;
+  }
+
   .panel {
     background: #111111;
     border: 1px solid #262626;
@@ -45,39 +248,4 @@
   .field:focus { border-color: #f2f2f2; }
   .field::placeholder { color: #7e7e7e; }
 
-  .btn-primary {
-    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    padding: 10px 20px; font-size: 14px; font-weight: 600;
-    font-family: "DM Sans", sans-serif;
-    background: linear-gradient(135deg, #ffffff, #d7d7d7); color: #0a0a0a; border: none;
-    border-radius: 12px; cursor: pointer;
-    box-shadow: 0 10px 24px rgba(255,255,255,0.12);
-    transition: opacity .15s, transform .1s;
-  }
-  .btn-primary:hover { opacity: 0.9; }
-  .btn-primary:active { transform: scale(0.98); }
-
-  .btn-muted {
-    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    padding: 10px 20px; font-size: 14px; font-weight: 600;
-    font-family: "DM Sans", sans-serif;
-    background: #151515; color: #F2F2F2;
-    border: 1px solid #2A2A2A;
-    border-radius: 12px; cursor: pointer;
-    transition: opacity .15s, transform .1s;
-  }
-  .btn-muted:hover { opacity: 0.8; }
-  .btn-muted:active { transform: scale(0.98); }
-
-  .btn-danger {
-    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    padding: 10px 20px; font-size: 14px; font-weight: 600;
-    font-family: "DM Sans", sans-serif;
-    background: #C0392B; color: #fff; border: none;
-    border-radius: 12px; cursor: pointer;
-    box-shadow: 0 10px 24px rgba(192,57,43,0.18);
-    transition: opacity .15s, transform .1s;
-  }
-  .btn-danger:hover { opacity: 0.9; }
-  .btn-danger:active { transform: scale(0.98); }
 }

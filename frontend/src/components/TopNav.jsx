@@ -77,6 +77,9 @@ export function TopNav() {
   const { user } = useAuth();
   const { pathname } = useLocation();
 
+  // Dashboard has its own inline topbar — hide this bar there
+  if (pathname === "/") return null;
+
   const meta = PAGE_META[pathname] || { title: "AptHive", subtitle: "" };
 
   const initials = (user?.fullName || "")

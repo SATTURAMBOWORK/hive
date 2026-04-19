@@ -7,57 +7,307 @@ import {
 import { useAuth } from "./AuthContext";
 
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Cormorant+Garamond:wght@500;600;700&display=swap');
 
-  .sb-nav { overflow-y: auto; flex: 1; padding: 12px 10px; }
-  .sb-nav::-webkit-scrollbar { width: 3px; }
+  .sb-shell {
+    position: relative;
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98));
+    overflow: hidden;
+  }
+
+  .sb-shell::before,
+  .sb-shell::after {
+    content: '';
+    position: absolute;
+    inset: auto;
+    pointer-events: none;
+    border-radius: 999px;
+    filter: blur(2px);
+    opacity: 0.65;
+  }
+
+  .sb-shell::before {
+    width: 180px; height: 180px;
+    right: -90px; top: -60px;
+    background: radial-gradient(circle, rgba(232,137,12,0.18), transparent 68%);
+  }
+
+  .sb-shell::after {
+    width: 220px; height: 220px;
+    left: -120px; bottom: 160px;
+    background: radial-gradient(circle, rgba(37,99,235,0.10), transparent 70%);
+  }
+
+  .sb-brand {
+    position: relative;
+    background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(248,250,252,0.94));
+    backdrop-filter: blur(14px);
+  }
+
+  .sb-brand::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(232,137,12,0.55), rgba(37,99,235,0.12), rgba(15,23,42,0.04));
+  }
+
+  .sb-brand-mark {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sb-brand-mark::before {
+    content: '';
+    position: absolute;
+    inset: -30%;
+    background: linear-gradient(120deg, rgba(255,255,255,0), rgba(255,255,255,0.9), rgba(255,255,255,0));
+    transform: translateX(-120%) rotate(18deg);
+    transition: transform 0.55s ease;
+  }
+
+  .sb-brand:hover .sb-brand-mark::before {
+    transform: translateX(120%) rotate(18deg);
+  }
+
+  .sb-brand-sub {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.64rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #94A3B8;
+  }
+
+  .sb-nav {
+    overflow-y: auto;
+    flex: 1;
+    padding: 10px 8px 8px;
+  }
+  .sb-nav::-webkit-scrollbar { width: 4px; }
   .sb-nav::-webkit-scrollbar-track { background: transparent; }
-  .sb-nav::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+  .sb-nav::-webkit-scrollbar-thumb { background: #E8EDF4; border-radius: 999px; }
+
+  .sb-group + .sb-group { margin-top: 14px; }
+
+  .sb-group-label {
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    color: #A3AAB8;
+    text-transform: uppercase;
+    padding: 0 12px;
+    margin: 0 0 6px;
+  }
 
   .sb-item {
+    position: relative;
+    overflow: hidden;
     display: flex;
     align-items: center;
     gap: 9px;
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.82rem;
-    font-weight: 500;
-    color: #64748B;
-    text-decoration: none;
-    transition: background 0.14s, color 0.14s;
-    cursor: pointer;
-    border: none;
-    background: none;
     width: 100%;
     text-align: left;
-    margin-bottom: 1px;
-    box-sizing: border-box;
-    border-left: 3px solid transparent;
-  }
-  .sb-item:hover {
-    background: #F8FAFC;
-    color: #0F172A;
-  }
-  .sb-item.active {
-    background: #0F172A;
-    color: #FFFFFF;
+    padding: 9px 12px;
+    margin-bottom: 4px;
+    border: 1px solid transparent;
+    border-radius: 14px;
+    background: transparent;
+    color: #64748B;
+    font-size: 0.79rem;
     font-weight: 600;
-    border-left: 3px solid #0F172A;
-    padding-left: 9px;
-    border-radius: 8px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    box-sizing: border-box;
   }
-  .sb-item.active svg {
-    color: #FFFFFF;
-    opacity: 0.85;
+
+  .sb-item::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(247,249,255,0.98));
+    opacity: 0;
+    transform: translateX(-8px) scale(0.98);
+    transition: opacity 0.22s ease, transform 0.22s ease;
+    z-index: 0;
+  }
+
+  .sb-item::after {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 50%;
+    width: 2px;
+    height: 22px;
+    border-radius: 999px;
+    transform: translateY(-50%) scaleY(0.25);
+    background: linear-gradient(180deg, #E8890C, #2563EB);
+    opacity: 0;
+    transition: opacity 0.22s ease, transform 0.22s ease;
+    z-index: 0;
+  }
+
+  .sb-item:hover {
+    color: #111827;
+    transform: translateX(3px);
+  }
+
+  .sb-item:hover::before {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+
+  .sb-item:hover::after {
+    opacity: 1;
+    transform: translateY(-50%) scaleY(1);
+  }
+
+  .sb-item.active {
+    color: #111827;
+    border-color: rgba(232,137,12,0.20);
+    box-shadow: 0 10px 24px rgba(15,23,42,0.06);
+    transform: translateX(3px);
+  }
+
+  .sb-item.active::before {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    background: linear-gradient(135deg, rgba(255,248,240,1), rgba(255,255,255,1));
+  }
+
+  .sb-item.active::after {
+    opacity: 1;
+    transform: translateY(-50%) scaleY(1);
+  }
+
+  .sb-item:active { transform: translateX(3px) scale(0.985); }
+  .sb-item > * { position: relative; z-index: 1; }
+
+  .sb-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: #CBD5E1;
+    transition: transform 0.22s ease, background 0.22s ease, box-shadow 0.22s ease;
+    position: relative;
+    z-index: 1;
+  }
+
+  .sb-item:hover .sb-dot {
+    background: #94A3B8;
+    transform: scale(1.2);
+  }
+
+  .sb-item.active .sb-dot {
+    background: #E8890C;
+    box-shadow: 0 0 0 3px rgba(232,137,12,0.12);
+    transform: scale(1.15);
+  }
+
+  .sb-icon {
+    transition: transform 0.22s ease, color 0.22s ease;
+  }
+
+  .sb-item:hover .sb-icon {
+    transform: translateY(-1px) scale(1.1);
+    color: #E8890C;
+  }
+
+  .sb-item.active .sb-icon {
+    color: #E8890C;
+  }
+
+  .sb-item-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .sb-item-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sb-item-caret {
+    color: #CBD5E1;
+    font-size: 0.82rem;
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease;
+  }
+
+  .sb-item:hover .sb-item-caret,
+  .sb-item.active .sb-item-caret {
+    opacity: 1;
+    transform: translateX(0);
+    color: #E8890C;
+  }
+
+  .sb-logout {
+    margin-top: 4px;
   }
 
   .sb-logout:hover {
-    background: #F1F5F9 !important;
-    color: #0F172A !important;
+    color: #B42318 !important;
   }
+
+  .sb-logout:hover::before {
+    background: linear-gradient(135deg, rgba(255,241,241,0.98), rgba(255,255,255,0.98)) !important;
+  }
+
+  .sb-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 11px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.96));
+    border: 1px solid #E9EEF5;
+    text-decoration: none;
+    margin-bottom: 6px;
+    box-shadow: 0 12px 28px rgba(15,23,42,0.05);
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  }
+
   .sb-profile:hover {
-    background: #F1F5F9 !important;
+    transform: translateY(-2px);
+    border-color: rgba(232,137,12,0.25) !important;
+    box-shadow: 0 18px 30px rgba(15,23,42,0.08), 0 0 0 4px rgba(232,137,12,0.08);
+  }
+
+  .sb-profile-name {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #111827;
+    margin: 0 0 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sb-profile-role {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.58rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 999px;
+    text-transform: capitalize;
+  }
+
+  .sb-logout-wrap {
+    padding-top: 8px;
+    border-top: 1px solid #EEF2F7;
   }
 `;
 
@@ -65,13 +315,13 @@ const NAV_GROUPS = [
   {
     label: "GENERAL",
     items: [
-      { to: "/",              label: "Dashboard",      Icon: LayoutDashboard, roles: null },
-      { to: "/announcements", label: "Announcements",  Icon: Megaphone,       roles: null },
-      { to: "/tickets",       label: "My Tickets",     Icon: Ticket,          roles: null },
-      { to: "/events",        label: "Events",         Icon: Calendar,        roles: null },
-      { to: "/amenities",     label: "Amenities",      Icon: Dumbbell,        roles: null },
-      { to: "/polls",         label: "Polls",          Icon: BarChart2,       roles: ["resident","committee","super_admin"] },
-      { to: "/lost-found",    label: "Lost & Found",   Icon: PackageSearch,   roles: null },
+      { to: "/",              label: "Dashboard",     Icon: LayoutDashboard, roles: null },
+      { to: "/announcements", label: "Announcements", Icon: Megaphone,       roles: null },
+      { to: "/tickets",       label: "My Tickets",    Icon: Ticket,          roles: null },
+      { to: "/events",        label: "Events",        Icon: Calendar,        roles: null },
+      { to: "/amenities",     label: "Amenities",     Icon: Dumbbell,        roles: null },
+      { to: "/polls",         label: "Polls",         Icon: BarChart2,       roles: ["resident","committee","super_admin"] },
+      { to: "/lost-found",    label: "Lost & Found",  Icon: PackageSearch,   roles: null },
     ],
   },
   {
@@ -85,24 +335,24 @@ const NAV_GROUPS = [
   {
     label: "SECURITY",
     items: [
-      { to: "/visitors",   label: "Visitor Log",  Icon: Users,        roles: ["security","committee","super_admin"] },
-      { to: "/staff/gate", label: "Staff Gate",   Icon: PackageCheck, roles: ["security","committee","super_admin"] },
+      { to: "/visitors",   label: "Visitor Log", Icon: Users,        roles: ["security","committee","super_admin"] },
+      { to: "/staff/gate", label: "Staff Gate",  Icon: PackageCheck, roles: ["security","committee","super_admin"] },
     ],
   },
   {
     label: "COMMITTEE",
     items: [
-      { to: "/admin/approvals",     label: "Approvals",     Icon: ClipboardCheck, roles: ["committee","super_admin"] },
-      { to: "/admin/society-setup", label: "Society Setup", Icon: Settings,       roles: ["committee","super_admin"] },
+      { to: "/admin/approvals",     label: "Approvals",    Icon: ClipboardCheck, roles: ["committee","super_admin"] },
+      { to: "/admin/society-setup", label: "Society Setup", Icon: Settings,      roles: ["committee","super_admin"] },
     ],
   },
 ];
 
 const ROLE_BADGE = {
-  security:    { bg: "#F1F5F9", color: "#475569", border: "#E2E8F0" },
-  committee:   { bg: "#F1F5F9", color: "#475569", border: "#E2E8F0" },
-  super_admin: { bg: "#0F172A", color: "#FFFFFF", border: "#0F172A" },
-  resident:    { bg: "#F1F5F9", color: "#475569", border: "#E2E8F0" },
+  security:    { bg: "#F3F4F6", color: "#6B7280", border: "#E5E7EB" },
+  committee:   { bg: "#FFF8F0", color: "#E8890C", border: "#FDECC8" },
+  super_admin: { bg: "#111827", color: "#FFFFFF", border: "#111827" },
+  resident:    { bg: "#F3F4F6", color: "#6B7280", border: "#E5E7EB" },
 };
 
 export function Sidebar() {
@@ -112,60 +362,44 @@ export function Sidebar() {
   const initials = (user?.fullName || "")
     .split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "?";
 
-  const badge = ROLE_BADGE[role] || { bg: "#F1F5F9", color: "#64748B", border: "#E2E8F0" };
+  const badge = ROLE_BADGE[role] || { bg: "#F3F4F6", color: "#6B7280", border: "#E5E7EB" };
 
   return (
     <>
       <style>{CSS}</style>
-      <aside
-        style={{
-          width: 228,
-          minWidth: 228,
-          height: "100vh",
-          background: "#FFFFFF",
-          borderRight: "1px solid #E2E8F0",
-          display: "flex",
-          flexDirection: "column",
-          flexShrink: 0,
-          fontFamily: "'DM Sans', sans-serif",
-        }}
-      >
+      <aside className="sb-shell" style={{
+        width: 228, minWidth: 228, height: "100vh",
+        background: "#FFFFFF", borderRight: "1px solid #EAEFF5",
+        display: "flex", flexDirection: "column", flexShrink: 0,
+        fontFamily: "'DM Sans', sans-serif",
+        boxShadow: "10px 0 30px rgba(15,23,42,0.04)",
+      }}>
+
         {/* ── Logo ── */}
-        <Link
-          to="/"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "18px 16px 16px",
-            textDecoration: "none",
-            borderBottom: "1px solid #E2E8F0",
-            flexShrink: 0,
-          }}
-        >
-          <div
-            style={{
-              width: 34, height: 34,
-              borderRadius: 10,
-              background: "#0F172A",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 2px 10px rgba(15,23,42,.25)",
-              flexShrink: 0,
-            }}
-          >
+        <Link to="/" className="sb-brand" style={{
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "18px 16px 16px", textDecoration: "none",
+          borderBottom: "1px solid #F0F0F0", flexShrink: 0,
+        }}>
+          <div className="sb-brand-mark" style={{
+            width: 34, height: 34, borderRadius: 10,
+            background: "linear-gradient(135deg, #E8890C 0%, #C97508 100%)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 2px 10px rgba(232,137,12,.3)", flexShrink: 0,
+          }}>
             <Building2 size={17} color="#fff" strokeWidth={2} />
           </div>
-          <span
-            style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontSize: "1.05rem",
-              fontWeight: 800,
-              color: "#0F172A",
-              letterSpacing: "-0.5px",
-            }}
-          >
-            AptHive
-          </span>
+          <div style={{ minWidth: 0 }}>
+            <span className="sb-brand-sub">AptHive Workspace</span>
+            <span style={{
+              display: "block",
+              fontFamily: "'Cormorant Garamond', serif",
+            fontSize: "1.05rem", fontWeight: 800,
+            color: "#111827", letterSpacing: "-0.5px", lineHeight: 1,
+            }}>
+              AptHive
+            </span>
+          </div>
         </Link>
 
         {/* ── Navigation ── */}
@@ -174,19 +408,8 @@ export function Sidebar() {
             const visible = items.filter(({ roles }) => !roles || roles.includes(role));
             if (!visible.length) return null;
             return (
-              <div key={label} style={{ marginBottom: 18 }}>
-                <p
-                  style={{
-                    fontSize: "0.6rem",
-                    fontWeight: 700,
-                    letterSpacing: "0.11em",
-                    color: "#94A3B8",
-                    textTransform: "uppercase",
-                    padding: "0 12px",
-                    marginBottom: 4,
-                    margin: "0 0 5px",
-                  }}
-                >
+              <div key={label} className="sb-group">
+                <p className="sb-group-label">
                   {label}
                 </p>
                 {visible.map(({ to, label: itemLabel, Icon }) => (
@@ -196,8 +419,12 @@ export function Sidebar() {
                     end={to === "/"}
                     className={({ isActive }) => `sb-item${isActive ? " active" : ""}`}
                   >
-                    <Icon size={15} strokeWidth={1.8} style={{ flexShrink: 0 }} />
-                    {itemLabel}
+                    <span className="sb-dot" />
+                    <Icon size={14} strokeWidth={1.8} className="sb-icon" style={{ flexShrink: 0 }} />
+                    <span className="sb-item-text">
+                      <span className="sb-item-label">{itemLabel}</span>
+                      <span className="sb-item-caret">→</span>
+                    </span>
                   </NavLink>
                 ))}
               </div>
@@ -206,61 +433,31 @@ export function Sidebar() {
         </nav>
 
         {/* ── Bottom: User card + Logout ── */}
-        <div
-          style={{
-            padding: "10px",
-            borderTop: "1px solid #E2E8F0",
-            flexShrink: 0,
-          }}
-        >
+        <div style={{ padding: "10px", flexShrink: 0 }}>
+
           {/* Profile link */}
-          <Link
-            to="/profile"
-            className="sb-profile"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "10px 12px",
-              borderRadius: 10,
-              background: "#F8FAFC",
-              border: "1px solid #E2E8F0",
-              textDecoration: "none",
-              marginBottom: 6,
-              transition: "background 0.14s",
-            }}
-          >
+          <Link to="/profile" className="sb-profile">
             {/* Avatar */}
-            <div
-              style={{
-                width: 34, height: 34,
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, #0F172A, #334155)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "0.72rem", fontWeight: 800, color: "#fff",
-                flexShrink: 0,
-              }}
-            >
+            <div style={{
+              width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
+              background: "linear-gradient(135deg, #E8890C, #C97508)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "0.66rem", fontWeight: 800, color: "#fff",
+              boxShadow: "0 2px 8px rgba(232,137,12,.25)",
+            }}>
               {initials}
             </div>
+
             <div style={{ minWidth: 0, flex: 1 }}>
-              <p
-                style={{
-                  fontSize: "0.8rem", fontWeight: 700, color: "#0F172A",
-                  margin: "0 0 3px",
-                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                }}
-              >
+              <p className="sb-profile-name">
                 {user?.fullName || "User"}
               </p>
               <span
+                className="sb-profile-role"
                 style={{
-                  display: "inline-block",
-                  fontSize: "0.58rem", fontWeight: 700,
-                  padding: "2px 7px", borderRadius: 100,
-                  background: badge.bg, color: badge.color,
+                  background: badge.bg,
+                  color: badge.color,
                   border: `1px solid ${badge.border}`,
-                  textTransform: "capitalize",
                 }}
               >
                 {role?.replace("_", " ")}
@@ -269,20 +466,16 @@ export function Sidebar() {
           </Link>
 
           {/* Logout */}
+          <div className="sb-logout-wrap">
           <button
             onClick={logout}
             className="sb-item sb-logout"
-            style={{
-              color: "#94A3B8",
-              gap: 9,
-              padding: "7px 12px",
-              borderRadius: 8,
-              fontSize: "0.8rem",
-            }}
+            style={{ color: "#9CA3AF", gap: 8, padding: "8px 12px", borderRadius: 14, fontSize: "0.76rem" }}
           >
-            <LogOut size={14} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+            <LogOut size={13} strokeWidth={1.8} style={{ flexShrink: 0 }} />
             Sign out
           </button>
+          </div>
         </div>
       </aside>
     </>

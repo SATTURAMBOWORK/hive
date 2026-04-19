@@ -8,50 +8,51 @@ import "react-quill/dist/quill.snow.css";
 
 /* ─── Design tokens — AptHive system ────────────────────────── */
 const T = {
-  bg:       "#FFFCF6",
-  surface:  "#FFFFFF",
-  subtle:   "#FAF6ED",
-  subtle2:  "#F5EED9",
-  border:   "#E7DDC8",
-  borderHv: "#D8CDAE",
-  ink:      "#24324A",
-  ink2:     "#3D52A0",
-  text2:    "#5B6577",
-  text3:    "#8B95A8",
-  green:    "#16A34A",
-  greenL:   "#DCFCE7",
-  red:      "#DC2626",
-  redL:     "#FEE2E2",
-  amber:    "#D97706",
-  amberL:   "#FEF9C3",
-  teal:     "#0F766E",
-  tealL:    "#CCFBF1",
-  purple:   "#3D52A0",
-  purpleL:  "#EEF2FF",
-  sh:       "0 1px 3px rgba(36,50,74,.05), 0 1px 2px rgba(36,50,74,.03)",
-  sh2:      "0 4px 20px rgba(36,50,74,.07), 0 1px 4px rgba(36,50,74,.03)",
+  bg:      "#F7F8FA",
+  surface: "#FFFFFF",
+  subtle:  "#F9FAFB",
+  subtle2: "#F3F4F6",
+  border:  "#F0F0F0",
+  borderHv:"#E5E7EB",
+  ink:     "#111827",
+  ink2:    "#374151",
+  text2:   "#6B7280",
+  text3:   "#9CA3AF",
+  green:   "#16A34A",
+  greenL:  "#DCFCE7",
+  red:     "#DC2626",
+  redL:    "#FEE2E2",
+  amber:   "#E8890C",
+  amberL:  "#FFF8F0",
+  amberM:  "#FDECC8",
+  teal:    "#0F766E",
+  tealL:   "#CCFBF1",
+  purple:  "#7C3AED",
+  purpleL: "#F5F3FF",
+  purpleM: "#DDD6FE",
+  sh:      "0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03)",
+  sh2:     "0 4px 16px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)",
 };
 
 /* ─── Category config — semantic colors only ─────────────────── */
 const CATS = {
-  General:     { color: T.text2,   border: T.border,   bg: T.subtle2,  accent: T.ink2  },
-  Maintenance: { color: T.amber,   border: "#FDE68A",  bg: T.amberL,   accent: T.amber },
-  Finance:     { color: T.teal,    border: "#99F6E4",  bg: T.tealL,    accent: T.teal  },
-  Emergency:   { color: T.red,     border: "#FECACA",  bg: T.redL,     accent: T.red   },
-  Event:       { color: T.green,   border: "#BBF7D0",  bg: T.greenL,   accent: T.green },
-  Social:      { color: T.purple,  border: "#DDD6FE",  bg: T.purpleL,  accent: T.purple},
+  General:     { color: "#6B7280", border: "#E5E7EB", bg: "#F9FAFB",  accent: "#9CA3AF" },
+  Finance:     { color: "#0F766E", border: "#99F6E4", bg: "#F0FDFA",  accent: "#0D9488" },
+  Emergency:   { color: "#DC2626", border: "#FECACA", bg: "#FEE2E2",  accent: "#DC2626" },
+  Maintenance: { color: "#B45309", border: "#FDE68A", bg: "#FFFBEB",  accent: "#D97706" },
+  Event:       { color: "#16A34A", border: "#BBF7D0", bg: "#DCFCE7",  accent: "#16A34A" },
+  Social:      { color: "#7C3AED", border: "#DDD6FE", bg: "#F5F3FF",  accent: "#7C3AED" },
 };
 
+/* Emergency and Maintenance removed from filter/create per user request */
 const CAT_META = {
-  All:         "All",
-  Emergency:   "🚨 Emergency",
-  Maintenance: "🔧 Maintenance",
-  Event:       "🎉 Event",
-  General:     "General",
-  Finance:     "Finance",
-  Social:      "Social",
+  All:     "All",
+  Event:   "Event",
+  General: "General",
+  Finance: "Finance",
+  Social:  "Social",
 };
-const CAT_LIST = Object.keys(CATS);
+const CAT_LIST = ["General", "Finance", "Event", "Social"];
 function catOf(item) { return item?.category && CATS[item.category] ? item.category : "General"; }
 
 /* ─── CSS ────────────────────────────────────────────────────── */
@@ -60,7 +61,7 @@ const CSS = `
   .ann-root {
     font-family: 'DM Sans', sans-serif;
     color: ${T.ink};
-    background: linear-gradient(180deg, #FFFCF6 0%, #F8F3E8 100%);
+    background: ${T.bg};
     min-height: calc(100vh - 64px);
     padding: 28px 28px 80px;
   }
@@ -73,10 +74,10 @@ const CSS = `
   /* ── Card ── */
   .ann-card {
     position: relative;
-    border-radius: 16px;
+    border-radius: 12px;
     border: 1px solid ${T.border};
     background: ${T.surface};
-    padding: 20px 20px 16px 24px;
+    padding: 14px 16px 12px 18px;
     box-shadow: ${T.sh};
     transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
     overflow: hidden;
@@ -85,11 +86,11 @@ const CSS = `
   .ann-card:hover {
     border-color: ${T.borderHv};
     box-shadow: ${T.sh2};
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
   .ann-card.unread {
-    background: #FFFDF8;
-    border-color: #D8CDAE;
+    background: #FDFCFF;
+    border-color: ${T.border};
   }
 
   /* Left accent strip */
@@ -108,13 +109,13 @@ const CSS = `
 
   /* Unread dot */
   @keyframes dotPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(61,82,160,0.3); }
-    50%       { box-shadow: 0 0 0 5px rgba(61,82,160,0); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(124,58,237,0.35); }
+    50%       { box-shadow: 0 0 0 5px rgba(124,58,237,0); }
   }
   .unread-dot {
-    width: 7px; height: 7px;
+    width: 6px; height: 6px;
     border-radius: 50%;
-    background: ${T.ink};
+    background: ${T.purple};
     flex-shrink: 0;
     animation: dotPulse 2.2s ease-in-out infinite;
   }
@@ -135,7 +136,7 @@ const CSS = `
     100% { background-position: -200% center; }
   }
   .ann-sk {
-    background: linear-gradient(90deg, #F5EED9 25%, #E7DDC8 50%, #F5EED9 75%);
+    background: linear-gradient(90deg, #F3F4F6 25%, #E5E7EB 50%, #F3F4F6 75%);
     background-size: 200% 100%;
     animation: skShimmer 1.6s ease-in-out infinite;
     border-radius: 6px;
@@ -157,8 +158,8 @@ const CSS = `
   }
   .ann-input::placeholder { color: ${T.text3}; }
   .ann-input:focus {
-    border-color: ${T.borderHv};
-    box-shadow: 0 0 0 3px rgba(61,82,160,.12);
+    border-color: #D1D5DB;
+    box-shadow: 0 0 0 3px rgba(232,137,12,.1);
   }
 
   .ann-select {
@@ -176,26 +177,26 @@ const CSS = `
     transition: border-color 0.18s, box-shadow 0.18s;
   }
   .ann-select:focus {
-    border-color: ${T.borderHv};
-    box-shadow: 0 0 0 3px rgba(61,82,160,.12);
+    border-color: #D1D5DB;
+    box-shadow: 0 0 0 3px rgba(232,137,12,.1);
   }
 
   /* Primary button */
   .ann-btn-primary {
     display: inline-flex; align-items: center; gap: 7px;
-    background: linear-gradient(135deg, #3D52A0, #2F3F7A);
+    background: linear-gradient(135deg, #E8890C, #C97508);
     color: #FFFFFF;
     border: none; border-radius: 10px;
     padding: 10px 18px;
     font-family: 'DM Sans', sans-serif;
     font-size: 0.84rem; font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(61,82,160,.25);
+    box-shadow: 0 4px 12px rgba(232,137,12,.25);
     transition: background 0.18s, box-shadow 0.18s, transform 0.18s;
   }
   .ann-btn-primary:hover:not(:disabled) {
-    background: linear-gradient(135deg, #2F3F7A, #253364);
-    box-shadow: 0 6px 18px rgba(61,82,160,.32);
+    background: linear-gradient(135deg, #C97508, #A86206);
+    box-shadow: 0 6px 18px rgba(232,137,12,.32);
     transform: translateY(-1px);
   }
   .ann-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -216,7 +217,7 @@ const CSS = `
   .ann-btn-ghost:hover {
     border-color: ${T.borderHv};
     color: ${T.ink};
-    box-shadow: 0 0 0 3px rgba(61,82,160,.1);
+    box-shadow: 0 0 0 3px rgba(0,0,0,.05);
   }
   .ann-btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -236,7 +237,7 @@ const CSS = `
     flex-wrap: wrap;
     align-items: center;
     gap: 8px;
-    background: rgba(255,252,246,0.92);
+    background: rgba(247,248,250,0.94);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid ${T.border};
@@ -249,12 +250,12 @@ const CSS = `
   .ann-chip {
     border: 1px solid ${T.border};
     border-radius: 100px;
-    background: ${T.subtle};
+    background: ${T.surface};
     color: ${T.text2};
     font-family: 'DM Sans', sans-serif;
     font-size: 0.72rem;
     font-weight: 600;
-    padding: 5px 12px;
+    padding: 4px 12px;
     cursor: pointer;
     transition: all 0.18s ease;
     white-space: nowrap;
@@ -262,12 +263,11 @@ const CSS = `
   .ann-chip:hover {
     border-color: ${T.borderHv};
     color: ${T.ink};
-    background: ${T.surface};
   }
   .ann-chip.active {
-    background: ${T.ink};
+    background: ${T.purple};
     color: #FFFFFF;
-    border-color: ${T.ink};
+    border-color: ${T.purple};
   }
 
   /* Search wrapper */
@@ -284,8 +284,8 @@ const CSS = `
     transition: border-color 0.18s, box-shadow 0.18s;
   }
   .ann-search-wrap:focus-within {
-    border-color: ${T.borderHv};
-    box-shadow: 0 0 0 3px rgba(61,82,160,.12);
+    border-color: #D1D5DB;
+    box-shadow: 0 0 0 3px rgba(232,137,12,.1);
   }
   .ann-search-input {
     background: none;
@@ -300,13 +300,13 @@ const CSS = `
 
   /* Quill editor overrides */
   .ann-editor .ql-toolbar {
-    border: 1px solid ${T.border} !important;
+    border: 1px solid #E5E7EB !important;
     border-radius: 10px 10px 0 0 !important;
-    background: ${T.subtle} !important;
+    background: #F9FAFB !important;
     font-family: 'DM Sans', sans-serif !important;
   }
   .ann-editor .ql-container {
-    border: 1px solid ${T.border} !important;
+    border: 1px solid #E5E7EB !important;
     border-top: none !important;
     border-radius: 0 0 10px 10px !important;
     font-family: 'DM Sans', sans-serif !important;
@@ -412,9 +412,9 @@ function CatPill({ category }) {
   return (
     <span style={{
       display: "inline-flex", alignItems: "center",
-      padding: "3px 10px", borderRadius: 100,
+      padding: "2px 9px", borderRadius: 100,
       fontFamily: "'DM Sans', sans-serif",
-      fontSize: "0.62rem", fontWeight: 700,
+      fontSize: "0.58rem", fontWeight: 700,
       letterSpacing: "0.07em", textTransform: "uppercase",
       background: c.bg, color: c.color, border: `1px solid ${c.border}`,
       flexShrink: 0,
@@ -468,8 +468,9 @@ function AnnCard({ item, unread, onRead }) {
       {!expanded && (
         <p style={{
           fontFamily: "'DM Sans', sans-serif",
-          fontSize: "0.85rem", color: T.text2,
-          lineHeight: 1.72, margin: 0,
+          fontSize: "0.84rem", color: T.text2,
+          lineHeight: 1.65, margin: 0,
+          textWrap: "pretty",
         }}>
           {displayBody}
         </p>
@@ -483,40 +484,40 @@ function AnnCard({ item, unread, onRead }) {
           style={{
             background: "none", border: "none", cursor: "pointer",
             fontFamily: "'DM Sans', sans-serif",
-            color: T.ink, fontSize: "0.76rem", fontWeight: 600,
-            padding: "6px 0 0", display: "inline-flex", alignItems: "center", gap: 3,
+            color: T.text3, fontSize: "0.74rem", fontWeight: 600,
+            padding: "5px 0 0", display: "inline-flex", alignItems: "center", gap: 3,
           }}
         >
-          {expanded ? <><ChevronUp size={12} /> Show less</> : <><ChevronDown size={12} /> Read more</>}
+          {expanded ? "↑ less" : "↓ more"}
         </button>
       )}
 
-      {/* Footer */}
+      {/* Author row — no border, just spacing */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        marginTop: 14, paddingTop: 12, borderTop: `1px solid ${T.border}`,
+        marginTop: 10,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
           <div style={{
-            width: 22, height: 22, borderRadius: "50%",
-            background: "linear-gradient(135deg, #3D52A0, #2F3F7A)",
+            width: 18, height: 18, borderRadius: "50%",
+            background: `linear-gradient(135deg, ${T.purple}, #6D28D9)`,
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "0.58rem", fontWeight: 800, color: "#fff",
+            fontSize: "0.48rem", fontWeight: 800, color: "#fff",
             flexShrink: 0,
           }}>
             {(item.createdBy?.fullName || "C")[0].toUpperCase()}
           </div>
-          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.73rem", color: T.text2 }}>
+          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.68rem", color: T.text3 }}>
             {item.createdBy?.fullName || "Committee"}
           </span>
         </div>
         {unread && (
           <span style={{
             fontFamily: "'DM Sans', sans-serif",
-            fontSize: "0.6rem", fontWeight: 700, color: T.ink,
+            fontSize: "0.55rem", fontWeight: 700, color: T.purple,
             letterSpacing: "0.08em", textTransform: "uppercase",
-            background: T.subtle2, border: `1px solid ${T.border}`,
-            padding: "2px 8px", borderRadius: 100,
+            background: T.purpleL, border: `1px solid ${T.purpleM}`,
+            padding: "1px 7px", borderRadius: 100,
           }}>
             New
           </span>
@@ -611,7 +612,7 @@ export function AnnouncementsPage() {
               <p style={{
                 fontFamily: "'DM Sans', sans-serif",
                 fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.14em",
-                textTransform: "uppercase", color: T.ink, marginBottom: 6,
+                textTransform: "uppercase", color: T.purple, marginBottom: 6,
               }}>
                 Community
               </p>
@@ -707,7 +708,7 @@ export function AnnouncementsPage() {
             {/* Top accent bar */}
             <div style={{
               position: "absolute", top: 0, left: 0, right: 0, height: 3,
-              background: "linear-gradient(90deg, #3D52A0, #2F3F7A)",
+              background: "linear-gradient(90deg, #E8890C, #C97508)",
               borderRadius: "20px 20px 0 0",
             }} />
 
