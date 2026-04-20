@@ -125,30 +125,30 @@ const CSS = `
     position: relative;
     isolation: isolate;
     overflow: hidden;
-    border: none;
+    border: 1.5px solid rgba(232,137,12,0.38);
     border-radius: 10px;
     padding: 10px 18px;
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    background: linear-gradient(135deg, ${T.amber}, ${T.amberH});
-    color: #FFFFFF;
+    background: rgba(255,248,240,0.75);
+    color: ${T.amberH};
     font-family: 'Manrope', sans-serif;
     font-size: 0.84rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(232,137,12,.25);
-    transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+    transition: transform 0.24s cubic-bezier(0.22,1,0.36,1), box-shadow 0.24s, color 0.2s, border-color 0.2s;
   }
 
   .lfx-btn-primary::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(120deg, rgba(255,255,255,0) 36%, rgba(255,255,255,0.34) 52%, rgba(255,255,255,0) 68%);
-    transform: translateX(-130%);
-    transition: transform 0.5s ease;
-    z-index: 0;
+    background: linear-gradient(135deg, ${T.amber}, ${T.amberH});
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    z-index: -1;
   }
 
   .lfx-btn-primary > * {
@@ -158,13 +158,15 @@ const CSS = `
   }
 
   .lfx-btn-primary:hover:not(:disabled) {
+    color: #FFFFFF;
+    border-color: ${T.amber};
     transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(232,137,12,.32);
-    filter: saturate(1.05);
+    box-shadow: 0 8px 22px rgba(232,137,12,0.26), 0 2px 6px rgba(232,137,12,0.12);
   }
 
-  .lfx-btn-primary:hover:not(:disabled)::before { transform: translateX(130%); }
+  .lfx-btn-primary:hover:not(:disabled)::before { transform: scaleX(1); }
   .lfx-btn-primary:hover:not(:disabled) svg { transform: translateX(1px); }
+  .lfx-btn-primary:active:not(:disabled) { transform: translateY(0); }
   .lfx-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
 
   .lfx-btn-soft {

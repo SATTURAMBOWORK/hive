@@ -44,3 +44,7 @@ IMPORTANT: Match implementation complexity to the aesthetic vision. Maximalist d
 Remember: Claude  is capable of extraordinary creative work. Don't hold back, show what can truly be created when thinking outside the box and committing fully to a distinctive vision.
 
 Make sure the designs are in touch with the theme of the website.
+
+do not make a hero section unless said so.
+do not make those little boxes which show status live or something like that anywhere in the website.
+

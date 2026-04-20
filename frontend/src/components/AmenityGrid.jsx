@@ -4,8 +4,8 @@ const T = {
   surface:   "#FFFFFF",
   border:    "#E7DDC8",
   borderHov: "#D8CDAE",
-  gold:      "#3D52A0",
-  goldLight: "#2F3F7A",
+  gold:      "#E8890C",
+  goldLight: "#C97508",
   text:      "#24324A",
   textSub:   "#5B6577",
   textMuted: "#8B95A8",
@@ -34,11 +34,11 @@ function PhotoCarousel({ photos }) {
         <>
           <button onClick={() => setIdx(i => (i - 1 + photos.length) % photos.length)}
             style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", width: 28, height: 28, borderRadius: "50%", border: "none", cursor: "pointer", background: "rgba(36,50,74,0.62)", color: "#fff", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", transition: "background 0.15s" }}
-            onMouseEnter={e => e.currentTarget.style.background = `rgba(61,82,160,0.8)`}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(232,137,12,0.85)"}
             onMouseLeave={e => e.currentTarget.style.background = "rgba(36,50,74,0.62)"}>‹</button>
           <button onClick={() => setIdx(i => (i + 1) % photos.length)}
             style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 28, height: 28, borderRadius: "50%", border: "none", cursor: "pointer", background: "rgba(36,50,74,0.62)", color: "#fff", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", transition: "background 0.15s" }}
-            onMouseEnter={e => e.currentTarget.style.background = `rgba(61,82,160,0.8)`}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(232,137,12,0.85)"}
             onMouseLeave={e => e.currentTarget.style.background = "rgba(36,50,74,0.62)"}>›</button>
           <div style={{ position: "absolute", bottom: 10, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 4 }}>
             {photos.map((_, i) => (
@@ -95,9 +95,9 @@ export function AmenityGrid({ amenities, onBook }) {
               </div>
 
               <button onClick={() => onBook(amenity)}
-                style={{ width: "100%", borderRadius: 12, background: `linear-gradient(135deg, ${T.gold}, ${T.goldLight})`, padding: "10px 0", fontSize: 13, fontWeight: 700, color: "#ffffff", border: "none", cursor: "pointer", transition: "all 0.2s" }}
-                onMouseEnter={e => e.currentTarget.style.opacity = "0.9"}
-                onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+                style={{ width: "100%", borderRadius: 12, background: `linear-gradient(135deg, ${T.gold}, ${T.goldLight})`, boxShadow: "0 6px 18px rgba(232,137,12,0.28)", padding: "10px 0", fontSize: 13, fontWeight: 700, color: "#ffffff", border: "none", cursor: "pointer", transition: "all 0.2s" }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 10px 22px rgba(232,137,12,0.34)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(232,137,12,0.28)"; }}>
                 Book Now
               </button>
             </div>
