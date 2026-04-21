@@ -7,6 +7,8 @@ import { env } from "./config/env.js";
 import { connectDB } from "./config/db.js";
 import { registerSocketHandlers } from "./sockets/index.js";
 import { logger } from "./config/logger.js";
+import { startRealtimeSubscriber } from "./services/realtime-bus.service.js";
+import { startEmailQueueWorker } from "./services/email-queue.service.js";
 
 async function bootstrap() {
   await connectDB();
@@ -38,6 +40,9 @@ async function bootstrap() {
 
   registerSocketHandlers(io);
   app.set("io", io);
+
+  await startRealtimeSubscriber(io);
+  startEmailQueueWorker();
 
   server.listen(env.port, () => {
     logger.info(`Backend running on http://localhost:${env.port}`, {

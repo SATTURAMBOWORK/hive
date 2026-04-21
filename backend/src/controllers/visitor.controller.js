@@ -7,6 +7,7 @@ import { Notification } from "../models/notification.model.js";
 import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
 import { parseFlatNumber, findResidentForFlat } from "../utils/flat-lookup.js";
+import { emitRealtime } from "../services/realtime-bus.service.js";
 
 const VALID_PURPOSES    = ["delivery", "guest", "contractor", "other"];
 const REQUEST_TTL_MS    = 15 * 60 * 1000; // 15 minutes
@@ -151,9 +152,13 @@ export async function requestEntry(req, res, next) {
 
     // Emit real-time event to the resident's private socket room
     const io = req.app.get("io");
-    io.to(`user:${residentId}`).emit(SOCKET_EVENTS.VISITOR_REQUEST_INCOMING, {
-      visitor: populated,
-      notification
+    await emitRealtime(io, {
+      room: `user:${residentId}`,
+      event: SOCKET_EVENTS.VISITOR_REQUEST_INCOMING,
+      payload: {
+        visitor: populated,
+        notification
+      }
     });
 
     res.status(StatusCodes.CREATED).json({ item: populated });
@@ -196,9 +201,13 @@ export async function respondToRequest(req, res, next) {
     // Notify the guard in real-time
     const io = req.app.get("io");
     const guardId = visitor.loggedBy;
-    io.to(`user:${guardId}`).emit(SOCKET_EVENTS.VISITOR_REQUEST_RESPONDED, {
-      visitor: populated,
-      decision
+    await emitRealtime(io, {
+      room: `user:${guardId}`,
+      event: SOCKET_EVENTS.VISITOR_REQUEST_RESPONDED,
+      payload: {
+        visitor: populated,
+        decision
+      }
     });
 
     res.json({ item: populated });

@@ -136,21 +136,6 @@ const CSS = `
     z-index: 0;
   }
 
-  .sb-item::after {
-    content: '';
-    position: absolute;
-    left: 7px;
-    top: 50%;
-    width: 2px;
-    height: 22px;
-    border-radius: 999px;
-    transform: translateY(-50%) scaleY(0.25);
-    background: linear-gradient(180deg, #E8890C, #2563EB);
-    opacity: 0;
-    transition: opacity 0.22s ease, transform 0.22s ease;
-    z-index: 0;
-  }
-
   .sb-item:hover {
     color: #111827;
     transform: translateX(3px);
@@ -159,11 +144,6 @@ const CSS = `
   .sb-item:hover::before {
     opacity: 1;
     transform: translateX(0) scale(1);
-  }
-
-  .sb-item:hover::after {
-    opacity: 1;
-    transform: translateY(-50%) scaleY(1);
   }
 
   .sb-item.active {
@@ -179,35 +159,8 @@ const CSS = `
     background: linear-gradient(135deg, rgba(255,248,240,1), rgba(255,255,255,1));
   }
 
-  .sb-item.active::after {
-    opacity: 1;
-    transform: translateY(-50%) scaleY(1);
-  }
-
   .sb-item:active { transform: translateX(3px) scale(0.985); }
   .sb-item > * { position: relative; z-index: 1; }
-
-  .sb-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    background: #CBD5E1;
-    transition: transform 0.22s ease, background 0.22s ease, box-shadow 0.22s ease;
-    position: relative;
-    z-index: 1;
-  }
-
-  .sb-item:hover .sb-dot {
-    background: #94A3B8;
-    transform: scale(1.2);
-  }
-
-  .sb-item.active .sb-dot {
-    background: #E8890C;
-    box-shadow: 0 0 0 3px rgba(232,137,12,0.12);
-    transform: scale(1.15);
-  }
 
   .sb-icon {
     transition: transform 0.22s ease, color 0.22s ease;
@@ -419,7 +372,6 @@ export function Sidebar() {
                     end={to === "/"}
                     className={({ isActive }) => `sb-item${isActive ? " active" : ""}`}
                   >
-                    <span className="sb-dot" />
                     <Icon size={14} strokeWidth={1.8} className="sb-icon" style={{ flexShrink: 0 }} />
                     <span className="sb-item-text">
                       <span className="sb-item-label">{itemLabel}</span>

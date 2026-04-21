@@ -15,9 +15,11 @@ export const env = {
   cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME || "",
   cloudinaryApiKey: process.env.CLOUDINARY_API_KEY || "",
   cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET || "",
-  // Optional — only needed for PM2 cluster mode in production.
-  // Get a free Redis URL from: https://redis.io/try-free/ or Railway
+  // Optional but recommended for distributed cache, rate limiting,
+  // queues, locks, and pub/sub features.
   redisUrl: process.env.REDIS_URL || "",
+  redisKeyPrefix: process.env.REDIS_KEY_PREFIX || "apthive",
+  redisCacheTtlSeconds: Number(process.env.REDIS_CACHE_TTL_SECONDS) || 60,
 };
 
 if (!env.mongoUri) {

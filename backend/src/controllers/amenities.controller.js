@@ -7,6 +7,9 @@ import { SOCKET_EVENTS } from "../config/socket-events.js";
 import { hasAmenityBookingConflict } from "../utils/booking-conflict.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { cache, cacheKey } from "../config/cache.js";
+import { acquireLock, releaseLock } from "../services/redis-features.service.js";
+import { isRedisEnabled } from "../config/redis.js";
+import { emitRealtime } from "../services/realtime-bus.service.js";
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -122,10 +125,14 @@ export async function createAmenity(req, res, next) {
       operatingHours
     });
 
-    cache.del(cacheKey("amenities", req.tenantId));
+    await cache.del(cacheKey("amenities", req.tenantId));
 
     const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.AMENITY_CREATED, { item });
+    await emitRealtime(io, {
+      room: `tenant:${req.tenantId}`,
+      event: SOCKET_EVENTS.AMENITY_CREATED,
+      payload: { item }
+    });
 
     res.status(StatusCodes.CREATED).json({ item });
   } catch (error) {
@@ -137,7 +144,7 @@ export async function listAmenities(req, res, next) {
   try {
     const key = cacheKey("amenities", req.tenantId);
 
-    const cached = cache.get(key);
+    const cached = await cache.get(key);
     if (cached) {
       return res.json({ items: cached });
     }
@@ -146,7 +153,7 @@ export async function listAmenities(req, res, next) {
       .sort({ name: 1 })
       .lean();
 
-    cache.set(key, items);
+    await cache.set(key, items);
     res.json({ items });
   } catch (error) {
     next(error);
@@ -206,49 +213,68 @@ export async function createAmenityBooking(req, res, next) {
 
     ensureWithinOperatingHours(amenity, date, startTime, endTime);
 
-    const isConflicting = await hasAmenityBookingConflict({
-      societyId: req.tenantId,
-      amenityId,
-      date,
-      startTime,
-      endTime
-    });
+    const lockKey = `amenity-booking:${req.tenantId}:${amenityId}:${date}:${startTime}:${endTime}`;
+    const lockHandle = await acquireLock(lockKey, { ttlMs: 12_000 });
 
-    if (isConflicting) {
-      throw new AppError("Amenity slot already booked for that time", StatusCodes.CONFLICT);
+    if (isRedisEnabled() && !lockHandle) {
+      throw new AppError("Another booking request for this slot is already in progress", StatusCodes.CONFLICT);
     }
 
-    const status = amenity.isAutoApprove ? "approved" : "pending";
+    try {
+      const isConflicting = await hasAmenityBookingConflict({
+        societyId: req.tenantId,
+        amenityId,
+        date,
+        startTime,
+        endTime
+      });
 
-    const booking = await AmenityBooking.create({
-      societyId: req.tenantId,
-      amenityId,
-      residentId: req.user.userId,
-      date,
-      startTime,
-      endTime,
-      status,
-      amenityName: amenity.name,
-      requestedBy: req.user.userId
-    });
+      if (isConflicting) {
+        throw new AppError("Amenity slot already booked for that time", StatusCodes.CONFLICT);
+      }
 
-    const populatedBooking = await booking.populate([
-      { path: "residentId", select: "fullName role" },
-      { path: "amenityId", select: "name isAutoApprove capacity" }
-    ]);
+      const status = amenity.isAutoApprove ? "approved" : "pending";
 
-    const responseItem = {
-      ...populatedBooking.toObject(),
-      amenityName: populatedBooking.amenityId?.name || populatedBooking.amenityName,
-      requestedBy: populatedBooking.residentId
-    };
+      const booking = await AmenityBooking.create({
+        societyId: req.tenantId,
+        amenityId,
+        residentId: req.user.userId,
+        date,
+        startTime,
+        endTime,
+        status,
+        amenityName: amenity.name,
+        requestedBy: req.user.userId
+      });
 
-    const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.AMENITY_BOOKING_CREATED, {
-      item: responseItem
-    });
+      const populatedBooking = await booking.populate([
+        { path: "residentId", select: "fullName role" },
+        { path: "amenityId", select: "name isAutoApprove capacity" }
+      ]);
 
-    res.status(StatusCodes.CREATED).json({ item: responseItem });
+      const responseItem = {
+        ...populatedBooking.toObject(),
+        amenityName: populatedBooking.amenityId?.name || populatedBooking.amenityName,
+        requestedBy: populatedBooking.residentId
+      };
+
+      const io = req.app.get("io");
+      await emitRealtime(io, {
+        room: `tenant:${req.tenantId}`,
+        event: SOCKET_EVENTS.AMENITY_BOOKING_CREATED,
+        payload: { item: responseItem }
+      });
+
+      res.status(StatusCodes.CREATED).json({ item: responseItem });
+    } finally {
+      if (lockHandle) {
+        try {
+          await releaseLock(lockHandle);
+        } catch {
+          // Ignore lock release failures.
+        }
+      }
+    }
   } catch (error) {
     next(error);
   }
@@ -301,8 +327,10 @@ export async function updateAmenityBookingStatus(req, res, next) {
     };
 
     const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.AMENITY_BOOKING_STATUS_UPDATED, {
-      item: responseItem
+    await emitRealtime(io, {
+      room: `tenant:${req.tenantId}`,
+      event: SOCKET_EVENTS.AMENITY_BOOKING_STATUS_UPDATED,
+      payload: { item: responseItem }
     });
 
     res.json({ item: responseItem });

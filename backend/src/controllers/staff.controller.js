@@ -6,6 +6,7 @@ import { Notification } from "../models/notification.model.js";
 import { AppError } from "../utils/app-error.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
+import { emitRealtime } from "../services/realtime-bus.service.js";
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -617,9 +618,13 @@ export async function logStaffEntry(req, res, next) {
     });
 
     const io = req.app.get("io");
-    io.to(`user:${assignment.residentId._id}`).emit(SOCKET_EVENTS.STAFF_ENTRY, {
-      entry: populated,
-      warning
+    await emitRealtime(io, {
+      room: `user:${assignment.residentId._id}`,
+      event: SOCKET_EVENTS.STAFF_ENTRY,
+      payload: {
+        entry: populated,
+        warning
+      }
     });
 
     // Step 8: Return entry + warning if outside schedule
@@ -714,11 +719,15 @@ export async function toggleLeave(req, res, next) {
     });
 
     const io = req.app.get("io");
-    io.to(`user:${assignment.residentId._id}`).emit(SOCKET_EVENTS.STAFF_LEAVE_TOGGLED, {
-      staffId:   staff._id,
-      staffName: staff.name,
-      onLeave:   assignment.onLeave,
-      flatNumber
+    await emitRealtime(io, {
+      room: `user:${assignment.residentId._id}`,
+      event: SOCKET_EVENTS.STAFF_LEAVE_TOGGLED,
+      payload: {
+        staffId:   staff._id,
+        staffName: staff.name,
+        onLeave:   assignment.onLeave,
+        flatNumber
+      }
     });
 
     res.json({ item: staff, onLeave: assignment.onLeave });

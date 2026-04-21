@@ -5,6 +5,7 @@ import { User } from "../models/user.model.js";
 import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
 import { createNotification } from "../utils/create-notification.js";
+import { emitRealtime } from "../services/realtime-bus.service.js";
 
 function sanitizeText(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -99,8 +100,16 @@ export async function approveResident(req, res, next) {
     ]);
 
     const io = req.app.get("io");
-    io.to(`user:${membership.userId}`).emit(SOCKET_EVENTS.MEMBERSHIP_APPROVED, { item: populated });
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.MEMBERSHIP_APPROVED, { item: populated });
+    await emitRealtime(io, {
+      room: `user:${membership.userId}`,
+      event: SOCKET_EVENTS.MEMBERSHIP_APPROVED,
+      payload: { item: populated }
+    });
+    await emitRealtime(io, {
+      room: `tenant:${req.tenantId}`,
+      event: SOCKET_EVENTS.MEMBERSHIP_APPROVED,
+      payload: { item: populated }
+    });
 
     await createNotification(io, {
       tenantId: req.tenantId,
@@ -154,7 +163,11 @@ export async function rejectResident(req, res, next) {
     ]);
 
     const io = req.app.get("io");
-    io.to(`user:${membership.userId}`).emit(SOCKET_EVENTS.MEMBERSHIP_REJECTED, { item: populated });
+    await emitRealtime(io, {
+      room: `user:${membership.userId}`,
+      event: SOCKET_EVENTS.MEMBERSHIP_REJECTED,
+      payload: { item: populated }
+    });
 
     await createNotification(io, {
       tenantId: req.tenantId,

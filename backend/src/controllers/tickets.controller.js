@@ -4,6 +4,7 @@ import { Ticket } from "../models/ticket.model.js";
 import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
+import { emitRealtime } from "../services/realtime-bus.service.js";
 
 const ALLOWED_TICKET_STATUSES = ["open", "in_progress", "resolved", "closed"];
 
@@ -67,8 +68,12 @@ export async function createTicket(req, res, next) {
     });
 
     const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.TICKET_CREATED, {
-      item: ticket
+    await emitRealtime(io, {
+      room: `tenant:${req.tenantId}`,
+      event: SOCKET_EVENTS.TICKET_CREATED,
+      payload: {
+        item: ticket
+      }
     });
 
     res.status(StatusCodes.CREATED).json({ item: ticket });
@@ -111,8 +116,12 @@ export async function updateTicketStatus(req, res, next) {
     await ticket.save();
 
     const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.TICKET_STATUS_UPDATED, {
-      item: ticket
+    await emitRealtime(io, {
+      room: `tenant:${req.tenantId}`,
+      event: SOCKET_EVENTS.TICKET_STATUS_UPDATED,
+      payload: {
+        item: ticket
+      }
     });
 
     res.json({ item: ticket });

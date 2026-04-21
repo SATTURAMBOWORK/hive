@@ -5,6 +5,7 @@ import { Membership } from "../models/membership.model.js";
 import { Notification } from "../models/notification.model.js";
 import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
+import { emitRealtime } from "../services/realtime-bus.service.js";
 
 function sanitizeText(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -285,14 +286,18 @@ export async function verifyGroupOtp(req, res, next) {
     });
 
     const io = req.app.get("io");
-    io.to(`user:${pass.residentId._id}`).emit(SOCKET_EVENTS.GROUP_PASS_USED, {
-      visitor:   populatedVisitor,
-      groupPass: {
-        _id:       pass._id,
-        eventName: pass.eventName,
-        usedCount: pass.usedCount,
-        maxUses:   pass.maxUses,
-        status:    pass.status
+    await emitRealtime(io, {
+      room: `user:${pass.residentId._id}`,
+      event: SOCKET_EVENTS.GROUP_PASS_USED,
+      payload: {
+        visitor:   populatedVisitor,
+        groupPass: {
+          _id:       pass._id,
+          eventName: pass.eventName,
+          usedCount: pass.usedCount,
+          maxUses:   pass.maxUses,
+          status:    pass.status
+        }
       }
     });
 

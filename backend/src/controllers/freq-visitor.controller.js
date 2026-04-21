@@ -8,6 +8,7 @@ import { Notification } from "../models/notification.model.js";
 import { AppError } from "../utils/app-error.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
+import { emitRealtime } from "../services/realtime-bus.service.js";
 
 function sanitizeText(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -351,9 +352,13 @@ export async function logFreqEntry(req, res, next) {
     });
 
     const io = req.app.get("io");
-    io.to(`user:${link.residentId._id}`).emit(SOCKET_EVENTS.FREQ_VISITOR_ENTRY, {
-      visitor:     populated,
-      freqVisitor: { name: freqVisitor.name, relationship: freqVisitor.relationship, photoUrl: freqVisitor.photoUrl }
+    await emitRealtime(io, {
+      room: `user:${link.residentId._id}`,
+      event: SOCKET_EVENTS.FREQ_VISITOR_ENTRY,
+      payload: {
+        visitor:     populated,
+        freqVisitor: { name: freqVisitor.name, relationship: freqVisitor.relationship, photoUrl: freqVisitor.photoUrl }
+      }
     });
 
     res.status(StatusCodes.CREATED).json({ item: populated });

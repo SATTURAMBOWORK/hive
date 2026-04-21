@@ -4,6 +4,7 @@ import { Poll, Vote } from "../models/poll.model.js";
 import { Notification } from "../models/notification.model.js";
 import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
+import { emitRealtime } from "../services/realtime-bus.service.js";
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -112,7 +113,11 @@ export async function createPoll(req, res, next) {
 
     // Broadcast to entire tenant room so all connected users see the new poll
     const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.POLL_CREATED, sanitizedPoll(populated));
+    await emitRealtime(io, {
+      room: `tenant:${req.tenantId}`,
+      event: SOCKET_EVENTS.POLL_CREATED,
+      payload: sanitizedPoll(populated)
+    });
 
     res.status(StatusCodes.CREATED).json({ item: sanitizedPoll(populated) });
   } catch (err) {
@@ -272,7 +277,11 @@ export async function castVote(req, res, next) {
     const myVote  = await Vote.findOne({ pollId: poll._id, userId: req.user.userId });
 
     const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.POLL_UPDATED, sanitizedPoll(updated));
+    await emitRealtime(io, {
+      room: `tenant:${req.tenantId}`,
+      event: SOCKET_EVENTS.POLL_UPDATED,
+      payload: sanitizedPoll(updated)
+    });
 
     res.json({ item: sanitizedPoll(updated, myVote) });
   } catch (err) {
@@ -302,7 +311,11 @@ export async function closePoll(req, res, next) {
     const populated = await Poll.findById(poll._id).populate("createdBy", "fullName");
 
     const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.POLL_UPDATED, sanitizedPoll(populated));
+    await emitRealtime(io, {
+      room: `tenant:${req.tenantId}`,
+      event: SOCKET_EVENTS.POLL_UPDATED,
+      payload: sanitizedPoll(populated)
+    });
 
     res.json({ item: sanitizedPoll(populated) });
   } catch (err) {
@@ -327,7 +340,11 @@ export async function deletePoll(req, res, next) {
     await Poll.deleteOne({ _id: poll._id });
 
     const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.POLL_DELETED, { pollId: req.params.id });
+    await emitRealtime(io, {
+      room: `tenant:${req.tenantId}`,
+      event: SOCKET_EVENTS.POLL_DELETED,
+      payload: { pollId: req.params.id }
+    });
 
     res.json({ message: "Poll deleted" });
   } catch (err) {

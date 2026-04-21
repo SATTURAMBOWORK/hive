@@ -7,6 +7,7 @@ import { SocietyUnit } from "../models/society-unit.model.js";
 import { Notification } from "../models/notification.model.js";
 import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
+import { emitRealtime } from "../services/realtime-bus.service.js";
 
 const VALID_PURPOSES = ["delivery", "guest", "contractor", "other"];
 
@@ -230,9 +231,13 @@ export async function verifyOtp(req, res, next) {
     });
 
     const io = req.app.get("io");
-    io.to(`user:${preReg.residentId._id}`).emit(SOCKET_EVENTS.VISITOR_PRE_REG_USED, {
-      visitor:    populatedVisitor,
-      preRegId:   preReg._id
+    await emitRealtime(io, {
+      room: `user:${preReg.residentId._id}`,
+      event: SOCKET_EVENTS.VISITOR_PRE_REG_USED,
+      payload: {
+        visitor:    populatedVisitor,
+        preRegId:   preReg._id
+      }
     });
 
     res.status(StatusCodes.CREATED).json({ item: populatedVisitor });

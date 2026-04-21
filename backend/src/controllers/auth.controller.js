@@ -5,9 +5,11 @@ import { Tenant } from "../models/tenant.model.js";
 import { PendingRegistration } from "../models/pending-registration.model.js";
 import { AppError } from "../utils/app-error.js";
 import { signToken } from "../utils/jwt.js";
-import { sendOtpEmail } from "../utils/mailer.js";
 import { ROLES } from "../config/roles.js";
 import { env } from "../config/env.js";
+import { enqueueOtpEmail } from "../services/email-queue.service.js";
+import { acquireLock, releaseLock } from "../services/redis-features.service.js";
+import { isRedisEnabled } from "../config/redis.js";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 6;
@@ -167,7 +169,7 @@ export async function register(req, res, next) {
       { upsert: true, new: true }
     );
 
-    await sendOtpEmail({ to: email, otp: otpState.otp, purpose: "verification" });
+    await enqueueOtpEmail({ to: email, otp: otpState.otp, purpose: "verification" });
 
     res.status(StatusCodes.OK).json({
       message: "OTP sent to your email. Verify to complete registration.",
@@ -236,51 +238,71 @@ export async function verifyRegistration(req, res, next) {
       throw new AppError("OTP must be a 6 digit code", StatusCodes.BAD_REQUEST);
     }
 
-    const pending = await PendingRegistration.findOne({ tenantSlug, email });
-    if (!pending) {
-      throw new AppError("No pending registration found. Please register again.", StatusCodes.NOT_FOUND);
+    const lockKey = `verify-registration:${tenantSlug}:${email}`;
+    const lockHandle = isRedisEnabled()
+      ? await acquireLock(lockKey, { ttlMs: 10_000 })
+      : null;
+
+    if (isRedisEnabled() && !lockHandle) {
+      throw new AppError("Another verification request is already in progress", StatusCodes.CONFLICT);
     }
 
-    if (pending.otpAttempts >= MAX_OTP_ATTEMPTS) {
-      throw new AppError("Too many invalid attempts. Please register again.", StatusCodes.TOO_MANY_REQUESTS);
+    try {
+      const pending = await PendingRegistration.findOne({ tenantSlug, email });
+      if (!pending) {
+        throw new AppError("No pending registration found. Please register again.", StatusCodes.NOT_FOUND);
+      }
+
+      if (pending.otpAttempts >= MAX_OTP_ATTEMPTS) {
+        throw new AppError("Too many invalid attempts. Please register again.", StatusCodes.TOO_MANY_REQUESTS);
+      }
+
+      if (new Date(pending.otpExpiresAt).getTime() < Date.now()) {
+        throw new AppError("OTP expired. Please register again.", StatusCodes.BAD_REQUEST);
+      }
+
+      const isOtpMatch = await bcrypt.compare(otp, pending.otpHash);
+      if (!isOtpMatch) {
+        pending.otpAttempts += 1;
+        await pending.save();
+        throw new AppError("Invalid OTP", StatusCodes.BAD_REQUEST);
+      }
+
+      // OTP correct — now create the actual user
+      const tenant = await Tenant.findOne({ slug: tenantSlug });
+      if (!tenant) throw new AppError("Society not found", StatusCodes.BAD_REQUEST);
+
+      const existingUser = await User.findOne({ tenantId: tenant._id, email });
+      if (existingUser) throw new AppError("An account with this email already exists", StatusCodes.CONFLICT);
+
+      const user = await User.create({
+        tenantId: tenant._id,
+        fullName: pending.fullName,
+        email: pending.email,
+        passwordHash: pending.passwordHash,
+        role: pending.desiredRole,
+        flatNumber: pending.flatNumber,
+        phone: pending.phone,
+        shift: pending.shift,
+        isVerified: true,
+        verificationOtpHash: "",
+        verificationOtpExpiresAt: null,
+        verificationAttempts: 0
+      });
+
+      await PendingRegistration.deleteOne({ _id: pending._id });
+
+      res.status(StatusCodes.CREATED).json(buildAuthResponse(user));
+    } finally {
+      if (lockHandle) {
+        try {
+          await releaseLock(lockHandle);
+        } catch {
+          // Ignore lock release errors to avoid breaking auth responses.
+        }
+      }
     }
 
-    if (new Date(pending.otpExpiresAt).getTime() < Date.now()) {
-      throw new AppError("OTP expired. Please register again.", StatusCodes.BAD_REQUEST);
-    }
-
-    const isOtpMatch = await bcrypt.compare(otp, pending.otpHash);
-    if (!isOtpMatch) {
-      pending.otpAttempts += 1;
-      await pending.save();
-      throw new AppError("Invalid OTP", StatusCodes.BAD_REQUEST);
-    }
-
-    // OTP correct — now create the actual user
-    const tenant = await Tenant.findOne({ slug: tenantSlug });
-    if (!tenant) throw new AppError("Society not found", StatusCodes.BAD_REQUEST);
-
-    const existingUser = await User.findOne({ tenantId: tenant._id, email });
-    if (existingUser) throw new AppError("An account with this email already exists", StatusCodes.CONFLICT);
-
-    const user = await User.create({
-      tenantId: tenant._id,
-      fullName: pending.fullName,
-      email: pending.email,
-      passwordHash: pending.passwordHash,
-      role: pending.desiredRole,
-      flatNumber: pending.flatNumber,
-      phone: pending.phone,
-      shift: pending.shift,
-      isVerified: true,
-      verificationOtpHash: "",
-      verificationOtpExpiresAt: null,
-      verificationAttempts: 0
-    });
-
-    await PendingRegistration.deleteOne({ _id: pending._id });
-
-    res.status(StatusCodes.CREATED).json(buildAuthResponse(user));
   } catch (error) {
     next(error);
   }
@@ -307,7 +329,7 @@ export async function resendRegistrationOtp(req, res, next) {
     pending.createdAt = new Date();
     await pending.save();
 
-    await sendOtpEmail({ to: email, otp: otpState.otp, purpose: "verification" });
+    await enqueueOtpEmail({ to: email, otp: otpState.otp, purpose: "verification" });
 
     res.json({ message: "A new OTP has been sent to your email." });
   } catch (error) {

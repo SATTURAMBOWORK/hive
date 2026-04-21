@@ -3,6 +3,7 @@ import sanitizeHtml from "sanitize-html";
 import { Announcement } from "../models/announcement.model.js";
 import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
+import { emitRealtime } from "../services/realtime-bus.service.js";
 
 function sanitizeText(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -101,10 +102,14 @@ export async function createAnnouncement(req, res, next) {
       .lean();
 
     const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.ANNOUNCEMENT_CREATED, {
-      item: {
-        ...populated,
-        unread: false
+    await emitRealtime(io, {
+      room: `tenant:${req.tenantId}`,
+      event: SOCKET_EVENTS.ANNOUNCEMENT_CREATED,
+      payload: {
+        item: {
+          ...populated,
+          unread: false
+        }
       }
     });
 

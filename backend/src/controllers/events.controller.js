@@ -4,6 +4,7 @@ import { Event } from "../models/event.model.js";
 import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
 import { cache, cacheKey } from "../config/cache.js";
+import { emitRealtime } from "../services/realtime-bus.service.js";
 
 function sanitizeText(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -13,7 +14,7 @@ export async function listEvents(req, res, next) {
   try {
     const key = cacheKey("events", req.tenantId);
 
-    const cached = cache.get(key);
+    const cached = await cache.get(key);
     if (cached) {
       return res.json({ items: cached });
     }
@@ -23,7 +24,7 @@ export async function listEvents(req, res, next) {
       .populate("createdBy", "fullName role")
       .lean();
 
-    cache.set(key, items);
+    await cache.set(key, items);
     res.json({ items });
   } catch (error) {
     next(error);
@@ -63,10 +64,14 @@ export async function createEvent(req, res, next) {
       createdBy: req.user.userId
     });
 
-    cache.del(cacheKey("events", req.tenantId));
+    await cache.del(cacheKey("events", req.tenantId));
 
     const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.EVENT_CREATED, { item: event });
+    await emitRealtime(io, {
+      room: `tenant:${req.tenantId}`,
+      event: SOCKET_EVENTS.EVENT_CREATED,
+      payload: { item: event }
+    });
 
     res.status(StatusCodes.CREATED).json({ item: event });
   } catch (error) {
@@ -111,10 +116,14 @@ export async function updateEvent(req, res, next) {
 
     await event.save();
 
-    cache.del(cacheKey("events", req.tenantId));
+    await cache.del(cacheKey("events", req.tenantId));
 
     const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.EVENT_UPDATED, { item: event });
+    await emitRealtime(io, {
+      room: `tenant:${req.tenantId}`,
+      event: SOCKET_EVENTS.EVENT_UPDATED,
+      payload: { item: event }
+    });
 
     res.json({ item: event });
   } catch (error) {
@@ -134,10 +143,14 @@ export async function deleteEvent(req, res, next) {
       throw new AppError("Event not found", StatusCodes.NOT_FOUND);
     }
 
-    cache.del(cacheKey("events", req.tenantId));
+    await cache.del(cacheKey("events", req.tenantId));
 
     const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.EVENT_DELETED, { item: event });
+    await emitRealtime(io, {
+      room: `tenant:${req.tenantId}`,
+      event: SOCKET_EVENTS.EVENT_DELETED,
+      payload: { item: event }
+    });
 
     res.status(StatusCodes.OK).json({ message: "Event deleted", item: event });
   } catch (error) {

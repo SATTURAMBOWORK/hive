@@ -2,251 +2,598 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Bell, Search, Users, FileText, Calendar, Megaphone,
-  Plus, BookOpen, UserCheck, BarChart2, ChevronRight,
-  CheckCircle, XCircle, RefreshCw, ArrowRight, Package,
-  MapPin, Clock, Zap,
+  RefreshCw, ArrowRight, CheckCircle, XCircle,
+  Clock, MapPin, ChevronRight, Bell, Calendar, Users,
 } from "lucide-react";
 import { useAuth } from "../components/AuthContext";
 import { apiRequest } from "../components/api";
 import { getSocket } from "../components/socket";
 import { SecurityDashboard } from "./SecurityDashboard";
+import { EventChainTimeline } from "../components/EventChainTimeline";
 
-/* ─── Design tokens ──────────────────────────────────────────── */
-const T = {
-  blue:    "#1456F5",
-  blueD:   "#0D3EC7",
-  blueL:   "#E8F0FE",
-  yellow:  "#FFE600",
-  yellowD: "#E5CE00",
-  yellowL: "#FFFBE0",
-  white:   "#FFFFFF",
-  bg:      "#F0F4FF",
-  surface: "#FFFFFF",
-  ink:     "#0F172A",
-  ink2:    "#1E293B",
-  text2:   "#64748B",
-  text3:   "#94A3B8",
-  border:  "#E2E8F0",
-  border2: "#CBD5E1",
-  green:   "#16A34A",
-  greenL:  "#DCFCE7",
-  red:     "#DC2626",
-  redL:    "#FEE2E2",
-  amber:   "#E8890C",
-  amberL:  "#FFF8F0",
-  amberM:  "#FDECC8",
-  purple:  "#7C3AED",
-  purpleL: "#F3E8FF",
-  sh:      "0 2px 8px rgba(0,0,0,0.06)",
-  shM:     "0 8px 28px rgba(20,86,245,0.14)",
-  shL:     "0 16px 48px rgba(20,86,245,0.20)",
+/* ─── Design tokens ────────────────────────────────────── */
+const C = {
+  bg:       "#FAFAFC",
+  surface:  "#FFFFFF",
+  ink:      "#1C1C1E",
+  ink2:     "#3A3A3C",
+  muted:    "#6B7280",
+  faint:    "#9CA3AF",
+  border:   "#E8E8ED",
+  borderL:  "#F0F0F5",
+  indigo:   "#4F46E5",
+  indigoD:  "#4338CA",
+  indigoL:  "#EEF2FF",
+  indigoBr: "#C7D2FE",
+  red:      "#DC2626",
+  redL:     "#FEF2F2",
+  redBr:    "#FECACA",
+  amber:    "#F59E0B",
+  amberD:   "#D97706",
+  amberL:   "#FFFBEB",
+  amberBr:  "#FCD34D",
+  green:    "#16A34A",
+  greenL:   "#DCFCE7",
+  orange:   "#E8890C",
+  orangeL:  "#FFF8F0",
 };
 
-/* ─── CSS ────────────────────────────────────────────────────── */
+/* ─── CSS ──────────────────────────────────────────────── */
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,500;0,600;0,700;0,800;1,700&family=Sora:wght@400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600;1,700&display=swap');
 
-  .dp-root { font-family: 'Sora', sans-serif; color: ${T.ink}; background: ${T.bg}; min-height: 100%; }
-  .dp-root * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  /* ── Hero ── */
-  .dp-hero {
-    background: linear-gradient(140deg, ${T.blue} 0%, ${T.blueD} 100%);
-    border-radius: 28px;
-    padding: 32px 34px 84px;
-    position: relative;
-    overflow: hidden;
-    margin-bottom: -58px;
+  .dp-root {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: ${C.ink};
+    background: ${C.bg};
+    min-height: 100%;
+    padding: 32px 32px 80px;
+    box-sizing: border-box;
+    max-width: 1320px;
+    margin: 0 auto;
   }
+  .dp-root * { box-sizing: border-box; }
 
-  .dp-hero-ring1 {
-    position: absolute;
-    top: -70px; right: -70px;
-    width: 280px; height: 280px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.07);
-    pointer-events: none;
-  }
-
-  .dp-hero-ring2 {
-    position: absolute;
-    bottom: -20px; left: 38%;
-    width: 200px; height: 200px;
-    border-radius: 50%;
-    background: rgba(255,230,0,0.09);
-    pointer-events: none;
-  }
-
-  .dp-hero-ring3 {
-    position: absolute;
-    top: 50%; left: -40px;
-    width: 140px; height: 140px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.04);
-    pointer-events: none;
-  }
-
-  /* ── Shortcuts strip ── */
-  .dp-shortcuts {
+  /* ═══════════════════════════════════════
+     GREETING
+  ═══════════════════════════════════════ */
+  .dp-greeting {
     display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .dp-greeting-date {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: ${C.muted};
+    margin: 0 0 6px;
+  }
+
+  .dp-greeting-title {
+    font-size: clamp(1.5rem, 2.8vw, 2.1rem);
+    font-weight: 800;
+    color: ${C.ink};
+    margin: 0;
+    line-height: 1.15;
+    letter-spacing: -0.5px;
+  }
+
+  .dp-greeting-title em {
+    font-style: italic;
+    color: ${C.indigo};
+  }
+
+  .dp-greeting-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .dp-flat-pill {
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: ${C.ink2};
+    background: ${C.surface};
+    border: 1px solid ${C.border};
+    border-radius: 100px;
+    padding: 5px 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+
+  .dp-indigo-pill {
+    display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 16px 20px;
-    background: ${T.white};
-    border-radius: 22px;
-    box-shadow: ${T.shM};
-    position: relative;
-    z-index: 10;
-    margin: 0 4px 22px;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .dp-shortcuts::-webkit-scrollbar { display: none; }
-
-  .dp-shortcut {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 7px;
-    flex: 0 0 auto;
-    padding: 6px 10px;
-    border-radius: 14px;
-    text-decoration: none;
-    transition: background 0.18s;
-  }
-  .dp-shortcut:hover { background: ${T.bg}; }
-
-  .dp-shortcut-circle {
-    width: 56px; height: 56px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s;
-  }
-  .dp-shortcut:hover .dp-shortcut-circle {
-    transform: translateY(-4px) scale(1.06);
-    box-shadow: 0 10px 24px rgba(0,0,0,0.14);
-  }
-
-  .dp-shortcut-label {
-    font-family: 'Sora', sans-serif;
-    font-size: 0.66rem;
+    font-size: 0.73rem;
     font-weight: 700;
-    color: ${T.text2};
-    text-align: center;
-    white-space: nowrap;
-    transition: color 0.18s;
+    color: ${C.surface};
+    background: ${C.indigo};
+    border-radius: 100px;
+    padding: 6px 14px;
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    transition: background 0.18s, transform 0.18s, box-shadow 0.18s;
+    box-shadow: 0 2px 8px rgba(79,70,229,0.28);
   }
-  .dp-shortcut:hover .dp-shortcut-label { color: ${T.blue}; }
+  .dp-indigo-pill:hover {
+    background: ${C.indigoD};
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(79,70,229,0.35);
+  }
 
-  /* ── Stat cards ── */
-  .dp-stat {
-    background: ${T.white};
-    border-radius: 20px;
-    padding: 20px;
-    box-shadow: ${T.sh};
-    border: 1px solid ${T.border};
-    transition: transform 0.2s, box-shadow 0.2s;
+  .dp-refresh {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: ${C.surface};
+    border: 1px solid ${C.border};
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: ${C.muted};
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    transition: border-color 0.18s, color 0.18s, box-shadow 0.18s;
+  }
+  .dp-refresh:hover { border-color: ${C.indigo}; color: ${C.indigo}; box-shadow: 0 2px 8px rgba(79,70,229,0.15); }
+  .dp-refresh:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ═══════════════════════════════════════
+     LIVE DASHBOARD PANEL
+  ═══════════════════════════════════════ */
+  .dp-live-panel {
+    background: ${C.surface};
+    border: 1px solid ${C.border};
+    border-radius: 18px;
+    margin-bottom: 32px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04), 0 2px 4px -1px rgba(0,0,0,0.02);
+  }
+
+  .dp-live-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 20px;
+    border-bottom: 1px solid ${C.borderL};
+    background: ${C.bg};
+  }
+
+  .dp-live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dp-live-dot {
+    position: relative;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .dp-live-dot::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 1.5px solid currentColor;
+    opacity: 0;
+    animation: dp-live-ripple 2.2s ease-out infinite;
+  }
+
+  @keyframes dp-live-ripple {
+    0%   { transform: scale(0.5); opacity: 0.55; }
+    100% { transform: scale(2.2); opacity: 0; }
+  }
+
+  .dp-live-label {
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+
+  .dp-live-count {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: ${C.faint};
+  }
+
+  /* ── Live rows ── */
+  .dp-live-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 20px 14px 23px;
+    border-bottom: 1px solid ${C.borderL};
     position: relative;
     overflow: hidden;
   }
-  .dp-stat::after {
+  .dp-live-row:last-child { border-bottom: none; }
+
+  /* Left accent strip — 3 px colored bar */
+  .dp-live-row::before {
     content: '';
     position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 3px;
-    border-radius: 0 0 20px 20px;
-    background: var(--stat-color, ${T.blue});
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.3s ease;
-  }
-  .dp-stat:hover { transform: translateY(-3px); box-shadow: ${T.shM}; }
-  .dp-stat:hover::after { transform: scaleX(1); }
-
-  /* ── Section card ── */
-  .dp-section {
-    background: ${T.white};
-    border: 1px solid ${T.border};
-    border-radius: 22px;
-    padding: 22px;
-    box-shadow: ${T.sh};
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
   }
 
-  /* ── Activity item ── */
-  .dp-act {
-    display: flex; align-items: flex-start; gap: 13px;
-    background: ${T.white}; border: 1px solid ${T.border};
-    border-radius: 14px; padding: 13px 15px; margin-bottom: 8px;
-    transition: box-shadow .2s, transform .2s, border-color .2s;
-    cursor: default;
-  }
-  .dp-act:hover { box-shadow: ${T.shM}; border-color: ${T.border2}; transform: translateY(-1px); }
-  .dp-act:last-child { margin-bottom: 0; }
+  .dp-live-row-visitor    { background: ${C.amberL}; }
+  .dp-live-row-event-soon { background: #F5F3FF; }
+  .dp-live-row-notice     { background: ${C.orangeL}; }
+  .dp-live-row-approval   { background: ${C.indigoL}; }
 
-  /* ── View all link ── */
-  .dp-view-all {
-    display: inline-flex; align-items: center; gap: 3px;
-    font-family: 'Sora', sans-serif;
-    font-size: .7rem; font-weight: 700; color: ${T.blue};
-    text-decoration: none; padding: 5px 11px;
+  .dp-live-row-visitor::before    { background: ${C.amber}; }
+  .dp-live-row-event-soon::before { background: ${C.indigo}; }
+  .dp-live-row-notice::before     { background: ${C.orange}; }
+  .dp-live-row-approval::before   { background: ${C.indigo}; }
+
+  /* Icon box */
+  .dp-live-icon {
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  /* Type tag pill */
+  .dp-live-type {
+    display: inline-block;
+    font-size: 0.57rem;
+    font-weight: 800;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    padding: 2px 7px;
     border-radius: 100px;
-    background: ${T.blueL};
-    border: 1px solid rgba(20,86,245,0.15);
-    transition: background .15s, box-shadow .15s;
+    margin-bottom: 4px;
   }
-  .dp-view-all:hover { background: rgba(20,86,245,0.12); box-shadow: 0 2px 10px rgba(20,86,245,0.12); }
 
-  /* ── Admin link ── */
+  /* Content */
+  .dp-live-content { flex: 1; min-width: 0; }
+  .dp-live-title {
+    font-size: 0.87rem; font-weight: 700; color: ${C.ink};
+    margin: 0 0 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .dp-live-sub {
+    font-size: 0.71rem; color: ${C.muted}; font-weight: 500;
+    display: flex; align-items: center; gap: 4px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  /* Actions */
+  .dp-live-actions {
+    display: flex; gap: 8px; flex-shrink: 0; align-items: center;
+  }
+
+  /* Approve button */
+  .dp-live-btn-approve {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 17px; border-radius: 9px;
+    font-size: 0.8rem; font-weight: 700;
+    background: ${C.ink}; color: #FFFFFF;
+    border: none; cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: background 0.18s, transform 0.1s, box-shadow 0.18s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.14);
+    white-space: nowrap;
+  }
+  .dp-live-btn-approve:hover:not(:disabled) {
+    background: ${C.indigo};
+    box-shadow: 0 4px 14px rgba(79,70,229,0.32);
+  }
+  .dp-live-btn-approve:active:not(:disabled) { transform: scale(0.97); }
+  .dp-live-btn-approve:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* Reject button */
+  .dp-live-btn-reject {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 17px; border-radius: 9px;
+    font-size: 0.8rem; font-weight: 700;
+    background: ${C.surface}; color: ${C.ink2};
+    border: 1.5px solid ${C.border};
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: background 0.18s, color 0.18s, border-color 0.18s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .dp-live-btn-reject:hover:not(:disabled) {
+    background: ${C.redL}; color: ${C.red}; border-color: ${C.redBr};
+  }
+  .dp-live-btn-reject:active:not(:disabled) { transform: scale(0.97); }
+  .dp-live-btn-reject:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* CTA link button */
+  .dp-live-btn-cta {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 14px; border-radius: 9px;
+    font-size: 0.77rem; font-weight: 700;
+    background: rgba(79,70,229,0.08); color: ${C.indigo};
+    border: 1px solid ${C.indigoBr};
+    text-decoration: none; cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: background 0.15s, transform 0.15s;
+    white-space: nowrap;
+  }
+  .dp-live-btn-cta:hover { background: ${C.indigoL}; transform: translateY(-1px); }
+
+  /* Empty state */
+  .dp-live-empty {
+    padding: 22px 20px;
+    display: flex; align-items: center; gap: 10px;
+    color: ${C.muted}; font-size: 0.8rem; font-weight: 600;
+  }
+
+  @keyframes dp-spin { to { transform: rotate(360deg); } }
+
+  /* ═══════════════════════════════════════
+     SECTION LABELS
+  ═══════════════════════════════════════ */
+  .dp-section-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: ${C.indigo};
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    margin: 0 0 6px;
+  }
+
+  .dp-section-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: ${C.ink};
+    margin: 0;
+    line-height: 1;
+    letter-spacing: -0.3px;
+  }
+
+  .dp-section-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .dp-view-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.71rem;
+    font-weight: 700;
+    color: ${C.indigo};
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    transition: gap 0.18s;
+    flex-shrink: 0;
+  }
+  .dp-view-all:hover { gap: 7px; }
+
+  /* ═══════════════════════════════════════
+     FEATURE CARDS  (slightly smaller)
+  ═══════════════════════════════════════ */
+  .dp-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .dp-card {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    display: block;
+    text-decoration: none;
+    aspect-ratio: 5 / 3;
+    background: #1C1C1E;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -1px rgba(0,0,0,0.04);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+  }
+  .dp-card:hover {
+    transform: translateY(-4px) scale(1.012);
+    box-shadow: 0 12px 20px -4px rgba(79,70,229,0.18), 0 4px 8px -2px rgba(79,70,229,0.1), 0 0 0 2px ${C.indigo};
+  }
+
+  .dp-card-img {
+    position: absolute;
+    inset: 0; width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform 0.55s ease;
+  }
+  .dp-card:hover .dp-card-img { transform: scale(1.08); }
+
+  .dp-card-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.14) 28%, rgba(0,0,0,0.82) 100%);
+  }
+
+  .dp-card-body {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 11px 13px;
+  }
+
+  .dp-card-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #FFFFFF;
+    margin: 0 0 2px;
+    line-height: 1.2;
+    letter-spacing: -0.15px;
+  }
+
+  .dp-card-desc {
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.6);
+    font-weight: 500;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .dp-card-arrow {
+    position: absolute;
+    top: 10px; right: 10px;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.18);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    color: #FFFFFF;
+    transition: background 0.22s, border-color 0.22s, transform 0.22s;
+  }
+  .dp-card:hover .dp-card-arrow {
+    background: ${C.indigo};
+    border-color: ${C.indigo};
+    transform: translate(2px,-2px) rotate(-45deg);
+  }
+
+  /* ═══════════════════════════════════════
+     LOWER GRID
+  ═══════════════════════════════════════ */
+  .dp-lower-grid {
+    display: grid;
+    grid-template-columns: 1fr 292px;
+    gap: 18px;
+    align-items: start;
+  }
+
+  .dp-panel {
+    background: ${C.surface};
+    border: 1px solid ${C.border};
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04), 0 2px 4px -1px rgba(0,0,0,0.02);
+  }
+
+  /* Feed */
+  .dp-feed-item {
+    display: flex; align-items: flex-start; gap: 11px;
+    padding: 11px 0; border-bottom: 1px solid ${C.borderL};
+  }
+  .dp-feed-item:first-child { padding-top: 0; }
+  .dp-feed-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .dp-feed-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 7px; }
+
+  .dp-feed-title {
+    font-size: 0.83rem; font-weight: 600; color: ${C.ink};
+    margin: 0 0 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  .dp-feed-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+  .dp-feed-badge {
+    padding: 2px 8px; border-radius: 100px;
+    font-size: 0.59rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+
+  .dp-feed-sub {
+    font-size: 0.7rem; color: ${C.muted}; font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;
+  }
+
+  .dp-feed-time {
+    margin-left: auto; font-size: 0.65rem; color: ${C.faint};
+    font-weight: 600; white-space: nowrap; flex-shrink: 0;
+  }
+
+  /* Empty */
+  .dp-empty {
+    border: 1.5px dashed ${C.border};
+    border-radius: 12px; padding: 28px 16px;
+    text-align: center; color: ${C.faint};
+    font-size: 0.8rem; font-weight: 600;
+  }
+
+  /* Events */
+  .dp-event-item {
+    display: flex; gap: 11px; padding: 10px 0;
+    border-bottom: 1px solid ${C.borderL};
+  }
+  .dp-event-item:first-child { padding-top: 0; }
+  .dp-event-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .dp-event-date {
+    width: 38px; flex-shrink: 0; background: ${C.indigo};
+    border-radius: 9px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 6px 4px;
+    box-shadow: 0 2px 8px rgba(79,70,229,0.28);
+  }
+  .dp-event-day { font-size: 1rem; font-weight: 800; color: #FFFFFF; line-height: 1; }
+  .dp-event-month { font-size: 0.48rem; font-weight: 700; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+  .dp-event-name { font-size: 0.81rem; font-weight: 600; color: ${C.ink}; margin: 0 0 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dp-event-sub { font-size: 0.68rem; color: ${C.muted}; font-weight: 500; display: flex; align-items: center; gap: 4px; }
+
+  /* Admin */
   .dp-admin-link {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 14px; border-radius: 12px;
-    background: ${T.bg}; border: 1px solid ${T.border};
-    margin-bottom: 8px; text-decoration: none;
-    transition: background .15s, border-color .15s, box-shadow .15s;
+    padding: 10px 12px; border-radius: 10px;
+    background: ${C.bg}; border: 1px solid ${C.border};
+    text-decoration: none; font-size: 0.8rem; font-weight: 600;
+    color: ${C.ink}; margin-bottom: 8px;
+    transition: background 0.15s, border-color 0.15s, transform 0.15s, box-shadow 0.15s;
   }
-  .dp-admin-link:hover { background: ${T.blueL}; border-color: rgba(20,86,245,0.25); box-shadow: 0 2px 10px rgba(20,86,245,0.1); }
   .dp-admin-link:last-child { margin-bottom: 0; }
+  .dp-admin-link:hover { background: ${C.indigoL}; border-color: ${C.indigoBr}; transform: translateX(3px); box-shadow: 0 2px 8px rgba(79,70,229,0.1); }
 
-  /* ── Skeleton ── */
+  /* Skeleton */
   .dp-sk {
-    background: linear-gradient(90deg, #EEF2FF 25%, #E4EAFF 50%, #EEF2FF 75%);
+    background: linear-gradient(90deg, #F0F0F5 25%, #E8E8F0 50%, #F0F0F5 75%);
     background-size: 200% 100%;
-    animation: dp-shimmer 1.5s ease-in-out infinite;
+    animation: dp-shimmer 1.4s ease-in-out infinite;
     border-radius: 8px;
   }
   @keyframes dp-shimmer { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
-  @keyframes dp-breathe { 0%,100% { border-color: rgba(220,38,38,.2); } 50% { border-color: rgba(220,38,38,.5); } }
-  .dp-visitor-wrap { animation: dp-breathe 3s ease-in-out infinite; }
-  @keyframes dp-blink { 0%,100% { opacity: 1; } 50% { opacity: .2; } }
-  @keyframes dp-spin { to { transform: rotate(360deg); } }
 
-  /* ── Notification pill in hero ── */
-  .dp-notif-pill {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(255,255,255,0.15);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.22);
-    border-radius: 100px;
-    padding: 6px 13px;
-    margin-bottom: 16px;
-    font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.9);
-    text-decoration: none;
-    transition: background 0.18s;
+  /* Error */
+  .dp-error {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 20px;
+    background: ${C.redL}; border: 1px solid ${C.redBr};
+    border-radius: 12px; padding: 12px 16px;
+    font-size: 0.83rem; color: ${C.red}; font-weight: 600;
   }
-  .dp-notif-pill:hover { background: rgba(255,255,255,0.22); }
 
-  @media (max-width: 960px) {
-    .dp-main-grid { grid-template-columns: 1fr !important; }
-    .dp-stat-row  { grid-template-columns: repeat(2, 1fr) !important; }
-  }
-  @media (max-width: 560px) {
-    .dp-stat-row { grid-template-columns: 1fr !important; }
-    .dp-hero { padding: 24px 20px 80px; }
-  }
+  /* Responsive */
+  @media (max-width: 1100px) { .dp-cards-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 860px)  { .dp-lower-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 700px)  { .dp-live-actions { flex-wrap: wrap; } }
+  @media (max-width: 600px)  { .dp-cards-grid { grid-template-columns: 1fr; } .dp-root { padding: 20px 16px 60px; } }
 `;
 
-/* ─── Helpers ────────────────────────────────────────────────── */
+/* ─── Feature cards ────────────────────────── */
+const PX = id =>
+  `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&fit=crop`;
+
+const FEATURES = [
+  { title: "Amenities",     desc: "Book gym, pool & shared spaces",      to: "/amenities",       img: PX(6012017),  roles: null },
+  { title: "Announcements", desc: "Society notices & updates",           to: "/announcements",   img: PX(8846035),  roles: null },
+  { title: "Events",        desc: "Community gatherings & programmes",   to: "/events",          img: PX(30388543), roles: null },
+  { title: "My Tickets",    desc: "Track maintenance & requests",        to: "/tickets",         img: PX(9607054),  roles: null },
+  { title: "Polls",         desc: "Vote on community decisions",         to: "/polls",           img: PX(8846076),  roles: ["resident","committee","super_admin"] },
+  { title: "Visitors",      desc: "Manage & pre-register guests",        to: "/visitors/prereg", img: PX(22940794), roles: ["resident","committee","super_admin"] },
+  { title: "My Deliveries", desc: "Track parcels & couriers",            to: "/deliveries/my",   img: PX(7362965),  roles: ["resident","committee","super_admin"] },
+  { title: "Lost & Found",  desc: "Report lost or claim found items",    to: "/lost-found",      img: PX(5598028),  roles: null },
+];
+
+/* ─── Feed config ──────────────────────────── */
+const FEED_CFG = {
+  announcement: { label: "Notice", dot: C.orange, badgeBg: C.orangeL, badgeColor: C.orange },
+  ticket:       { label: "Ticket", dot: C.red,    badgeBg: C.redL,    badgeColor: C.red    },
+  event:        { label: "Event",  dot: C.green,  badgeBg: C.greenL,  badgeColor: C.green  },
+};
+
+/* ─── Helpers ──────────────────────────────── */
 function greeting(name) {
   const h = new Date().getHours();
   const w = h < 12 ? "Morning" : h < 17 ? "Afternoon" : "Evening";
@@ -260,167 +607,39 @@ function timeAgo(date) {
   const h = Math.floor(m / 60); if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
 }
-function fmtDate(d) {
-  if (!d) return "-";
-  return new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+function fmtTime(d)  { if (!d) return ""; return new Date(d).toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit" }); }
+function fmtDay(d)   { return new Date(d).toLocaleDateString("en-IN", { day:"numeric" }); }
+function fmtMonth(d) { return new Date(d).toLocaleDateString("en-IN", { month:"short" }); }
+function startsIn(startAt) {
+  const mins = Math.round((new Date(startAt) - Date.now()) / 60000);
+  if (mins <= 0) return "starting now";
+  if (mins < 60) return `in ${mins}m`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m > 0 ? `in ${h}h ${m}m` : `in ${h}h`;
 }
-function fmtTime(d) {
-  if (!d) return "";
-  return new Date(d).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
-}
-function fmtDay(d)   { return new Date(d).toLocaleDateString("en-IN", { day: "numeric" }); }
-function fmtMonth(d) { return new Date(d).toLocaleDateString("en-IN", { month: "short" }); }
 
 function buildFeed(announcements, tickets, events) {
   const items = [];
-  announcements.slice(0, 6).forEach(a =>
-    items.push({ type: "announcement", date: a.createdAt, data: a }));
-  tickets.filter(t => !["resolved", "closed"].includes(t.status)).slice(0, 6)
-    .forEach(t => items.push({ type: "ticket", date: t.createdAt, data: t }));
-  events.filter(e => new Date(e.startAt) >= new Date()).slice(0, 3)
-    .forEach(e => items.push({ type: "event", date: e.startAt, data: e }));
-  return items.sort((a, b) => new Date(b.date) - new Date(a.date));
+  announcements.slice(0,5).forEach(a => items.push({ type:"announcement", date:a.createdAt, data:a }));
+  tickets.filter(t => !["resolved","closed"].includes(t.status)).slice(0,4)
+    .forEach(t => items.push({ type:"ticket", date:t.createdAt, data:t }));
+  events.filter(e => new Date(e.startAt) >= new Date()).slice(0,3)
+    .forEach(e => items.push({ type:"event", date:e.startAt, data:e }));
+  return items.sort((a,b) => new Date(b.date) - new Date(a.date));
 }
 
-/* ─── Feed config ────────────────────────────────────────────── */
-const FEED_CFG = {
-  announcement: { label: "Notice", color: T.amber,  bg: T.amberL,  border: T.amberM,   dot: T.amber  },
-  ticket:       { label: "Ticket", color: T.red,    bg: T.redL,    border: "#FECACA",  dot: T.red    },
-  event:        { label: "Event",  color: T.green,  bg: T.greenL,  border: "#BBF7D0",  dot: T.green  },
-};
-const STATUS_CFG = {
-  open:        { bg: T.blueL,   color: T.blue,  label: "Open"        },
-  in_progress: { bg: T.amberL,  color: T.amber, label: "In Progress" },
-  resolved:    { bg: T.greenL,  color: T.green, label: "Resolved"    },
-  closed:      { bg: "#F1F5F9", color: T.text3, label: "Closed"      },
-};
+function Sk({ style }) { return <div className="dp-sk" style={style} />; }
 
-/* ─── Skeleton ───────────────────────────────────────────────── */
-function Sk({ style = {} }) { return <div className="dp-sk" style={style} />; }
-
-/* ─── StatCard ───────────────────────────────────────────────── */
-function StatCard({ label, value, icon: Icon, iconBg, iconColor, trend, loading, index, accentColor }) {
-  return (
-    <motion.div
-      className="dp-stat"
-      style={{ "--stat-color": accentColor || T.blue }}
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1 + index * 0.07, duration: 0.42, ease: [.22, 1, .36, 1] }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
-        <p style={{ fontSize: ".63rem", fontWeight: 700, color: T.text3, textTransform: "uppercase", letterSpacing: ".11em", lineHeight: 1.3 }}>
-          {label}
-        </p>
-        <div style={{ width: 38, height: 38, borderRadius: 12, background: iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Icon size={17} style={{ color: iconColor }} />
-        </div>
-      </div>
-      {loading
-        ? <Sk style={{ height: 42, width: 72, marginBottom: 10, borderRadius: 12 }} />
-        : <p style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "2.4rem", fontWeight: 800, color: T.ink, lineHeight: 1, marginBottom: 8, letterSpacing: "-1.5px" }}>{value ?? 0}</p>
-      }
-      {loading
-        ? <Sk style={{ height: 11, width: 110 }} />
-        : trend && <p style={{ fontSize: ".7rem", color: T.text3, lineHeight: 1.4, fontWeight: 500 }}>{trend}</p>
-      }
-    </motion.div>
-  );
-}
-
-/* ─── ActivityCard ───────────────────────────────────────────── */
-function ActivityCard({ item, index }) {
-  const cfg = FEED_CFG[item.type];
-  const d   = item.data;
-  const raw = d.createdBy?.fullName || d.organizer?.fullName || d.postedBy?.fullName || "";
-  const initials = raw.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "?";
-
-  return (
-    <motion.div
-      className="dp-act"
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1 + index * 0.04, duration: 0.32 }}
-      style={{ borderLeft: `3px solid ${cfg.dot}` }}
-    >
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", gap: 6, marginBottom: 7, flexWrap: "wrap" }}>
-          <span style={{ padding: "3px 9px", borderRadius: 100, fontSize: ".6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
-            {cfg.label}
-          </span>
-          {item.type === "ticket" && d.status && (() => {
-            const s = STATUS_CFG[d.status] || STATUS_CFG.open;
-            return <span style={{ padding: "3px 9px", borderRadius: 100, fontSize: ".6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", background: s.bg, color: s.color, border: `1px solid ${s.color}25` }}>{s.label}</span>;
-          })()}
-          {item.type === "ticket" && d.category && (
-            <span style={{ padding: "3px 9px", borderRadius: 100, fontSize: ".6rem", fontWeight: 600, background: "#F1F5F9", color: T.text2, border: `1px solid ${T.border}` }}>{d.category}</span>
-          )}
-        </div>
-        <p style={{ fontSize: ".86rem", fontWeight: 700, color: T.ink, marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {d.title || "Untitled"}
-        </p>
-        {item.type !== "event" && (d.body || d.description) && (
-          <p style={{ fontSize: ".76rem", color: T.text2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500 }}>
-            {(d.body || d.description || "").replace(/<[^>]+>/g, "")}
-          </p>
-        )}
-        {item.type === "event" && (
-          <p style={{ fontSize: ".76rem", color: T.text2, display: "flex", alignItems: "center", gap: 5, fontWeight: 500 }}>
-            <Clock size={11} /> {fmtDate(d.startAt)} · {fmtTime(d.startAt)}
-            {d.location && <><MapPin size={11} style={{ marginLeft: 4 }} />{d.location}</>}
-          </p>
-        )}
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
-        <span style={{ fontSize: ".64rem", color: T.text3, whiteSpace: "nowrap", fontWeight: 500 }}>{timeAgo(item.date)}</span>
-        <div style={{ width: 28, height: 28, borderRadius: "50%", background: `linear-gradient(135deg, ${T.blue}, ${T.blueD})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: ".56rem", fontWeight: 800, color: "#fff" }}>
-          {initials}
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-/* ─── EventRow ───────────────────────────────────────────────── */
-function EventRow({ event, index, isLast }) {
-  const diff = Math.floor((new Date(event.startAt) - new Date()) / 86400000);
-  const soon = diff >= 0 && diff <= 2;
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: 0.12 + index * 0.08, duration: 0.35 }}
-      style={{ display: "flex", gap: 12, paddingBottom: isLast ? 0 : 16, position: "relative" }}
-    >
-      {!isLast && <div style={{ position: "absolute", left: 17, top: 38, bottom: 0, width: 1, background: T.border }} />}
-      <div style={{
-        width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-        background: soon ? `linear-gradient(135deg, ${T.blue}, ${T.blueD})` : "#F1F5F9",
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      }}>
-        <span style={{ fontSize: ".9rem", fontWeight: 800, lineHeight: 1, color: soon ? "#fff" : T.ink2 }}>{fmtDay(event.startAt)}</span>
-        <span style={{ fontSize: ".44rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", color: soon ? "rgba(255,255,255,0.8)" : T.text3 }}>{fmtMonth(event.startAt)}</span>
-      </div>
-      <div style={{ minWidth: 0, paddingTop: 2 }}>
-        <p style={{ fontSize: ".84rem", fontWeight: 700, color: T.ink, marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{event.title}</p>
-        <p style={{ fontSize: ".7rem", color: T.text2, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap", fontWeight: 500 }}>
-          {fmtTime(event.startAt)}
-          {event.location && <><span style={{ color: T.border2 }}>·</span>{event.location}</>}
-          {soon && <span style={{ background: T.yellow, color: T.ink, padding: "1px 8px", borderRadius: 100, fontSize: ".58rem", fontWeight: 800 }}>{diff === 0 ? "Today!" : "Tomorrow"}</span>}
-        </p>
-      </div>
-    </motion.div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════
    MAIN COMPONENT
-═══════════════════════════════════════════════════════════════ */
+════════════════════════════════════════════════ */
 export function DashboardPage() {
   const { token, user, membership } = useAuth();
 
   if (user?.role === "security") return <SecurityDashboard />;
 
-  const isAdmin    = ["committee", "super_admin"].includes(user?.role);
+  const isAdmin    = ["committee","super_admin"].includes(user?.role);
   const isResident = user?.role === "resident";
 
   const [announcements,    setAnnouncements]    = useState([]);
@@ -437,9 +656,9 @@ export function DashboardPage() {
     setLoading(true); setError("");
     try {
       const calls = [
-        apiRequest("/announcements",   { token }),
-        apiRequest("/tickets",         { token }),
-        apiRequest("/events",          { token }),
+        apiRequest("/announcements", { token }),
+        apiRequest("/tickets",       { token }),
+        apiRequest("/events",        { token }),
       ];
       if (isAdmin)    calls.push(apiRequest("/admin/pending-approvals", { token }));
       if (isResident) calls.push(apiRequest("/visitors/my-requests",   { token }));
@@ -471,269 +690,411 @@ export function DashboardPage() {
   async function respondToVisitor(visitorId, decision) {
     setRespondingId(visitorId);
     try {
-      await apiRequest(`/visitors/${visitorId}/respond`, { token, method: "PATCH", body: { decision } });
+      await apiRequest(`/visitors/${visitorId}/respond`, { token, method:"PATCH", body:{ decision } });
       setVisitorRequests(prev => prev.filter(v => v._id !== visitorId));
     } catch (err) { setError(err.message); }
     finally { setRespondingId(null); }
   }
 
+  /* ── Build priority-sorted live feed ── */
+  const liveItems = useMemo(() => {
+    const items = [];
+    const now = Date.now();
+
+    /* Visitor requests — highest priority, need immediate action */
+    visitorRequests.forEach(v => items.push({
+      id: `v-${v._id}`, type: "visitor", pri: 1, data: v,
+    }));
+
+    /* Admin approvals pending — needs action */
+    if (isAdmin && pendingApprovals > 0) {
+      items.push({ id: "approvals", type: "approval", pri: 2, data: { count: pendingApprovals } });
+    }
+
+    /* Events starting within the next 2 hours — time-sensitive info */
+    events
+      .filter(e => {
+        const start = new Date(e.startAt).getTime();
+        return start > now && start < now + 2 * 3600 * 1000;
+      })
+      .forEach(e => items.push({ id: `ev-${e._id}`, type: "event_soon", pri: 3, data: e }));
+
+    /* Announcements posted today — fresh notice */
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    announcements
+      .filter(a => new Date(a.createdAt) >= todayStart)
+      .slice(0, 2)
+      .forEach(a => items.push({ id: `an-${a._id}`, type: "notice", pri: 4, data: a }));
+
+    return items.sort((a, b) => a.pri - b.pri);
+  }, [visitorRequests, events, announcements, isAdmin, pendingApprovals]);
+
+  const hasActionable = liveItems.some(i => i.type === "visitor" || i.type === "approval");
+  const dotColor = liveItems.length > 0 ? (hasActionable ? C.amber : C.green) : C.green;
+  const liveCountLabel = liveItems.length === 0
+    ? "All quiet"
+    : `${liveItems.length} update${liveItems.length > 1 ? "s" : ""}`;
+
+  /* ── Row class map ── */
+  const rowClass = { visitor: "dp-live-row-visitor", event_soon: "dp-live-row-event-soon", notice: "dp-live-row-notice", approval: "dp-live-row-approval" };
+
   const { word, first } = greeting(user?.fullName);
-  const today = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" });
-  const initials = (user?.fullName || "?").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  const today = new Date().toLocaleDateString("en-IN", { weekday:"long", day:"numeric", month:"long" });
   const flatLabel = membership?.wingId?.name && membership?.unitId?.unitNumber
     ? `${membership.wingId.name}-${membership.unitId.unitNumber}` : null;
 
   const upcomingEvents = useMemo(() =>
     events.filter(e => new Date(e.startAt) >= new Date())
-          .sort((a, b) => new Date(a.startAt) - new Date(b.startAt)), [events]);
-
-  const openTickets = useMemo(() =>
-    tickets.filter(t => ["open", "in_progress"].includes(t.status)).length, [tickets]);
-
-  const thisMonthEvents = useMemo(() => {
-    const now = new Date();
-    return events.filter(e => { const d = new Date(e.startAt); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).length;
-  }, [events]);
+          .sort((a,b) => new Date(a.startAt) - new Date(b.startAt)), [events]);
 
   const feed = useMemo(() => buildFeed(announcements, tickets, events), [announcements, tickets, events]);
 
-  const Spinner = (
-    <span style={{ width: 12, height: 12, display: "inline-block", borderRadius: "50%", border: "2px solid rgba(255,255,255,.35)", borderTopColor: "#fff", animation: "dp-spin .7s linear infinite" }} />
-  );
+  const role = user?.role;
+  const visibleFeatures = FEATURES.filter(f => !f.roles || f.roles.includes(role));
 
-  /* Quick action shortcuts config */
-  const SHORTCUTS = [
-    { to: "/tickets",         icon: Plus,      label: "Raise Ticket", bg: "#FEE2E2", color: T.red    },
-    { to: "/amenities",       icon: BookOpen,  label: "Book Amenity", bg: "#DCFCE7", color: T.green  },
-    { to: "/visitors/prereg", icon: UserCheck, label: "Pre-reg",      bg: T.amberL,  color: T.amber  },
-    { to: "/polls",           icon: BarChart2, label: "Polls",        bg: T.blueL,   color: T.blue   },
-    { to: "/lost-found",      icon: Package,   label: "Lost & Found", bg: T.purpleL, color: T.purple },
-    { to: "/announcements",   icon: Megaphone, label: "Notices",      bg: "#FFF9DB", color: "#B45309"},
-  ];
+  const Spinner = (
+    <span style={{ width:11, height:11, display:"inline-block", borderRadius:"50%", border:"2px solid rgba(255,255,255,0.35)", borderTopColor:"#fff", animation:"dp-spin .7s linear infinite" }} />
+  );
 
   return (
     <>
       <style>{CSS}</style>
-      <div className="dp-root" style={{ padding: "24px 28px 64px" }}>
+      <div className="dp-root">
 
-        {/* ══ HERO ══ */}
-        <motion.div
-          className="dp-hero"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: [.22, 1, .36, 1] }}
-        >
-          {/* Decorative rings */}
-          <div className="dp-hero-ring1" />
-          <div className="dp-hero-ring2" />
-          <div className="dp-hero-ring3" />
-
-          <div style={{ position: "relative", zIndex: 1 }}>
-            {/* Top row: notification + user avatar */}
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
-              <div>
-                {isAdmin && pendingApprovals > 0 && (
-                  <Link to="/admin/approvals" className="dp-notif-pill">
-                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: T.yellow, display: "inline-block", flexShrink: 0 }} />
-                    {pendingApprovals} pending approval{pendingApprovals !== 1 ? "s" : ""} awaiting review
-                    <ArrowRight size={12} />
-                  </Link>
-                )}
-                {!isAdmin && flatLabel && (
-                  <div className="dp-notif-pill" style={{ display: "inline-flex" }}>
-                    <span style={{ fontSize: 14 }}>🏠</span>
-                    Flat {flatLabel}
-                  </div>
-                )}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-                <button onClick={load} disabled={loading} style={{
-                  background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.22)",
-                  borderRadius: "50%", width: 38, height: 38, display: "flex", alignItems: "center",
-                  justifyContent: "center", cursor: "pointer", color: "#fff",
-                  transition: "background 0.18s",
-                }}>
-                  <RefreshCw size={14} style={{ animation: loading ? "dp-spin 1s linear infinite" : "none" }} />
-                </button>
-                <div style={{
-                  width: 42, height: 42, borderRadius: 13, flexShrink: 0,
-                  background: T.yellow,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: ".78rem", fontWeight: 800, color: T.ink,
-                  boxShadow: `0 4px 16px rgba(255,230,0,0.4)`,
-                }}>
-                  {initials}
-                </div>
-              </div>
-            </div>
-
-            {/* Greeting */}
-            <p style={{ fontSize: ".72rem", fontWeight: 600, color: "rgba(255,255,255,0.6)", marginBottom: 6, letterSpacing: ".06em", textTransform: "uppercase" }}>
-              Good {word} · {today}
-            </p>
-            <h1 style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontSize: "clamp(1.75rem, 3.5vw, 2.6rem)",
-              fontWeight: 800, lineHeight: 1.12,
-              color: "#FFFFFF", letterSpacing: "-1px", marginBottom: 6,
-            }}>
-              Let&apos;s Get Started,{" "}
-              <span style={{ color: T.yellow }}>{first}!</span>
+        {/* ══════════════════════════════════════════
+            1. GREETING ROW
+        ══════════════════════════════════════════ */}
+        <div className="dp-greeting">
+          <div>
+            <p className="dp-greeting-date">{today}</p>
+            <h1 className="dp-greeting-title">
+              Good {word}, <em>{first}</em>
             </h1>
-            <p style={{ fontSize: ".82rem", color: "rgba(255,255,255,0.65)", fontWeight: 500 }}>
-              Here&apos;s what&apos;s happening in your community today.
-            </p>
           </div>
-        </motion.div>
+          <div className="dp-greeting-right">
+            {flatLabel && <span className="dp-flat-pill">Flat {flatLabel}</span>}
+            {isAdmin && pendingApprovals > 0 && (
+              <Link to="/admin/approvals" className="dp-indigo-pill">
+                {pendingApprovals} pending {pendingApprovals === 1 ? "approval" : "approvals"}
+                <ArrowRight size={12}/>
+              </Link>
+            )}
+            <button className="dp-refresh" onClick={load} disabled={loading}>
+              <RefreshCw size={14} style={{ animation: loading ? "dp-spin 1s linear infinite" : "none" }}/>
+            </button>
+          </div>
+        </div>
 
-        {/* ══ SHORTCUTS STRIP ══ */}
-        <motion.div
-          className="dp-shortcuts"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.45, ease: [.22, 1, .36, 1] }}
-        >
-          {SHORTCUTS.map((s, i) => (
-            <Link key={s.to} to={s.to} className="dp-shortcut">
-              <div className="dp-shortcut-circle" style={{ background: s.bg }}>
-                <s.icon size={22} style={{ color: s.color }} />
-              </div>
-              <span className="dp-shortcut-label">{s.label}</span>
-            </Link>
-          ))}
-        </motion.div>
-
-        {/* ══ ERROR ══ */}
+        {/* Error */}
         {error && (
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18, background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 14, padding: "12px 16px", fontSize: ".84rem", color: T.red, fontWeight: 500 }}>
-            <XCircle size={15} /> {error}
-            <button onClick={() => setError("")} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: T.red, display: "flex" }}><XCircle size={14} /></button>
+          <div className="dp-error">
+            <XCircle size={15}/> {error}
+            <button onClick={() => setError("")} style={{ marginLeft:"auto", background:"none", border:"none", cursor:"pointer", color:C.red, display:"flex" }}>
+              <XCircle size={14}/>
+            </button>
           </div>
         )}
 
-        {/* ══ STAT CARDS ══ */}
-        <div className="dp-stat-row" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 22 }}>
-          <StatCard index={0} label="Active Visitors"   value={visitorRequests.length} icon={Users}    iconBg="#FFF4E6" iconColor={T.amber} accentColor={T.amber} trend={visitorRequests.length > 0 ? `${visitorRequests.length} waiting` : "No visitors now"} loading={loading} />
-          <StatCard index={1} label="Open Tickets"      value={openTickets}            icon={FileText} iconBg="#FEF2F2" iconColor={T.red}   accentColor={T.red}   trend={`${tickets.length} total raised`} loading={loading} />
-          <StatCard index={2} label="Events This Month" value={thisMonthEvents}        icon={Calendar} iconBg="#DCFCE7" iconColor={T.green} accentColor={T.green} trend={upcomingEvents.length > 0 ? `Next: ${fmtDate(upcomingEvents[0]?.startAt)}` : "No upcoming"} loading={loading} />
-          <StatCard index={3} label="Announcements"     value={announcements.length}   icon={Megaphone} iconBg={T.blueL} iconColor={T.blue} accentColor={T.blue}  trend="Community notices" loading={loading} />
+        {/* ══════════════════════════════════════════
+            2. LIVE DASHBOARD  — smart real-time feed
+        ══════════════════════════════════════════ */}
+        <motion.div
+          className="dp-live-panel"
+          initial={{ opacity:0, y:10 }}
+          animate={{ opacity:1, y:0 }}
+          transition={{ duration:0.36, ease:[0.22,1,0.36,1] }}
+        >
+          {/* Panel header */}
+          <div className="dp-live-head">
+            <div className="dp-live-indicator">
+              <div
+                className="dp-live-dot"
+                style={{ background: dotColor, color: dotColor }}
+              />
+              <span className="dp-live-label" style={{ color: dotColor }}>Live Dashboard</span>
+            </div>
+            <span className="dp-live-count">{liveCountLabel}</span>
+          </div>
+
+          {/* Items */}
+          <AnimatePresence initial={false}>
+            {liveItems.length === 0 ? (
+              <motion.div
+                key="live-empty"
+                className="dp-live-empty"
+                initial={{ opacity:0 }}
+                animate={{ opacity:1 }}
+                exit={{ opacity:0 }}
+              >
+                <CheckCircle size={15} color={C.green}/>
+                All quiet · Live monitoring active. Events, visitor arrivals & notices will appear here.
+              </motion.div>
+            ) : (
+              liveItems.map(item => (
+                <motion.div
+                  key={item.id}
+                  className={`dp-live-row ${rowClass[item.type]}`}
+                  initial={{ opacity:0, x:-10 }}
+                  animate={{ opacity:1, x:0 }}
+                  exit={{ opacity:0, x:10, height:0, padding:0 }}
+                  transition={{ duration:0.28, ease:[0.22,1,0.36,1] }}
+                >
+
+                  {/* ── VISITOR ── */}
+                  {item.type === "visitor" && (
+                    <>
+                      <div className="dp-live-icon" style={{ background:"rgba(245,158,11,0.10)", border:"1px solid rgba(245,158,11,0.25)" }}>
+                        👤
+                      </div>
+                      <div className="dp-live-content">
+                        <span className="dp-live-type" style={{ background:"rgba(245,158,11,0.14)", color:C.amberD }}>Visitor at Gate</span>
+                        <p className="dp-live-title">{item.data.visitorName}</p>
+                        <p className="dp-live-sub">
+                          {item.data.purpose}
+                          {item.data.visitorPhone ? ` · ${item.data.visitorPhone}` : ""}
+                        </p>
+                      </div>
+                      <div className="dp-live-actions">
+                        <button
+                          className="dp-live-btn-reject"
+                          onClick={() => respondToVisitor(item.data._id, "rejected")}
+                          disabled={respondingId === item.data._id}
+                        >
+                          <XCircle size={13}/> Reject
+                        </button>
+                        <button
+                          className="dp-live-btn-approve"
+                          onClick={() => respondToVisitor(item.data._id, "approved")}
+                          disabled={respondingId === item.data._id}
+                        >
+                          {respondingId === item.data._id ? Spinner : <><CheckCircle size={13}/> Approve</>}
+                        </button>
+                      </div>
+                    </>
+                  )}
+
+                  {/* ── EVENT STARTING SOON ── */}
+                  {item.type === "event_soon" && (
+                    <>
+                      <div className="dp-live-icon" style={{ background:"rgba(79,70,229,0.08)", border:`1px solid ${C.indigoBr}` }}>
+                        <Calendar size={14} color={C.indigo}/>
+                      </div>
+                      <div className="dp-live-content">
+                        <span className="dp-live-type" style={{ background:C.indigoL, color:C.indigo }}>Starting Soon</span>
+                        <p className="dp-live-title">{item.data.title}</p>
+                        <p className="dp-live-sub">
+                          <Clock size={10}/> {startsIn(item.data.startAt)}
+                          {item.data.location && <><MapPin size={10} style={{ marginLeft:3 }}/>{item.data.location}</>}
+                        </p>
+                      </div>
+                      <div className="dp-live-actions">
+                        <Link to="/events" className="dp-live-btn-cta">View <ArrowRight size={11}/></Link>
+                      </div>
+                    </>
+                  )}
+
+                  {/* ── TODAY'S NOTICE ── */}
+                  {item.type === "notice" && (
+                    <>
+                      <div className="dp-live-icon" style={{ background:"rgba(232,137,12,0.08)", border:"1px solid rgba(232,137,12,0.2)" }}>
+                        <Bell size={14} color={C.orange}/>
+                      </div>
+                      <div className="dp-live-content">
+                        <span className="dp-live-type" style={{ background:C.orangeL, color:C.orange }}>New Notice</span>
+                        <p className="dp-live-title">{item.data.title}</p>
+                        {item.data.body && (
+                          <p className="dp-live-sub">{item.data.body.replace(/<[^>]+>/g,"").slice(0,90)}</p>
+                        )}
+                      </div>
+                      <div className="dp-live-actions">
+                        <Link to="/announcements" className="dp-live-btn-cta">Read <ArrowRight size={11}/></Link>
+                      </div>
+                    </>
+                  )}
+
+                  {/* ── PENDING APPROVALS (admin) ── */}
+                  {item.type === "approval" && (
+                    <>
+                      <div className="dp-live-icon" style={{ background:C.indigoL, border:`1px solid ${C.indigoBr}` }}>
+                        <Users size={14} color={C.indigo}/>
+                      </div>
+                      <div className="dp-live-content">
+                        <span className="dp-live-type" style={{ background:C.indigoL, color:C.indigo }}>Action Required</span>
+                        <p className="dp-live-title">
+                          {item.data.count} Pending Approval{item.data.count !== 1 ? "s" : ""}
+                        </p>
+                        <p className="dp-live-sub">New member requests awaiting your review</p>
+                      </div>
+                      <div className="dp-live-actions">
+                        <Link to="/admin/approvals" className="dp-live-btn-cta">Review <ArrowRight size={11}/></Link>
+                      </div>
+                    </>
+                  )}
+
+                </motion.div>
+              ))
+            )}
+          </AnimatePresence>
+        </motion.div>
+
+        {/* ══════════════════════════════════════════
+            3. FEATURE CARDS
+        ══════════════════════════════════════════ */}
+        <div style={{ marginBottom:12 }}>
+          <p className="dp-section-label">Your Community</p>
+          <div className="dp-section-head">
+            <h2 className="dp-section-title">Explore Features</h2>
+          </div>
         </div>
 
-        {/* ══ MAIN GRID ══ */}
-        <div className="dp-main-grid" style={{ display: "grid", gridTemplateColumns: "1fr 310px", gap: 18, alignItems: "start" }}>
-
-          {/* ── LEFT: Activity feed ── */}
-          <div>
-            <motion.div className="dp-section" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22, duration: 0.45, ease: [.22, 1, .36, 1] }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.green, display: "inline-block", animation: "dp-blink 1.8s ease-in-out infinite" }} />
-                    <span style={{ fontSize: ".58rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".12em", color: T.green }}>Live</span>
-                  </div>
-                  <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "1.05rem", fontWeight: 800, color: T.ink }}>
-                    Recent Activity
-                  </h2>
+        <div className="dp-cards-grid">
+          {visibleFeatures.map((f, i) => (
+            <motion.div
+              key={f.to}
+              initial={{ opacity:0, y:18 }}
+              animate={{ opacity:1, y:0 }}
+              transition={{ delay: i * 0.05, duration:0.4, ease:[0.22,1,0.36,1] }}
+            >
+              <Link to={f.to} className="dp-card">
+                <img className="dp-card-img" src={f.img} alt={f.title} loading="lazy"/>
+                <div className="dp-card-overlay"/>
+                <div className="dp-card-arrow"><ArrowRight size={11}/></div>
+                <div className="dp-card-body">
+                  <p className="dp-card-title">{f.title}</p>
+                  <p className="dp-card-desc">{f.desc}</p>
                 </div>
-                <Link to="/announcements" className="dp-view-all">View all <ChevronRight size={11} /></Link>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* ══════════════════════════════════════════
+            4. EVENT CHAIN TIMELINE
+        ══════════════════════════════════════════ */}
+        <div style={{ marginBottom: 24 }}>
+          <EventChainTimeline events={events} />
+        </div>
+
+        {/* ══════════════════════════════════════════
+            5. ACTIVITY + EVENTS LOWER GRID
+        ══════════════════════════════════════════ */}
+        <div className="dp-lower-grid">
+
+          {/* Activity feed */}
+          <motion.div
+            className="dp-panel"
+            initial={{ opacity:0, y:14 }}
+            animate={{ opacity:1, y:0 }}
+            transition={{ delay:0.18, duration:0.42, ease:[0.22,1,0.36,1] }}
+          >
+            <div className="dp-section-head" style={{ marginBottom:16 }}>
+              <div>
+                <p className="dp-section-label">Updates</p>
+                <h2 className="dp-section-title">Recent Activity</h2>
+              </div>
+              <Link to="/announcements" className="dp-view-all">View all <ChevronRight size={10}/></Link>
+            </div>
+
+            {loading ? (
+              [...Array(4)].map((_,i) => (
+                <div key={i} style={{ padding:"11px 0", borderBottom:`1px solid ${C.borderL}` }}>
+                  <div style={{ display:"flex", gap:6, marginBottom:8 }}>
+                    <Sk style={{ width:52, height:17, borderRadius:100 }}/>
+                    <Sk style={{ width:68, height:17, borderRadius:100 }}/>
+                  </div>
+                  <Sk style={{ height:13, width:"62%", marginBottom:6 }}/>
+                  <Sk style={{ height:11, width:"40%" }}/>
+                </div>
+              ))
+            ) : feed.length === 0 ? (
+              <div className="dp-empty">No activity yet in your community.</div>
+            ) : (
+              feed.map((item) => {
+                const cfg = FEED_CFG[item.type];
+                const d = item.data;
+                return (
+                  <div key={`${item.type}-${d._id}`} className="dp-feed-item">
+                    <div className="dp-feed-dot" style={{ background:cfg.dot }}/>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <p className="dp-feed-title">{d.title || "Untitled"}</p>
+                      <div className="dp-feed-row">
+                        <span className="dp-feed-badge" style={{ background:cfg.badgeBg, color:cfg.badgeColor }}>{cfg.label}</span>
+                        {(d.body || d.description || d.location) && (
+                          <span className="dp-feed-sub">{(d.body || d.description || d.location || "").replace(/<[^>]+>/g,"")}</span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="dp-feed-time">{timeAgo(item.date)}</span>
+                  </div>
+                );
+              })
+            )}
+          </motion.div>
+
+          {/* Right column */}
+          <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+
+            {/* Upcoming events */}
+            <motion.div
+              className="dp-panel"
+              initial={{ opacity:0, x:12 }}
+              animate={{ opacity:1, x:0 }}
+              transition={{ delay:0.22, duration:0.4, ease:[0.22,1,0.36,1] }}
+            >
+              <div className="dp-section-head" style={{ marginBottom:14 }}>
+                <div>
+                  <p className="dp-section-label">Schedule</p>
+                  <h2 className="dp-section-title">Upcoming</h2>
+                </div>
+                <Link to="/events" className="dp-view-all">See all <ChevronRight size={10}/></Link>
               </div>
 
               {loading ? (
-                [...Array(4)].map((_, i) => (
-                  <div key={i} style={{ marginBottom: 8, padding: "13px 15px", borderRadius: 14, border: `1px solid ${T.border}`, background: T.surface }}>
-                    <div style={{ display: "flex", gap: 8, marginBottom: 8 }}><Sk style={{ width: 58, height: 18, borderRadius: 100 }} /><Sk style={{ width: 74, height: 18, borderRadius: 100 }} /></div>
-                    <Sk style={{ height: 14, width: "62%", marginBottom: 7 }} />
-                    <Sk style={{ height: 11, width: "46%" }} />
+                <><Sk style={{ height:50, marginBottom:10 }}/><Sk style={{ height:50 }}/></>
+              ) : upcomingEvents.length === 0 ? (
+                <div className="dp-empty">No upcoming events.</div>
+              ) : (
+                upcomingEvents.slice(0,4).map(e => (
+                  <div key={e._id} className="dp-event-item">
+                    <div className="dp-event-date">
+                      <span className="dp-event-day">{fmtDay(e.startAt)}</span>
+                      <span className="dp-event-month">{fmtMonth(e.startAt)}</span>
+                    </div>
+                    <div style={{ minWidth:0, paddingTop:2 }}>
+                      <p className="dp-event-name">{e.title}</p>
+                      <p className="dp-event-sub">
+                        <Clock size={10}/> {fmtTime(e.startAt)}
+                        {e.location && <><MapPin size={10} style={{ marginLeft:3 }}/>{e.location}</>}
+                      </p>
+                    </div>
                   </div>
                 ))
-              ) : feed.length === 0 ? (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "52px 0", textAlign: "center" }}>
-                  <div style={{ width: 54, height: 54, borderRadius: 16, background: T.blueL, border: `1px solid rgba(20,86,245,0.2)`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
-                    <Zap size={24} style={{ color: T.blue }} />
-                  </div>
-                  <p style={{ fontSize: ".92rem", fontWeight: 700, color: T.ink, marginBottom: 5 }}>All caught up!</p>
-                  <p style={{ fontSize: ".78rem", color: T.text2, fontWeight: 500 }}>No activity in your community yet.</p>
-                </div>
-              ) : (
-                <AnimatePresence>
-                  {feed.map((item, i) => <ActivityCard key={`${item.type}-${item.data._id}`} item={item} index={i} />)}
-                </AnimatePresence>
               )}
-            </motion.div>
-
-            {/* Visitor gate requests */}
-            {isResident && visitorRequests.length > 0 && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28, duration: 0.4 }} style={{ marginTop: 16 }}>
-                <div className="dp-visitor-wrap dp-section" style={{ border: "1px solid rgba(220,38,38,.25)", background: "#FFF8F8" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: T.red, display: "inline-block", animation: "dp-blink 1s ease-in-out infinite" }} />
-                    <span style={{ fontSize: ".58rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".12em", color: T.red }}>Action Required</span>
-                  </div>
-                  <h3 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "1rem", fontWeight: 800, color: T.ink, marginBottom: 16 }}>Visitor at Gate</h3>
-                  <AnimatePresence>
-                    {visitorRequests.map(v => (
-                      <motion.div key={v._id} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }}
-                        style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 13 }}>
-                          <div style={{ width: 36, height: 36, borderRadius: 10, background: "#FEE2E2", border: "1px solid #FECACA", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>👤</div>
-                          <div style={{ minWidth: 0 }}>
-                            <p style={{ fontSize: ".85rem", fontWeight: 700, color: T.ink, marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.visitorName}</p>
-                            <p style={{ fontSize: ".72rem", color: T.text2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500 }}>{v.purpose}{v.visitorPhone ? ` · ${v.visitorPhone}` : ""}</p>
-                          </div>
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                          <button onClick={() => respondToVisitor(v._id, "rejected")} disabled={respondingId === v._id}
-                            style={{ padding: "9px", borderRadius: 10, fontSize: ".76rem", fontWeight: 700, background: "#FEE2E2", color: T.red, border: "1px solid #FECACA", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontFamily: "'Sora', sans-serif", opacity: respondingId === v._id ? 0.6 : 1 }}>
-                            {respondingId === v._id ? Spinner : <><XCircle size={13} /> Reject</>}
-                          </button>
-                          <button onClick={() => respondToVisitor(v._id, "approved")} disabled={respondingId === v._id}
-                            style={{ padding: "9px", borderRadius: 10, fontSize: ".76rem", fontWeight: 700, background: `linear-gradient(135deg, ${T.blue}, ${T.blueD})`, color: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontFamily: "'Sora', sans-serif", boxShadow: "0 3px 10px rgba(20,86,245,.3)", opacity: respondingId === v._id ? 0.6 : 1 }}>
-                            {respondingId === v._id ? Spinner : <><CheckCircle size={13} /> Approve</>}
-                          </button>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
-              </motion.div>
-            )}
-          </div>
-
-          {/* ── RIGHT column ── */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-            {/* Upcoming Events */}
-            <motion.div className="dp-section" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2, duration: 0.4, ease: [.22, 1, .36, 1] }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                <div>
-                  <p style={{ fontSize: ".58rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".12em", color: T.blue, marginBottom: 3 }}>Schedule</p>
-                  <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "1.05rem", fontWeight: 800, color: T.ink }}>Upcoming</h2>
-                </div>
-                <Link to="/events" className="dp-view-all">See all <ChevronRight size={11} /></Link>
-              </div>
-              {loading ? <><Sk style={{ height: 54, marginBottom: 10 }} /><Sk style={{ height: 54 }} /></>
-                : upcomingEvents.length === 0
-                  ? <div style={{ borderRadius: 12, border: `1.5px dashed ${T.border}`, background: T.bg, padding: "18px 14px", textAlign: "center", fontSize: ".8rem", color: T.text3, fontWeight: 600 }}>No upcoming events yet.</div>
-                  : upcomingEvents.slice(0, 3).map((e, i) => <EventRow key={e._id} event={e} index={i} isLast={i === Math.min(upcomingEvents.length, 3) - 1} />)
-              }
             </motion.div>
 
             {/* Admin workspace */}
             {isAdmin && (
-              <motion.div className="dp-section" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.26, duration: 0.4, ease: [.22, 1, .36, 1] }} style={{ borderTop: `3px solid ${T.blue}` }}>
-                <p style={{ fontSize: ".58rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".12em", color: T.blue, marginBottom: 3 }}>Admin</p>
-                <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "1.05rem", fontWeight: 800, color: T.ink, marginBottom: 14 }}>Workspace</h2>
+              <motion.div
+                className="dp-panel"
+                initial={{ opacity:0, x:12 }}
+                animate={{ opacity:1, x:0 }}
+                transition={{ delay:0.28, duration:0.4, ease:[0.22,1,0.36,1] }}
+                style={{ borderTop:`3px solid ${C.indigo}` }}
+              >
+                <p className="dp-section-label">Management</p>
+                <h2 className="dp-section-title" style={{ marginBottom:14 }}>Admin</h2>
                 {[
-                  { to: "/admin/approvals",     emoji: "👥", label: "Pending Approvals", badge: pendingApprovals || null },
-                  { to: "/admin/society-setup", emoji: "⚙️", label: "Society Setup" },
+                  { to:"/admin/approvals",     emoji:"👥", label:"Pending Approvals", badge:pendingApprovals||null },
+                  { to:"/admin/society-setup", emoji:"⚙️", label:"Society Setup" },
                 ].map(({ to, emoji, label, badge }) => (
                   <Link key={to} to={to} className="dp-admin-link">
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: ".83rem", fontWeight: 700, color: T.ink2 }}>
-                      <span>{emoji}</span> {label}
-                    </div>
+                    <span style={{ display:"flex", alignItems:"center", gap:9 }}>
+                      <span>{emoji}</span>{label}
+                    </span>
                     {badge
-                      ? <span style={{ background: T.yellow, color: T.ink, padding: "2px 10px", borderRadius: 100, fontSize: ".68rem", fontWeight: 800 }}>{badge}</span>
-                      : <ChevronRight size={13} style={{ color: T.text3 }} />}
+                      ? <span style={{ background:C.indigo, color:"#fff", padding:"2px 10px", borderRadius:100, fontSize:"0.64rem", fontWeight:800 }}>{badge}</span>
+                      : <ChevronRight size={13} style={{ color:C.faint }}/>
+                    }
                   </Link>
                 ))}
               </motion.div>

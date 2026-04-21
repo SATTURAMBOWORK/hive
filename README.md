@@ -32,3 +32,19 @@ Backend: http://localhost:5000
 ## Important
 
 This starter intentionally includes TODO blocks for learning. We will implement each TODO together.
+
+## Redis Setup (Backend)
+
+Set these values in `backend/.env`:
+
+```bash
+REDIS_URL=redis://127.0.0.1:6379
+REDIS_KEY_PREFIX=apthive
+REDIS_CACHE_TTL_SECONDS=60
+```
+
+What Redis now powers:
+
+- Distributed cache for amenities/events list APIs
+- Shared auth rate limiting counters
+- Reusable helpers for Pub/Sub, atomic counters, distributed locks, and queue operations

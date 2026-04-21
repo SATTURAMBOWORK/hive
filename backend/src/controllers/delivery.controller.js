@@ -5,6 +5,7 @@ import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
 import { findMatchingPreReg } from "./delivery-prereg.controller.js";
 import { findResidentForFlat } from "../utils/flat-lookup.js";
+import { emitRealtime } from "../services/realtime-bus.service.js";
 
 function sanitizeText(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -118,7 +119,11 @@ export async function logDelivery(req, res, next) {
 
     // TODO: Step 7 — emit socket event
     const io = req.app.get("io");
-    io.to(`user:${residentId}`).emit(SOCKET_EVENTS.DELIVERY_INCOMING, { delivery });
+    await emitRealtime(io, {
+      room: `user:${residentId}`,
+      event: SOCKET_EVENTS.DELIVERY_INCOMING,
+      payload: { delivery }
+    });
 
     //TODO: Step 8
     res.status(StatusCodes.CREATED).json({ item: delivery });
@@ -203,7 +208,11 @@ export async function approveDelivery(req, res, next) {
 
     // TODO: Step 7
     const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}:security`).emit(SOCKET_EVENTS.DELIVERY_APPROVED, { delivery });
+    await emitRealtime(io, {
+      room: `tenant:${req.tenantId}:security`,
+      event: SOCKET_EVENTS.DELIVERY_APPROVED,
+      payload: { delivery }
+    });
 
     //TODO: Step 8
     res.json({ item: delivery });
@@ -250,7 +259,11 @@ export async function rejectDelivery(req, res, next) {
     await delivery.save();
 
     const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}:security`).emit(SOCKET_EVENTS.DELIVERY_REJECTED, { delivery });
+    await emitRealtime(io, {
+      room: `tenant:${req.tenantId}:security`,
+      event: SOCKET_EVENTS.DELIVERY_REJECTED,
+      payload: { delivery }
+    });
 
     res.json({ item: delivery });
 
@@ -297,7 +310,11 @@ export async function markDelivered(req, res, next) {
     await delivery.save();
 
     const io = req.app.get("io");
-    io.to(`user:${delivery.residentId}`).emit(SOCKET_EVENTS.DELIVERY_DELIVERED, { delivery });
+    await emitRealtime(io, {
+      room: `user:${delivery.residentId}`,
+      event: SOCKET_EVENTS.DELIVERY_DELIVERED,
+      payload: { delivery }
+    });
 
     res.json({ item: delivery });
   } catch (error) {

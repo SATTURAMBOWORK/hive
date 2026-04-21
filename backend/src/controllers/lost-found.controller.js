@@ -3,6 +3,7 @@ import { StatusCodes } from "http-status-codes";
 import { LostFound } from "../models/lost-found.model.js";
 import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
+import { emitRealtime } from "../services/realtime-bus.service.js";
 
 /*
   📖 LEARNING NOTE — What is a Controller?
@@ -104,7 +105,11 @@ export async function createItem(req, res, next) {
     // 4. Emit socket event so all online users see it immediately
     //    req.app.get("io") retrieves the Socket.io instance set in server.js
     const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.LOST_FOUND_CREATED, { item });
+    await emitRealtime(io, {
+      room: `tenant:${req.tenantId}`,
+      event: SOCKET_EVENTS.LOST_FOUND_CREATED,
+      payload: { item }
+    });
 
     // 5. Respond with the newly created document
     res.status(StatusCodes.CREATED).json({ item });
@@ -159,7 +164,11 @@ export async function claimItem(req, res, next) {
     await item.populate("claimedBy", "fullName");
 
     const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.LOST_FOUND_CLAIMED, { item });
+    await emitRealtime(io, {
+      room: `tenant:${req.tenantId}`,
+      event: SOCKET_EVENTS.LOST_FOUND_CLAIMED,
+      payload: { item }
+    });
 
     res.json({ item });
   } catch (error) {
@@ -198,7 +207,11 @@ export async function resolveItem(req, res, next) {
     await item.save();
 
     const io = req.app.get("io");
-    io.to(`tenant:${req.tenantId}`).emit(SOCKET_EVENTS.LOST_FOUND_RESOLVED, { item });
+    await emitRealtime(io, {
+      room: `tenant:${req.tenantId}`,
+      event: SOCKET_EVENTS.LOST_FOUND_RESOLVED,
+      payload: { item }
+    });
 
     res.json({ item });
   } catch (error) {
