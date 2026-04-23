@@ -5,9 +5,7 @@ import { logger } from "./logger.js";
 export async function connectDB() {
   await mongoose.connect(env.mongoUri, {
     // How many simultaneous DB connections Mongoose keeps open.
-    // Default is 10 — raise to 20 so 100 concurrent users don't
-    // queue up waiting for a free slot.
-    maxPoolSize: 30,
+    maxPoolSize: 50,
 
     // If MongoDB takes longer than 5s to respond to a new connection
     // attempt, fail fast instead of hanging silently.

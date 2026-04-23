@@ -575,11 +575,16 @@ const CSS = `
 const PX = id =>
   `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&fit=crop`;
 
+const AMENITIES_ROTATING_IMAGES = [
+  "/images/dashboard/amenities-gym.jpg",
+  "/images/dashboard/amenities-pool.jpg",
+];
+
 const FEATURES = [
   { title: "Amenities",     desc: "Book gym, pool & shared spaces",      to: "/amenities",       img: PX(6012017),  roles: null },
   { title: "Announcements", desc: "Society notices & updates",           to: "/announcements",   img: PX(8846035),  roles: null },
   { title: "Events",        desc: "Community gatherings & programmes",   to: "/events",          img: PX(30388543), roles: null },
-  { title: "My Tickets",    desc: "Track maintenance & requests",        to: "/tickets",         img: PX(9607054),  roles: null },
+  { title: "My Tickets",    desc: "Track maintenance & requests",        to: "/tickets",         img: "/images/dashboard/tickets-maintenance.jpg",  roles: null },
   { title: "Polls",         desc: "Vote on community decisions",         to: "/polls",           img: PX(8846076),  roles: ["resident","committee","super_admin"] },
   { title: "Visitors",      desc: "Manage & pre-register guests",        to: "/visitors/prereg", img: PX(22940794), roles: ["resident","committee","super_admin"] },
   { title: "My Deliveries", desc: "Track parcels & couriers",            to: "/deliveries/my",   img: PX(7362965),  roles: ["resident","committee","super_admin"] },
@@ -647,6 +652,7 @@ export function DashboardPage() {
   const [events,           setEvents]           = useState([]);
   const [pendingApprovals, setPendingApprovals] = useState(0);
   const [visitorRequests,  setVisitorRequests]  = useState([]);
+  const [amenityImageIdx,  setAmenityImageIdx]  = useState(0);
   const [respondingId,     setRespondingId]     = useState(null);
   const [loading,          setLoading]          = useState(true);
   const [error,            setError]            = useState("");
@@ -686,6 +692,13 @@ export function DashboardPage() {
     socket.on("visitor:request_incoming", onIncoming);
     return () => socket.off("visitor:request_incoming", onIncoming);
   }, [isResident]);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setAmenityImageIdx(prev => (prev + 1) % AMENITIES_ROTATING_IMAGES.length);
+    }, 5000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   async function respondToVisitor(visitorId, decision) {
     setRespondingId(visitorId);
@@ -956,7 +969,12 @@ export function DashboardPage() {
               transition={{ delay: i * 0.05, duration:0.4, ease:[0.22,1,0.36,1] }}
             >
               <Link to={f.to} className="dp-card">
-                <img className="dp-card-img" src={f.img} alt={f.title} loading="lazy"/>
+                <img
+                  className="dp-card-img"
+                  src={f.title === "Amenities" ? AMENITIES_ROTATING_IMAGES[amenityImageIdx] : f.img}
+                  alt={f.title}
+                  loading="lazy"
+                />
                 <div className="dp-card-overlay"/>
                 <div className="dp-card-arrow"><ArrowRight size={11}/></div>
                 <div className="dp-card-body">
