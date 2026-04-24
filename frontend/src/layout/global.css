@@ -19,6 +19,50 @@
   }
 
   * { scroll-behavior: smooth; box-sizing: border-box; }
+
+  /* Global thin scrollbar style for window and all overflow containers */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #D1D5DB transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: #D1D5DB;
+    border-radius: 10px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: #9CA3AF;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  [tabindex] {
+    outline: none;
+    transition: outline 0.15s ease, outline-offset 0.15s ease;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid #4F46E5;
+    outline-offset: 2px;
+  }
 }
 
 @layer components {
