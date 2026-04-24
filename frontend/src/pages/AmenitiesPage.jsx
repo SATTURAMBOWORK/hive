@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { AdminManager } from "../components/AdminManager";
 import { AmenityGrid } from "../components/AmenityGrid";
 import { apiRequest } from "../components/api";
@@ -6,28 +7,33 @@ import { BookingForm } from "../components/BookingForm";
 import { useAuth } from "../components/AuthContext";
 import { RefreshCw, Plus } from "lucide-react";
 
-const T = {
-  bg: "#F7F9FF",
-  surface: "#FFFFFF",
-  border: "#DCE5F3",
-  borderHover: "#D1D5DB",
-  ink: "#111827",
-  text2: "#6B7280",
-  text3: "#9CA3AF",
-  amber: "#E8890C",
-  amberH: "#C97508",
-  amberLight: "#FFF8F0",
-  amberBorder: "#FDECC8",
-  blue: "#2563EB",
-  green: "#16A34A",
-  greenLight: "#DCFCE7",
-  greenBorder: "#BBF7D0",
-  red: "#DC2626",
-  redLight: "#FEE2E2",
-  redBorder: "#FECACA",
+const C = {
+  bg:       "#FAFAFC",
+  surface:  "#FFFFFF",
+  ink:      "#1C1C1E",
+  ink2:     "#3A3A3C",
+  muted:    "#6B7280",
+  faint:    "#9CA3AF",
+  border:   "#E8E8ED",
+  borderL:  "#F0F0F5",
+  indigo:   "#4F46E5",
+  indigoD:  "#4338CA",
+  indigoL:  "#EEF2FF",
+  indigoBr: "#C7D2FE",
+  red:      "#DC2626",
+  redL:     "#FEF2F2",
+  redBr:    "#FECACA",
+  amber:    "#F59E0B",
+  amberD:   "#D97706",
+  amberL:   "#FFFBEB",
+  amberBr:  "#FCD34D",
+  green:    "#16A34A",
+  greenL:   "#DCFCE7",
+  orange:   "#E8890C",
+  orangeL:  "#FFF8F0",
 };
 
-const DAY_KEYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+const DAY_KEYS = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
 
 function buildOperatingHours(open, close) {
   return DAY_KEYS.reduce((acc, day) => {
@@ -37,39 +43,44 @@ function buildOperatingHours(open, close) {
 }
 
 const BOOKING_STATUS_CFG = {
-  pending: { color: "#B45309", bg: "#FFFBEB", border: "#FDE68A" },
-  approved: { color: T.green, bg: T.greenLight, border: T.greenBorder },
-  rejected: { color: T.red, bg: T.redLight, border: T.redBorder },
-  cancelled: { color: T.text3, bg: "#F9FAFB", border: "#E5E7EB" },
+  pending:   { color: C.amberD, bg: C.amberL,  border: C.amberBr },
+  approved:  { color: C.green,  bg: C.greenL,  border: "#BBF7D0"  },
+  rejected:  { color: C.red,    bg: C.redL,    border: C.redBr    },
+  cancelled: { color: C.faint,  bg: "#F9FAFB", border: C.borderL  },
+};
+
+const staggerStats = {
+  hidden:  {},
+  visible: { transition: { staggerChildren: 0.1, delayChildren: 0.15 } },
+};
+
+const statVariant = {
+  hidden:  { opacity: 0, y: 14, scale: 0.95 },
+  visible: { opacity: 1, y: 0,  scale: 1,   transition: { duration: 0.42, ease: "easeOut" } },
+};
+
+const staggerBooks = {
+  hidden:  {},
+  visible: { transition: { staggerChildren: 0.055 } },
+};
+
+const bookItemVariant = {
+  hidden:  { opacity: 0, x: -10 },
+  visible: { opacity: 1, x: 0,   transition: { duration: 0.3, ease: "easeOut" } },
 };
 
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap');
 
   .amn-root * { box-sizing: border-box; }
 
   .amn-root {
-    font-family: 'Manrope', sans-serif;
-    color: ${T.ink};
-    background:
-      radial-gradient(900px 380px at 85% -12%, rgba(37,99,235,0.13), transparent 64%),
-      radial-gradient(760px 340px at -10% 0%, rgba(232,137,12,0.12), transparent 68%),
-      ${T.bg};
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: ${C.ink};
+    background: ${C.bg};
     min-height: calc(100vh - 64px);
     padding: 22px 20px 78px;
     position: relative;
-  }
-
-  .amn-root::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background-image:
-      linear-gradient(to right, rgba(148,163,184,0.11) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(148,163,184,0.11) 1px, transparent 1px);
-    background-size: 38px 38px;
-    mask-image: radial-gradient(circle at 15% 10%, rgba(0,0,0,.9), transparent 70%);
   }
 
   .amn-content {
@@ -79,41 +90,47 @@ const CSS = `
     margin: 0 auto;
   }
 
-  .amn-display { font-family: 'Cormorant Garamond', serif; }
-
   .amn-hero {
-    border-radius: 24px;
-    border: 1px solid #D8E3F5;
-    background: linear-gradient(140deg, rgba(255,255,255,0.96), rgba(243,247,255,0.95));
-    box-shadow: 0 22px 46px rgba(17,24,39,0.09);
-    padding: 18px;
-    display: grid;
-    grid-template-columns: 1.05fr 0.95fr;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
     gap: 16px;
-    margin-bottom: 18px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  .amn-head-left {
+    min-width: 0;
   }
 
   .amn-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(2rem, 4.4vw, 3.2rem);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: clamp(1.5rem, 2.8vw, 2.1rem);
+    font-weight: 800;
     margin: 0;
-    line-height: 0.95;
-    color: ${T.ink};
+    line-height: 1.15;
+    color: ${C.ink};
+    letter-spacing: -0.5px;
   }
 
   .amn-sub {
-    margin-top: 10px;
-    color: #61708D;
-    font-size: 0.9rem;
-    line-height: 1.65;
+    margin-top: 8px;
+    color: ${C.muted};
+    font-size: 0.82rem;
+    line-height: 1.6;
     max-width: 58ch;
   }
 
   .amn-actions {
-    margin-top: 14px;
+    margin-top: 0;
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    align-items: center;
   }
 
   .amn-stats {
@@ -121,35 +138,37 @@ const CSS = `
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
     align-content: start;
+    margin-bottom: 18px;
   }
 
   .amn-stat {
-    border: 1px solid #D8E3F5;
+    border: 1px solid ${C.border};
     border-radius: 14px;
-    background: #FFFFFF;
+    background: ${C.surface};
     padding: 10px;
   }
 
   .amn-stat-num {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1.5rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.6rem;
     line-height: 1;
-    font-weight: 700;
+    font-weight: 800;
+    letter-spacing: -0.03em;
   }
 
   .amn-stat-lbl {
     margin-top: 4px;
     font-size: 0.74rem;
-    color: #8B95A8;
+    color: ${C.faint};
     font-weight: 600;
   }
 
   .amn-block {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    background: ${C.surface};
+    border: 1px solid ${C.border};
     border-radius: 18px;
     padding: 16px;
-    box-shadow: 0 10px 26px rgba(17,24,39,0.06);
+    box-shadow: 0 8px 24px rgba(28,28,30,0.05);
     margin-bottom: 18px;
   }
 
@@ -157,7 +176,8 @@ const CSS = `
     margin: 0 0 14px;
     font-size: 1rem;
     font-weight: 700;
-    color: ${T.ink};
+    color: ${C.ink};
+    letter-spacing: -0.01em;
   }
 
   .amn-form-grid {
@@ -169,19 +189,19 @@ const CSS = `
   .amn-label {
     display: block;
     margin-bottom: 6px;
-    color: ${T.text2};
+    color: ${C.muted};
     font-size: 0.78rem;
     font-weight: 600;
   }
 
   .amn-input {
     width: 100%;
-    background: ${T.surface};
-    border: 1px solid #E5E7EB;
+    background: ${C.surface};
+    border: 1px solid ${C.border};
     border-radius: 10px;
     padding: 10px 14px;
-    color: ${T.ink};
-    font-family: 'Manrope', sans-serif;
+    color: ${C.ink};
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.875rem;
     outline: none;
     transition: border-color 0.18s, box-shadow 0.18s;
@@ -189,97 +209,56 @@ const CSS = `
     resize: vertical;
   }
 
-  .amn-input::placeholder { color: ${T.text3}; }
+  .amn-input::placeholder { color: ${C.faint}; }
 
   .amn-input:focus {
-    border-color: #D1D5DB;
-    box-shadow: 0 0 0 3px rgba(232,137,12,.1);
+    border-color: #C7C7CC;
+    box-shadow: 0 0 0 3px rgba(232,137,12,0.1);
   }
 
   .amn-toggle {
     display: flex;
     align-items: center;
     gap: 10px;
-    border: 1px solid #E5E7EB;
+    border: 1px solid ${C.border};
     border-radius: 10px;
-    background: #FFFFFF;
-    color: ${T.text2};
+    background: ${C.surface};
+    color: ${C.muted};
     padding: 11px 14px;
     font-size: 0.84rem;
     font-weight: 600;
     cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
   }
 
   .amn-toggle input {
     width: 16px;
     height: 16px;
-    accent-color: ${T.amber};
+    accent-color: ${C.orange};
     margin: 0;
   }
 
-  .amn-btn-primary {
-    position: relative;
-    overflow: hidden;
-    isolation: isolate;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    background: linear-gradient(135deg, ${T.amber}, ${T.amberH});
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    padding: 10px 20px;
-    font-family: 'Manrope', sans-serif;
-    font-size: 0.84rem;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(232,137,12,.25);
-    transition: all 0.18s;
-  }
-
-  .amn-btn-primary::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(120deg, rgba(255,255,255,0) 36%, rgba(255,255,255,0.35) 52%, rgba(255,255,255,0) 68%);
-    transform: translateX(-130%);
-    transition: transform 0.5s ease;
-    z-index: 0;
-  }
-
-  .amn-btn-primary > * {
-    position: relative;
-    z-index: 1;
-    transition: transform 0.2s ease;
-  }
-
-  .amn-btn-primary:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(232,137,12,.32);
-  }
-
-  .amn-btn-primary:hover:not(:disabled)::before { transform: translateX(130%); }
-  .amn-btn-primary:hover:not(:disabled) svg { transform: translateX(1px); }
-  .amn-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
-
+  .amn-btn-primary,
   .amn-btn-ghost {
     position: relative;
     overflow: hidden;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    background: ${T.surface};
-    border: 1px solid #E5E7EB;
-    border-radius: 8px;
-    padding: 9px 13px;
-    color: ${T.text2};
-    font-family: 'Manrope', sans-serif;
+    gap: 7px;
+    background: ${C.surface};
+    border: 1px solid ${C.border};
+    border-radius: 10px;
+    padding: 9px 14px;
+    color: ${C.ink};
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.8rem;
-    font-weight: 500;
+    font-weight: 700;
     cursor: pointer;
-    transition: all 0.18s;
+    transition: border-color 0.2s, color 0.2s, transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   }
 
+  .amn-btn-primary::after,
   .amn-btn-ghost::after {
     content: '';
     position: absolute;
@@ -288,22 +267,35 @@ const CSS = `
     bottom: 0;
     height: 2px;
     border-radius: 999px;
-    background: linear-gradient(90deg, ${T.blue}, ${T.amber});
+    background: ${C.indigo};
     transform: scaleX(0.2);
     opacity: 0;
     transition: transform 0.2s ease, opacity 0.2s ease;
   }
 
-  .amn-btn-ghost:hover {
-    border-color: #D1D5DB;
-    color: ${T.ink};
+  .amn-btn-primary:hover:not(:disabled),
+  .amn-btn-ghost:hover:not(:disabled) {
+    border-color: #C7C7CC;
+    color: ${C.ink};
     transform: translateY(-1px);
-    box-shadow: 0 8px 18px rgba(17,24,39,0.07);
+    box-shadow: 0 6px 16px rgba(28,28,30,0.09);
   }
 
-  .amn-btn-ghost:hover::after {
+  .amn-btn-primary:hover:not(:disabled)::after,
+  .amn-btn-ghost:hover:not(:disabled)::after {
     transform: scaleX(1);
     opacity: 1;
+  }
+
+  .amn-btn-primary:active:not(:disabled),
+  .amn-btn-ghost:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  .amn-btn-primary:disabled,
+  .amn-btn-ghost:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
 
   .amn-btn-ghost:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -321,14 +313,10 @@ const CSS = `
     gap: 12px;
     padding: 14px 16px;
     border-radius: 14px;
-    border: 1px solid ${T.border};
-    background: ${T.surface};
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-
-  .amn-book-item:hover {
-    border-color: ${T.borderHover};
-    box-shadow: 0 8px 18px rgba(17,24,39,0.07);
+    border: 1px solid ${C.border};
+    background: ${C.surface};
+    cursor: default;
+    will-change: transform;
   }
 
   .amn-badge {
@@ -341,10 +329,21 @@ const CSS = `
     text-transform: capitalize;
   }
 
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .amn-spinner {
+    width: 13px;
+    height: 13px;
+    border: 2px solid rgba(28,28,30,0.2);
+    border-top-color: ${C.ink};
+    border-radius: 50%;
+    animation: amn-spin 0.65s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes amn-spin { to { transform: rotate(360deg); } }
 
   @media (max-width: 960px) {
-    .amn-hero { grid-template-columns: 1fr; }
+    .amn-hero { align-items: flex-start; }
+    .amn-actions { margin-top: 2px; }
   }
 
   @media (max-width: 740px) {
@@ -411,28 +410,14 @@ export function AmenitiesPage() {
         photos = uploadData.urls || [];
         setIsUploading(false);
       }
-
       const data = await apiRequest("/amenities", {
         method: "POST",
         token,
-        body: {
-          name,
-          description,
-          isAutoApprove,
-          capacity: Number(capacity),
-          photos,
-          operatingHours: buildOperatingHours(openTime, closeTime),
-        },
+        body: { name, description, isAutoApprove, capacity: Number(capacity), photos, operatingHours: buildOperatingHours(openTime, closeTime) },
       });
-
       setAmenities((prev) => [...prev, data.item]);
-      setName("");
-      setDescription("");
-      setCapacity(1);
-      setIsAutoApprove(false);
-      setOpenTime("06:00");
-      setCloseTime("22:00");
-      setPhotoFiles([]);
+      setName(""); setDescription(""); setCapacity(1); setIsAutoApprove(false);
+      setOpenTime("06:00"); setCloseTime("22:00"); setPhotoFiles([]);
     } catch (err) {
       setIsUploading(false);
       setError(err.message);
@@ -440,9 +425,7 @@ export function AmenitiesPage() {
   }
 
   async function handleCreateBooking(payload) {
-    setBookingError("");
-    setError("");
-    setIsBookingSubmitting(true);
+    setBookingError(""); setError(""); setIsBookingSubmitting(true);
     try {
       const data = await apiRequest("/amenities/bookings", { method: "POST", token, body: payload });
       setBookings((prev) => [data.item, ...prev]);
@@ -465,204 +448,245 @@ export function AmenitiesPage() {
     }
   }
 
-  useEffect(() => {
-    loadAll();
-  }, []);
+  useEffect(() => { loadAll(); }, []);
+
+  const ease = [0.25, 0.46, 0.45, 0.94];
 
   return (
     <>
       <style>{CSS}</style>
       <div className="amn-root">
         <div className="amn-content">
-          <section className="amn-hero">
-            <div>
+
+          {/* ── Hero ── */}
+          <motion.section
+            className="amn-hero"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, ease }}
+          >
+            <div className="amn-head-left">
               <h1 className="amn-title">Amenities</h1>
               <p className="amn-sub">Book shared facilities, track approvals, and manage society spaces in one place.</p>
-              <div className="amn-actions">
-                <button className="amn-btn-ghost" onClick={loadAll} disabled={loading}>
-                  <RefreshCw size={13} style={{ animation: loading ? "spin 1s linear infinite" : "none" }} />
-                  Refresh
+            </div>
+
+            <div className="amn-actions">
+              <button className="amn-btn-ghost" onClick={loadAll} disabled={loading}>
+                <RefreshCw size={13} style={{ animation: loading ? "amn-spin 1s linear infinite" : "none" }} />
+                Refresh
+              </button>
+              {canManage && (
+                <button className="amn-btn-primary" onClick={() => setShowCreateForm((v) => !v)}>
+                  <Plus size={13} />
+                  {showCreateForm ? "Close form" : "Add amenity"}
                 </button>
-                {canManage && (
-                  <button className="amn-btn-primary" onClick={() => setShowCreateForm((v) => !v)}>
-                    <Plus size={13} />
-                    {showCreateForm ? "Close form" : "Add amenity"}
-                  </button>
-                )}
-              </div>
+              )}
             </div>
+          </motion.section>
 
-            <div className="amn-stats">
-              <div className="amn-stat">
-                <div className="amn-stat-num" style={{ color: T.blue }}>{amenities.length}</div>
-                <div className="amn-stat-lbl">Facilities</div>
-              </div>
-              <div className="amn-stat">
-                <div className="amn-stat-num" style={{ color: T.amber }}>{bookings.length}</div>
-                <div className="amn-stat-lbl">My bookings</div>
-              </div>
-              <div className="amn-stat">
-                <div className="amn-stat-num" style={{ color: T.green }}>{pendingBookings.length}</div>
-                <div className="amn-stat-lbl">Pending approvals</div>
-              </div>
-            </div>
-          </section>
+          <motion.div
+            className="amn-stats"
+            variants={staggerStats}
+            initial="hidden"
+            animate="visible"
+          >
+            <motion.div className="amn-stat" variants={statVariant}>
+              <div className="amn-stat-num" style={{ color: C.indigo }}>{amenities.length}</div>
+              <div className="amn-stat-lbl">Facilities</div>
+            </motion.div>
+            <motion.div className="amn-stat" variants={statVariant}>
+              <div className="amn-stat-num" style={{ color: C.orange }}>{bookings.length}</div>
+              <div className="amn-stat-lbl">My bookings</div>
+            </motion.div>
+            <motion.div className="amn-stat" variants={statVariant}>
+              <div className="amn-stat-num" style={{ color: C.green }}>{pendingBookings.length}</div>
+              <div className="amn-stat-lbl">Pending approvals</div>
+            </motion.div>
+          </motion.div>
 
-          {error && (
-            <div
-              style={{
-                marginBottom: 14,
-                padding: "11px 16px",
-                background: T.redLight,
-                border: `1px solid ${T.redBorder}`,
-                borderRadius: 10,
-                fontSize: "0.84rem",
-                color: T.red,
-              }}
-            >
-              {error}
-            </div>
-          )}
-
-          {canManage && showCreateForm && (
-            <section className="amn-block" style={{ position: "relative", overflow: "hidden" }}>
-              <div
+          {/* ── Error banner ── */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                key="error-banner"
+                initial={{ opacity: 0, y: -8, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                exit={{ opacity: 0, y: -8, height: 0 }}
+                transition={{ duration: 0.26 }}
                 style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 3,
-                  background: `linear-gradient(90deg, ${T.amber}, ${T.amberH})`,
+                  marginBottom: 14, padding: "11px 16px",
+                  background: C.redL, border: `1px solid ${C.redBr}`,
+                  borderRadius: 10, fontSize: "0.84rem",
+                  color: C.red, fontWeight: 600, overflow: "hidden",
                 }}
-              />
-              <h2 className="amn-display" style={{ fontSize: "1.45rem", fontWeight: 700, color: T.ink, margin: "0 0 14px" }}>
-                Add Amenity
-              </h2>
+              >
+                {error}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-              <form onSubmit={handleCreateAmenity} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <div>
-                  <label className="amn-label">Amenity name</label>
-                  <input
-                    className="amn-input"
-                    placeholder="e.g. Swimming pool"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                  />
-                </div>
+          {/* ── Create Amenity form (animated toggle) ── */}
+          <AnimatePresence>
+            {canManage && showCreateForm && (
+              <motion.div
+                key="create-form"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.4, ease }}
+                style={{ overflow: "hidden" }}
+              >
+                <section className="amn-block" style={{ position: "relative", overflow: "hidden" }}>
+                  <div style={{
+                    position: "absolute", top: 0, left: 0, right: 0, height: 3,
+                    background: `linear-gradient(90deg, ${C.orange}, ${C.amberD})`,
+                  }} />
+                  <h2 style={{ fontSize: "1.35rem", fontWeight: 800, color: C.ink, margin: "0 0 14px", letterSpacing: "-0.02em" }}>
+                    Add Amenity
+                  </h2>
 
-                <div>
-                  <label className="amn-label">Description</label>
-                  <textarea
-                    className="amn-input"
-                    style={{ minHeight: 82 }}
-                    placeholder="Tell residents about this facility"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                  />
-                </div>
+                  <form onSubmit={handleCreateAmenity} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div>
+                      <label className="amn-label">Amenity name</label>
+                      <input className="amn-input" placeholder="e.g. Swimming pool" value={name} onChange={(e) => setName(e.target.value)} required />
+                    </div>
 
-                <div className="amn-form-grid">
-                  <div>
-                    <label className="amn-label">Capacity</label>
-                    <input
-                      className="amn-input"
-                      type="number"
-                      min="1"
-                      value={capacity}
-                      onChange={(e) => setCapacity(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="amn-label">Approvals</label>
-                    <label className="amn-toggle">
-                      <input
-                        type="checkbox"
-                        checked={isAutoApprove}
-                        onChange={(e) => setIsAutoApprove(e.target.checked)}
-                      />
-                      {isAutoApprove ? "Auto-approval is enabled" : "Manual approval is enabled"}
-                    </label>
-                  </div>
-                </div>
+                    <div>
+                      <label className="amn-label">Description</label>
+                      <textarea className="amn-input" style={{ minHeight: 82 }} placeholder="Tell residents about this facility" value={description} onChange={(e) => setDescription(e.target.value)} />
+                    </div>
 
-                <div className="amn-form-grid">
-                  <div>
-                    <label className="amn-label">Opens at</label>
-                    <input className="amn-input" type="time" value={openTime} onChange={(e) => setOpenTime(e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="amn-label">Closes at</label>
-                    <input className="amn-input" type="time" value={closeTime} onChange={(e) => setCloseTime(e.target.value)} />
-                  </div>
-                </div>
+                    <div className="amn-form-grid">
+                      <div>
+                        <label className="amn-label">Capacity</label>
+                        <input className="amn-input" type="number" min="1" value={capacity} onChange={(e) => setCapacity(e.target.value)} />
+                      </div>
+                      <div>
+                        <label className="amn-label">Approvals</label>
+                        <label className="amn-toggle">
+                          <input type="checkbox" checked={isAutoApprove} onChange={(e) => setIsAutoApprove(e.target.checked)} />
+                          {isAutoApprove ? "Auto-approval is enabled" : "Manual approval is enabled"}
+                        </label>
+                      </div>
+                    </div>
 
-                <div>
-                  <label className="amn-label">Photos (up to 5, max 5 MB each)</label>
-                  <input
-                    className="amn-input"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={(e) => setPhotoFiles(Array.from(e.target.files).slice(0, 5))}
-                  />
-                  {photoFiles.length > 0 && (
-                    <p style={{ fontSize: "0.78rem", color: T.text3, marginTop: 6 }}>
-                      {photoFiles.length} file{photoFiles.length > 1 ? "s" : ""} selected
-                    </p>
-                  )}
-                </div>
+                    <div className="amn-form-grid">
+                      <div>
+                        <label className="amn-label">Opens at</label>
+                        <input className="amn-input" type="time" value={openTime} onChange={(e) => setOpenTime(e.target.value)} />
+                      </div>
+                      <div>
+                        <label className="amn-label">Closes at</label>
+                        <input className="amn-input" type="time" value={closeTime} onChange={(e) => setCloseTime(e.target.value)} />
+                      </div>
+                    </div>
 
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button className="amn-btn-primary" type="submit" disabled={isUploading}>
-                    {isUploading ? "Uploading photos..." : <><Plus size={13} /> Add amenity</>}
-                  </button>
-                  <button type="button" className="amn-btn-ghost" onClick={() => setShowCreateForm(false)}>
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </section>
-          )}
+                    <div>
+                      <label className="amn-label">Photos (up to 5, max 5 MB each)</label>
+                      <input className="amn-input" type="file" accept="image/*" multiple onChange={(e) => setPhotoFiles(Array.from(e.target.files).slice(0, 5))} />
+                      {photoFiles.length > 0 && (
+                        <p style={{ fontSize: "0.78rem", color: C.faint, marginTop: 6 }}>
+                          {photoFiles.length} file{photoFiles.length > 1 ? "s" : ""} selected
+                        </p>
+                      )}
+                    </div>
 
-          <section className="amn-block">
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button className="amn-btn-primary" type="submit" disabled={isUploading}>
+                        {isUploading
+                          ? <><div className="amn-spinner" /> Uploading photos...</>
+                          : <><Plus size={13} /> Add amenity</>
+                        }
+                      </button>
+                      <button type="button" className="amn-btn-ghost" onClick={() => setShowCreateForm(false)}>
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </section>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ── Available Facilities ── */}
+          <motion.section
+            className="amn-block"
+            initial={{ opacity: 0, y: 22 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.52, ease, delay: 0.12 }}
+          >
             <h2 className="amn-section-title">Available facilities</h2>
             <AmenityGrid amenities={amenities} onBook={setActiveAmenity} />
-          </section>
+          </motion.section>
 
-          {bookings.length > 0 && (
-            <section className="amn-block">
-              <h2 className="amn-section-title">My bookings</h2>
-              <div className="amn-book-list">
-                {bookings.map((item) => {
-                  const cfg = BOOKING_STATUS_CFG[item.status] || BOOKING_STATUS_CFG.pending;
-                  return (
-                    <article key={item._id} className="amn-book-item">
-                      <div>
-                        <p style={{ fontSize: "0.92rem", fontWeight: 700, color: T.ink, margin: "0 0 4px" }}>
-                          {item.amenityId?.name || item.amenityName}
-                        </p>
-                        <p style={{ fontSize: "0.78rem", color: T.text2, margin: 0 }}>
-                          {item.date} . {item.startTime}-{item.endTime}
-                        </p>
-                      </div>
-                      <span className="amn-badge" style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
-                        {item.status}
-                      </span>
-                    </article>
-                  );
-                })}
-              </div>
-            </section>
-          )}
+          {/* ── My Bookings ── */}
+          <AnimatePresence>
+            {bookings.length > 0 && (
+              <motion.section
+                key="bookings-section"
+                className="amn-block"
+                initial={{ opacity: 0, y: 22 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.45, ease }}
+              >
+                <h2 className="amn-section-title">My bookings</h2>
+                <motion.div
+                  className="amn-book-list"
+                  variants={staggerBooks}
+                  initial="hidden"
+                  animate="visible"
+                >
+                  {bookings.map((item) => {
+                    const cfg = BOOKING_STATUS_CFG[item.status] || BOOKING_STATUS_CFG.pending;
+                    return (
+                      <motion.article
+                        key={item._id}
+                        className="amn-book-item"
+                        variants={bookItemVariant}
+                        whileHover={{
+                          y: -2,
+                          boxShadow: "0 14px 32px rgba(28,28,30,0.1)",
+                          borderColor: "#C7C7CC",
+                        }}
+                        transition={{ duration: 0.18 }}
+                      >
+                        <div>
+                          <p style={{ fontSize: "0.92rem", fontWeight: 700, color: C.ink, margin: "0 0 4px" }}>
+                            {item.amenityId?.name || item.amenityName}
+                          </p>
+                          <p style={{ fontSize: "0.78rem", color: C.muted, margin: 0 }}>
+                            {item.date} · {item.startTime}–{item.endTime}
+                          </p>
+                        </div>
+                        <span className="amn-badge" style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+                          {item.status}
+                        </span>
+                      </motion.article>
+                    );
+                  })}
+                </motion.div>
+              </motion.section>
+            )}
+          </AnimatePresence>
 
-          {canManage && pendingBookings.length > 0 && (
-            <section className="amn-block">
-              <h2 className="amn-section-title">Pending approvals ({pendingBookings.length})</h2>
-              <AdminManager items={pendingBookings} onStatusUpdate={handleStatusUpdate} />
-            </section>
-          )}
+          {/* ── Pending Approvals ── */}
+          <AnimatePresence>
+            {canManage && pendingBookings.length > 0 && (
+              <motion.section
+                key="pending-section"
+                className="amn-block"
+                initial={{ opacity: 0, y: 22 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.45, ease }}
+              >
+                <h2 className="amn-section-title">Pending approvals ({pendingBookings.length})</h2>
+                <AdminManager items={pendingBookings} onStatusUpdate={handleStatusUpdate} />
+              </motion.section>
+            )}
+          </AnimatePresence>
+
         </div>
 
         <BookingForm
@@ -670,10 +694,7 @@ export function AmenitiesPage() {
           isOpen={Boolean(activeAmenity)}
           errorMessage={bookingError}
           isSubmitting={isBookingSubmitting}
-          onClose={() => {
-            setActiveAmenity(null);
-            setBookingError("");
-          }}
+          onClose={() => { setActiveAmenity(null); setBookingError(""); }}
           onSubmit={handleCreateBooking}
         />
       </div>

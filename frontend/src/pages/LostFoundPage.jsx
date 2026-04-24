@@ -1,66 +1,66 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Search,
-  Plus,
-  X,
-  PackageSearch,
-  CheckCircle,
-  Trash2,
-  HandHelping,
-  MapPin,
-  CalendarDays,
+  Search, Plus, X, PackageSearch, CheckCircle,
+  Trash2, HandHelping, MapPin, CalendarDays, RefreshCw,
 } from "lucide-react";
 import { apiRequest } from "../components/api";
 import { useAuth } from "../components/AuthContext";
 
-const T = {
-  bg: "#F7F9FF",
-  surface: "#FFFFFF",
-  border: "#DCE5F3",
-  borderHover: "#D1D5DB",
-  ink: "#111827",
-  text2: "#6B7280",
-  text3: "#9CA3AF",
-  blue: "#2563EB",
-  blueLight: "#EFF6FF",
-  blueBorder: "#BFDBFE",
-  green: "#16A34A",
-  greenLight: "#DCFCE7",
-  greenBorder: "#BBF7D0",
-  amber: "#E8890C",
-  amberH: "#C97508",
-  amberLight: "#FFF8F0",
-  amberBorder: "#FDECC8",
-  red: "#DC2626",
-  redLight: "#FEE2E2",
-  redBorder: "#FECACA",
+/* ─── C Palette ─────────────────────────────────────────────────── */
+const C = {
+  bg:       "#FAFAFC",
+  surface:  "#FFFFFF",
+  ink:      "#1C1C1E",
+  ink2:     "#3A3A3C",
+  muted:    "#6B7280",
+  faint:    "#9CA3AF",
+  border:   "#E8E8ED",
+  borderL:  "#F0F0F5",
+  indigo:   "#4F46E5",
+  indigoD:  "#4338CA",
+  indigoL:  "#EEF2FF",
+  indigoBr: "#C7D2FE",
+  red:      "#DC2626",
+  redL:     "#FEF2F2",
+  redBr:    "#FECACA",
+  amber:    "#F59E0B",
+  amberD:   "#D97706",
+  amberL:   "#FFFBEB",
+  amberBr:  "#FCD34D",
+  green:    "#16A34A",
+  greenL:   "#DCFCE7",
+  orange:   "#E8890C",
+  orangeL:  "#FFF8F0",
 };
 
+/* ─── Category metadata ─────────────────────────────────────────── */
 const CATEGORY_META = {
-  keys: { label: "Keys", color: T.amber, bg: T.amberLight, border: T.amberBorder },
-  phone: { label: "Phone", color: T.blue, bg: T.blueLight, border: T.blueBorder },
-  wallet: { label: "Wallet", color: T.green, bg: T.greenLight, border: T.greenBorder },
-  pet: { label: "Pet", color: "#7C3AED", bg: "#EDE9FE", border: "#DDD6FE" },
-  documents: { label: "Documents", color: T.red, bg: T.redLight, border: T.redBorder },
-  bag: { label: "Bag", color: T.amber, bg: T.amberLight, border: T.amberBorder },
-  other: { label: "Other", color: T.text2, bg: "#F1F5F9", border: "#E2E8F0" },
+  keys:      { label: "Keys",      color: C.orange,  bg: C.orangeL,  border: "#FDDCAA"  },
+  phone:     { label: "Phone",     color: C.indigo,  bg: C.indigoL,  border: C.indigoBr },
+  wallet:    { label: "Wallet",    color: C.green,   bg: C.greenL,   border: "#BBF7D0"  },
+  pet:       { label: "Pet",       color: "#7C3AED", bg: "#EDE9FE",  border: "#DDD6FE"  },
+  documents: { label: "Documents", color: C.red,     bg: C.redL,     border: C.redBr    },
+  bag:       { label: "Bag",       color: C.amberD,  bg: C.amberL,   border: C.amberBr  },
+  other:     { label: "Other",     color: C.muted,   bg: C.borderL,  border: C.border   },
 };
 
 const CATEGORIES = Object.keys(CATEGORY_META);
 
+/* ─── CSS ───────────────────────────────────────────────────────── */
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap');
 
   .lfx-root * { box-sizing: border-box; }
 
   .lfx-root {
-    font-family: 'Manrope', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     background:
-      radial-gradient(900px 380px at 85% -12%, rgba(37,99,235,0.13), transparent 64%),
-      radial-gradient(760px 340px at -10% 0%, rgba(232,137,12,0.12), transparent 68%),
-      ${T.bg};
+      radial-gradient(860px 340px at 80% -8%, rgba(79,70,229,0.08), transparent 60%),
+      radial-gradient(700px 300px at -5% 5%, rgba(232,137,12,0.07), transparent 65%),
+      ${C.bg};
     min-height: calc(100vh - 64px);
-    padding: 22px 20px 70px;
+    padding: 22px 20px 120px;
     position: relative;
   }
 
@@ -70,10 +70,10 @@ const CSS = `
     inset: 0;
     pointer-events: none;
     background-image:
-      linear-gradient(to right, rgba(148,163,184,0.11) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(148,163,184,0.11) 1px, transparent 1px);
+      linear-gradient(to right,  rgba(148,163,184,0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(148,163,184,0.08) 1px, transparent 1px);
     background-size: 40px 40px;
-    mask-image: radial-gradient(circle at 20% 10%, rgba(0,0,0,0.9), transparent 72%);
+    mask-image: radial-gradient(circle at 18% 8%, rgba(0,0,0,.7), transparent 62%);
   }
 
   .lfx-content {
@@ -83,541 +83,567 @@ const CSS = `
     margin: 0 auto;
   }
 
-  .lfx-display { font-family: 'Cormorant Garamond', serif; }
-
+  /* ── Hero ─────────────────────────────────────── */
   .lfx-hero {
-    border: 1px solid #D8E3F5;
+    border: 1px solid ${C.border};
     border-radius: 24px;
-    background: linear-gradient(140deg, rgba(255,255,255,0.96), rgba(243,247,255,0.95));
-    box-shadow: 0 24px 50px rgba(17,24,39,0.09);
-    padding: 18px;
-    margin-bottom: 18px;
-    overflow: hidden;
-    position: relative;
-  }
-
-  .lfx-hero::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: linear-gradient(120deg, rgba(255,255,255,0) 38%, rgba(255,255,255,0.34) 52%, rgba(255,255,255,0) 66%);
-    transform: translateX(-130%);
-    animation: lfx-sheen 4.6s ease-in-out infinite;
-  }
-
-  .lfx-sub {
-    margin-top: 10px;
-    color: ${T.text2};
-    font-size: 0.9rem;
-    line-height: 1.7;
-    max-width: 60ch;
-  }
-
-  .lfx-hero-actions {
-    margin-top: 14px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .lfx-btn-primary {
-    position: relative;
-    isolation: isolate;
-    overflow: hidden;
-    border: 1.5px solid rgba(232,137,12,0.38);
-    border-radius: 10px;
-    padding: 10px 18px;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    background: rgba(255,248,240,0.75);
-    color: ${T.amberH};
-    font-family: 'Manrope', sans-serif;
-    font-size: 0.84rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: transform 0.24s cubic-bezier(0.22,1,0.36,1), box-shadow 0.24s, color 0.2s, border-color 0.2s;
-  }
-
-  .lfx-btn-primary::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, ${T.amber}, ${T.amberH});
-    transform: scaleX(0);
-    transform-origin: left center;
-    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
-    z-index: -1;
-  }
-
-  .lfx-btn-primary > * {
-    position: relative;
-    z-index: 1;
-    transition: transform 0.2s ease;
-  }
-
-  .lfx-btn-primary:hover:not(:disabled) {
-    color: #FFFFFF;
-    border-color: ${T.amber};
-    transform: translateY(-1px);
-    box-shadow: 0 8px 22px rgba(232,137,12,0.26), 0 2px 6px rgba(232,137,12,0.12);
-  }
-
-  .lfx-btn-primary:hover:not(:disabled)::before { transform: scaleX(1); }
-  .lfx-btn-primary:hover:not(:disabled) svg { transform: translateX(1px); }
-  .lfx-btn-primary:active:not(:disabled) { transform: translateY(0); }
-  .lfx-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
-
-  .lfx-btn-soft {
-    position: relative;
-    overflow: hidden;
-    border: 1px solid ${T.border};
-    border-radius: 10px;
-    padding: 9px 14px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: #FFFFFF;
-    color: ${T.text2};
-    font-family: 'Manrope', sans-serif;
-    font-size: 0.8rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s, color 0.2s;
-  }
-
-  .lfx-btn-soft::after {
-    content: '';
-    position: absolute;
-    left: 8px;
-    right: 8px;
-    bottom: 0;
-    height: 2px;
-    border-radius: 999px;
-    background: linear-gradient(90deg, ${T.blue}, ${T.amber});
-    transform: scaleX(0.2);
-    opacity: 0;
-    transition: transform 0.22s ease, opacity 0.22s ease;
-  }
-
-  .lfx-btn-soft:hover:not(:disabled) {
-    border-color: ${T.borderHover};
-    color: ${T.ink};
-    transform: translateY(-1px);
-    box-shadow: 0 8px 16px rgba(17,24,39,0.08);
-  }
-
-  .lfx-btn-soft:hover:not(:disabled)::after {
-    transform: scaleX(1);
-    opacity: 1;
-  }
-
-  .lfx-toolbar {
-    position: sticky;
-    top: 64px;
-    z-index: 10;
+    background: linear-gradient(140deg, rgba(255,255,255,0.98), rgba(247,249,255,0.97));
+    box-shadow: 0 20px 44px rgba(28,28,30,0.08);
+    padding: 20px 24px;
     margin-bottom: 16px;
-    border: 1px solid #DAE4F6;
-    border-radius: 16px;
-    padding: 10px;
-    background: rgba(255,255,255,0.88);
-    backdrop-filter: blur(12px);
-    box-shadow: 0 12px 26px rgba(17,24,39,0.08);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    align-items: center;
   }
 
-  .lfx-chip-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 7px;
-    margin-bottom: 8px;
+  .lfx-hero-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: clamp(1.9rem, 4vw, 2.8rem);
+    font-weight: 800;
+    color: ${C.ink};
+    margin: 0;
+    letter-spacing: -0.03em;
+    line-height: 1;
   }
 
-  .lfx-chip {
-    border: 1px solid ${T.border};
-    border-radius: 999px;
-    padding: 6px 12px;
-    background: #FFFFFF;
-    color: ${T.text2};
-    font-family: 'Manrope', sans-serif;
-    font-size: 0.75rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: transform 0.16s, border-color 0.16s, color 0.16s, box-shadow 0.16s;
-    white-space: nowrap;
+  .lfx-hero-sub {
+    margin-top: 8px;
+    color: ${C.muted};
+    font-size: 0.88rem;
+    line-height: 1.65;
+    max-width: 50ch;
   }
 
-  .lfx-chip:hover {
-    border-color: ${T.borderHover};
-    color: ${T.ink};
-    transform: translateY(-1px);
-    box-shadow: 0 6px 14px rgba(17,24,39,0.08);
-  }
-
-  .lfx-chip.active {
-    border-color: ${T.amber};
-    color: #FFFFFF;
-    background: linear-gradient(135deg, ${T.amber}, ${T.amberH});
-    box-shadow: 0 8px 18px rgba(232,137,12,0.30);
-  }
-
-  .lfx-search {
+  .lfx-search-wrap {
     position: relative;
-    margin-left: auto;
-    min-width: 230px;
+    width: 250px;
+    flex-shrink: 0;
   }
 
+  /* ── Inputs ───────────────────────────────────── */
   .lfx-input {
     width: 100%;
-    border: 1px solid ${T.border};
+    border: 1px solid ${C.border};
     border-radius: 10px;
-    background: #FFFFFF;
-    color: ${T.ink};
+    background: ${C.bg};
+    color: ${C.ink};
     padding: 10px 12px;
-    font-family: 'Manrope', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.84rem;
+    font-weight: 500;
     outline: none;
     transition: border-color 0.18s, box-shadow 0.18s;
   }
-
-  .lfx-input::placeholder { color: ${T.text3}; }
-
+  .lfx-input::placeholder { color: ${C.faint}; }
   .lfx-input:focus {
-    border-color: ${T.borderHover};
-    box-shadow: 0 0 0 3px rgba(232,137,12,.1);
+    border-color: #C7C7CC;
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
   }
 
+  /* ── Category bar ─────────────────────────────── */
+  .lfx-cat-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 18px;
+    align-items: center;
+  }
+
+  .lfx-chip {
+    border: 1px solid ${C.border};
+    border-radius: 999px;
+    padding: 6px 13px;
+    background: ${C.surface};
+    color: ${C.muted};
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.74rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+  .lfx-chip:hover {
+    border-color: #C7C7CC;
+    color: ${C.ink};
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(28,28,30,0.07);
+  }
+  .lfx-chip.active {
+    background: ${C.indigo};
+    border-color: ${C.indigo};
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(79,70,229,0.28);
+  }
+
+  /* ── Form block ───────────────────────────────── */
   .lfx-block {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    background: ${C.surface};
+    border: 1px solid ${C.border};
     border-radius: 18px;
-    padding: 16px;
-    box-shadow: 0 10px 24px rgba(17,24,39,0.06);
+    padding: 20px 22px;
+    box-shadow: 0 8px 24px rgba(28,28,30,0.05);
     margin-bottom: 16px;
   }
 
-  .lfx-card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 14px;
+  /* ── Masonry grid ─────────────────────────────── */
+  .lfx-masonry {
+    column-count: 3;
+    column-gap: 14px;
   }
+  @media (max-width: 1060px) { .lfx-masonry { column-count: 2; } }
+  @media (max-width:  620px) { .lfx-masonry { column-count: 1; } }
 
+  /* ── Card ─────────────────────────────────────── */
   .lfx-card {
-    border: 1px solid #E2E8F0;
-    border-radius: 18px;
-    background: #FFFFFF;
+    position: relative;
     overflow: hidden;
-    box-shadow: 0 8px 20px rgba(17,24,39,0.06);
-    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-  }
-
-  .lfx-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 16px 34px rgba(17,24,39,0.12);
-    border-color: ${T.borderHover};
-  }
-
-  .lfx-card-topbar {
-    height: 3px;
-    background: linear-gradient(90deg, ${T.amber}, ${T.amberH});
-  }
-
-  .lfx-type-badge,
-  .lfx-cat-badge,
-  .lfx-status-badge {
-    padding: 3px 10px;
-    border-radius: 999px;
-    font-size: 0.66rem;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  .lfx-mini-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    border-radius: 8px;
-    border: 1px solid;
-    padding: 6px 11px;
-    font-family: 'Manrope', sans-serif;
-    font-size: 0.73rem;
-    font-weight: 700;
+    border-radius: 18px;
+    border: 1px solid ${C.border};
+    background: ${C.surface};
+    box-shadow: 0 4px 16px rgba(28,28,30,0.06);
+    break-inside: avoid;
+    margin-bottom: 14px;
     cursor: pointer;
-    transition: transform 0.16s, box-shadow 0.16s, opacity 0.16s;
+    transition: box-shadow 0.26s, border-color 0.26s, transform 0.26s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  .lfx-card:hover {
+    box-shadow: 0 18px 44px rgba(28,28,30,0.14);
+    border-color: #C7C7CC;
+    transform: translateY(-3px);
   }
 
-  .lfx-mini-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 14px rgba(17,24,39,0.10);
+  /* Card media */
+  .lfx-card-media { position: relative; width: 100%; overflow: hidden; }
+  .lfx-card-media img {
+    width: 100%; max-height: 320px;
+    display: block; object-fit: cover;
+    transition: transform 0.42s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  .lfx-card:hover .lfx-card-media img { transform: scale(1.05); }
+
+  .lfx-card-placeholder {
+    width: 100%; height: 190px;
+    display: flex; align-items: center; justify-content: center;
   }
 
+  /* Always-visible base strip */
+  .lfx-card-base {
+    padding: 12px 14px 14px;
+    background: ${C.surface};
+    border-top: 1px solid ${C.borderL};
+  }
+  .lfx-card-title {
+    margin: 5px 0 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: ${C.ink};
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+  }
+
+  /* Hover overlay */
+  .lfx-card-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgba(28,28,30,0.97) 0%,
+      rgba(28,28,30,0.92) 45%,
+      rgba(28,28,30,0.72) 75%,
+      rgba(28,28,30,0.45) 100%
+    );
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 18px 16px 16px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.32s ease, transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    pointer-events: none;
+  }
+  .lfx-card:hover .lfx-card-overlay {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .lfx-overlay-title {
+    font-size: 1rem; font-weight: 800; color: #FFFFFF;
+    margin: 0 0 7px; letter-spacing: -0.015em; line-height: 1.3;
+  }
+  .lfx-overlay-desc {
+    font-size: 0.79rem; color: rgba(255,255,255,0.78);
+    line-height: 1.6; margin: 0 0 11px;
+    display: -webkit-box; -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .lfx-overlay-meta {
+    display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 13px;
+  }
+  .lfx-overlay-meta-item {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.71rem; color: rgba(255,255,255,0.65); font-weight: 600;
+  }
+  .lfx-overlay-actions { display: flex; gap: 7px; flex-wrap: wrap; }
+  .lfx-overlay-author {
+    margin-top: 11px; padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.14);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .lfx-overlay-avatar {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: rgba(255,255,255,0.2); color: #fff;
+    font-size: 0.58rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+
+  /* Badges */
+  .lfx-type-badge, .lfx-cat-badge, .lfx-status-badge {
+    padding: 3px 9px; border-radius: 999px;
+    font-size: 0.64rem; font-weight: 800;
+    letter-spacing: 0.04em; text-transform: uppercase; border: 1px solid;
+  }
+
+  /* Mini action buttons (in overlay) */
+  .lfx-mini-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    border-radius: 8px; padding: 7px 12px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.72rem; font-weight: 700; cursor: pointer; color: #fff;
+    border: 1px solid rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.14);
+    backdrop-filter: blur(4px);
+    transition: background 0.18s, transform 0.18s;
+  }
+  .lfx-mini-btn:hover { background: rgba(255,255,255,0.24); transform: translateY(-1px); }
+  .lfx-mini-btn.claim-lost  { background: rgba(232,137,12,0.55);  border-color: rgba(232,137,12,0.5);  }
+  .lfx-mini-btn.claim-found { background: rgba(22,163,74,0.55);   border-color: rgba(22,163,74,0.5);   }
+  .lfx-mini-btn.resolve     { background: rgba(22,163,74,0.5);    border-color: rgba(22,163,74,0.45);  }
+  .lfx-mini-btn.delete      { background: rgba(220,38,38,0.5);    border-color: rgba(220,38,38,0.45);  }
+
+  /* Skeleton */
   .lfx-sk {
     border-radius: 8px;
-    background: linear-gradient(90deg, #EEF2F7 25%, #E2E8F0 50%, #EEF2F7 75%);
+    background: linear-gradient(90deg, #F0F0F5 25%, #E8E8ED 50%, #F0F0F5 75%);
     background-size: 200% 100%;
     animation: lfx-shimmer 1.5s ease-in-out infinite;
   }
 
-  .lfx-fade {
-    opacity: 0;
-    animation: lfx-fadeup .35s ease both;
+  /* Buttons */
+  .lfx-btn-primary {
+    border: none; border-radius: 10px; padding: 10px 18px;
+    display: inline-flex; align-items: center; gap: 7px;
+    background: linear-gradient(135deg, ${C.indigo}, ${C.indigoD});
+    color: #fff; font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.84rem; font-weight: 700; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(79,70,229,0.28);
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+  }
+  .lfx-btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 7px 20px rgba(79,70,229,0.38);
+  }
+  .lfx-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .lfx-btn-soft {
+    border: 1px solid ${C.border}; border-radius: 10px; padding: 9px 14px;
+    display: inline-flex; align-items: center; gap: 6px;
+    background: ${C.surface}; color: ${C.muted};
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.8rem; font-weight: 600;
+    cursor: pointer; transition: all 0.18s;
+  }
+  .lfx-btn-soft:hover:not(:disabled) {
+    border-color: #C7C7CC; color: ${C.ink};
+    transform: translateY(-1px); box-shadow: 0 4px 12px rgba(28,28,30,0.07);
+  }
+  .lfx-btn-soft:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Form label */
+  .lfx-form-label {
+    display: block; margin-bottom: 6px;
+    color: ${C.muted}; font-size: 0.72rem; font-weight: 700;
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+
+  /* Error banner */
+  .lfx-error {
+    margin-bottom: 14px; border-radius: 12px;
+    border: 1px solid ${C.redBr}; background: ${C.redL};
+    color: ${C.red}; font-size: 0.82rem; font-weight: 700;
+    padding: 11px 14px; display: flex; align-items: center; gap: 10px;
+    overflow: hidden;
+  }
+
+  /* ── Floating bottom toolbar ──────────────────── */
+  .lfx-float-bar {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 7px 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(255,255,255,0.75);
+    box-shadow:
+      0 8px 32px rgba(28,28,30,0.16),
+      0 2px 8px rgba(28,28,30,0.08),
+      inset 0 1px 0 rgba(255,255,255,0.9);
+    white-space: nowrap;
+  }
+
+  .lfx-bar-chip {
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 7px 15px;
+    background: transparent;
+    color: ${C.muted};
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.78rem; font-weight: 700;
+    cursor: pointer; transition: all 0.18s;
+  }
+  .lfx-bar-chip:hover { color: ${C.ink}; background: rgba(28,28,30,0.06); }
+  .lfx-bar-chip.active {
+    background: ${C.ink}; border-color: ${C.ink}; color: #fff;
+    box-shadow: 0 2px 8px rgba(28,28,30,0.22);
+  }
+
+  .lfx-bar-divider {
+    width: 1px; height: 20px;
+    background: rgba(28,28,30,0.12);
+    margin: 0 3px; flex-shrink: 0;
+  }
+
+  .lfx-bar-post {
+    border: none; border-radius: 999px;
+    padding: 8px 16px; margin-left: 2px;
+    display: inline-flex; align-items: center; gap: 6px;
+    background: linear-gradient(135deg, ${C.orange}, ${C.amberD});
+    color: #fff;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.78rem; font-weight: 800; cursor: pointer;
+    box-shadow: 0 3px 12px rgba(232,137,12,0.32);
+    transition: transform 0.18s, box-shadow 0.18s;
+  }
+  .lfx-bar-post:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(232,137,12,0.42);
+  }
+
+  /* Resolved ribbon */
+  .lfx-resolved-ribbon {
+    position: absolute; top: 10px; right: 10px; z-index: 3;
+    background: ${C.green}; color: #fff;
+    font-size: 0.6rem; font-weight: 800;
+    padding: 3px 9px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: 0.06em;
   }
 
   @keyframes lfx-shimmer {
-    0% { background-position: -200% center; }
-    100% { background-position: 200% center; }
+    0%   { background-position: -200% center; }
+    100% { background-position:  200% center; }
   }
-
-  @keyframes lfx-fadeup {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes lfx-sheen {
-    0%, 24% { transform: translateX(-130%); }
-    55% { transform: translateX(130%); }
-    100% { transform: translateX(130%); }
-  }
+  @keyframes lfx-spin { to { transform: rotate(360deg); } }
 
   @media (max-width: 760px) {
-    .lfx-search {
-      width: 100%;
-      margin-left: 0;
-      min-width: 0;
-    }
+    .lfx-hero { grid-template-columns: 1fr; }
+    .lfx-search-wrap { width: 100%; }
+    .lfx-float-bar { max-width: calc(100vw - 32px); flex-wrap: wrap; justify-content: center; bottom: 16px; }
   }
 `;
 
+/* ─── Helpers ───────────────────────────────────────────────────── */
 function timeAgo(date) {
   if (!date) return "";
   const s = Math.floor((Date.now() - new Date(date)) / 1000);
-  if (s < 60) return "just now";
+  if (s < 60)  return "just now";
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
+  if (m < 60)  return `${m}m ago`;
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
+  if (h < 24)  return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
 }
 
 function fmtDate(d) {
   if (!d) return "";
-  return new Date(d).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
+/* ─── Skeleton card ─────────────────────────────────────────────── */
 function SkeletonCard() {
   return (
-    <div className="lfx-card" style={{ padding: 16 }}>
-      <div className="lfx-sk" style={{ width: 74, height: 18, marginBottom: 10, borderRadius: 999 }} />
-      <div className="lfx-sk" style={{ width: "74%", height: 17, marginBottom: 8 }} />
-      <div className="lfx-sk" style={{ width: "54%", height: 13, marginBottom: 14 }} />
-      <div className="lfx-sk" style={{ width: "40%", height: 13 }} />
+    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 18, overflow: "hidden", breakInsideAvoid: "avoid", marginBottom: 14 }}>
+      <div className="lfx-sk" style={{ width: "100%", height: 180 }} />
+      <div style={{ padding: "12px 14px 14px" }}>
+        <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+          <div className="lfx-sk" style={{ width: 52, height: 18, borderRadius: 999 }} />
+          <div className="lfx-sk" style={{ width: 44, height: 18, borderRadius: 999 }} />
+        </div>
+        <div className="lfx-sk" style={{ width: "76%", height: 15, marginBottom: 6 }} />
+        <div className="lfx-sk" style={{ width: "50%", height: 13 }} />
+      </div>
     </div>
   );
 }
 
+/* ─── Item card ─────────────────────────────────────────────────── */
 function ItemCard({ item, userId, onClaim, onResolve, onDelete, index }) {
-  const isLost = item.type === "lost";
-  const cat = CATEGORY_META[item.category] || CATEGORY_META.other;
+  const isLost  = item.type === "lost";
+  const cat     = CATEGORY_META[item.category] || CATEGORY_META.other;
   const isOwner = item.postedBy?._id === userId || item.postedBy === userId;
-  const isClaimed = Boolean(item.claimedBy);
+  const isClaimed  = Boolean(item.claimedBy);
   const isResolved = item.status === "resolved";
 
   return (
-    <article className="lfx-card lfx-fade" style={{ animationDelay: `${index * 0.05}s` }}>
-      <div
-        className="lfx-card-topbar"
-        style={{
-          background: isLost
-            ? "linear-gradient(90deg, #E8890C, #C97508)"
-            : "linear-gradient(90deg, #16A34A, #4ADE80)",
-        }}
-      />
+    <motion.article
+      className="lfx-card"
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94], delay: Math.min(index * 0.045, 0.36) }}
+    >
+      {/* Resolved ribbon */}
+      {isResolved && <div className="lfx-resolved-ribbon">✓ Resolved</div>}
 
-      <div style={{ padding: "15px 16px 14px" }}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 10 }}>
-          <span
-            className="lfx-type-badge"
+      {/* Media */}
+      <div className="lfx-card-media">
+        {item.photo ? (
+          <img src={item.photo} alt={item.title} />
+        ) : (
+          <div
+            className="lfx-card-placeholder"
             style={{
-              background: isLost ? T.amberLight : T.greenLight,
-              color: isLost ? T.amber : T.green,
-              border: `1px solid ${isLost ? T.amberBorder : T.greenBorder}`,
+              background: isLost
+                ? `linear-gradient(145deg, ${C.orangeL}, #FFE4C4)`
+                : `linear-gradient(145deg, ${C.greenL}, #C6F6D5)`,
             }}
           >
+            <span style={{ fontSize: "3rem" }}>{isLost ? "🔍" : "📦"}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Always-visible base strip */}
+      <div className="lfx-card-base">
+        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+          <span className="lfx-type-badge" style={{
+            background: isLost ? C.orangeL : C.greenL,
+            color: isLost ? C.orange : C.green,
+            border: `1px solid ${isLost ? "#FDDCAA" : "#BBF7D0"}`,
+          }}>
             {isLost ? "Lost" : "Found"}
           </span>
-
           <span className="lfx-cat-badge" style={{ background: cat.bg, color: cat.color, border: `1px solid ${cat.border}` }}>
             {cat.label}
           </span>
+        </div>
+        <h3 className="lfx-card-title">{item.title}</h3>
+      </div>
 
-          {isResolved && (
-            <span className="lfx-status-badge" style={{ background: T.greenLight, color: T.green, border: `1px solid ${T.greenBorder}` }}>
-              Resolved
+      {/* Hover overlay — slides up on hover */}
+      <div className="lfx-card-overlay">
+        {/* Ghost badges */}
+        <div style={{ display: "flex", gap: 5, marginBottom: 9 }}>
+          {[isLost ? "Lost" : "Found", cat.label].map((lbl) => (
+            <span key={lbl} style={{
+              padding: "3px 9px", borderRadius: 999,
+              fontSize: "0.62rem", fontWeight: 800, textTransform: "uppercase",
+              background: "rgba(255,255,255,0.16)", color: "#fff",
+              border: "1px solid rgba(255,255,255,0.26)",
+            }}>
+              {lbl}
             </span>
-          )}
+          ))}
         </div>
 
-        <h3 style={{ margin: "0 0 6px", fontSize: "1rem", fontWeight: 800, color: T.ink, lineHeight: 1.35 }}>
-          {item.title}
-        </h3>
+        <h3 className="lfx-overlay-title">{item.title}</h3>
+        <p className="lfx-overlay-desc">{item.description}</p>
 
-        <p style={{ margin: "0 0 10px", fontSize: "0.83rem", color: T.text2, lineHeight: 1.6 }}>
-          {item.description}
-        </p>
-
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
+        <div className="lfx-overlay-meta">
           {item.location && (
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: "0.73rem", color: T.text3 }}>
-              <MapPin size={12} />
-              {item.location}
-            </span>
+            <span className="lfx-overlay-meta-item"><MapPin size={11} />{item.location}</span>
           )}
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: "0.73rem", color: T.text3 }}>
-            <CalendarDays size={12} />
-            {fmtDate(item.date)}
-          </span>
+          <span className="lfx-overlay-meta-item"><CalendarDays size={11} />{fmtDate(item.date)}</span>
         </div>
 
-        {item.photo && (
-          <img
-            src={item.photo}
-            alt="Item"
-            style={{
-              width: "100%",
-              maxHeight: 180,
-              objectFit: "cover",
-              borderRadius: 10,
-              marginBottom: 10,
-              border: `1px solid ${T.border}`,
-            }}
-          />
-        )}
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 10,
-            flexWrap: "wrap",
-            borderTop: `1px solid ${T.border}`,
-            paddingTop: 10,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, #24324A, #5B6577)",
-                color: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "0.62rem",
-                fontWeight: 800,
-                flexShrink: 0,
-              }}
-            >
-              {(item.postedBy?.fullName || "?")
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
-                .slice(0, 2)
-                .toUpperCase()}
-            </div>
-            <div>
-              <p style={{ margin: 0, fontSize: "0.74rem", fontWeight: 700, color: T.ink }}>
-                {item.postedBy?.fullName || "Unknown"}
-              </p>
-              <p style={{ margin: 0, fontSize: "0.68rem", color: T.text3 }}>{timeAgo(item.createdAt)}</p>
-            </div>
-          </div>
-
-          {!isResolved && (
-            <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-              {!isOwner && !isClaimed && (
+        {!isResolved && (
+          <div className="lfx-overlay-actions">
+            {!isOwner && !isClaimed && (
+              <button
+                className={`lfx-mini-btn ${isLost ? "claim-lost" : "claim-found"}`}
+                onClick={(e) => { e.stopPropagation(); onClaim(item._id); }}
+              >
+                <HandHelping size={12} />
+                {isLost ? "I found this" : "This is mine"}
+              </button>
+            )}
+            {isClaimed && !isOwner && (
+              <span style={{ fontSize: "0.71rem", color: "rgba(255,255,255,0.58)", fontStyle: "italic", alignSelf: "center" }}>
+                Claimed by {item.claimedBy?.fullName || "someone"}
+              </span>
+            )}
+            {isOwner && (
+              <>
                 <button
-                  className="lfx-mini-btn"
-                  onClick={() => onClaim(item._id)}
-                  style={{
-                    background: isLost ? T.amberLight : T.greenLight,
-                    color: isLost ? T.amber : T.green,
-                    borderColor: isLost ? T.amberBorder : T.greenBorder,
-                  }}
+                  className="lfx-mini-btn resolve"
+                  onClick={(e) => { e.stopPropagation(); onResolve(item._id); }}
                 >
-                  <HandHelping size={12} />
-                  {isLost ? "I found this" : "This is mine"}
+                  <CheckCircle size={12} /> Resolve
                 </button>
-              )}
-
-              {isClaimed && !isOwner && (
-                <span style={{ fontSize: "0.72rem", color: T.text3, fontStyle: "italic", alignSelf: "center" }}>
-                  Claimed by {item.claimedBy?.fullName || "someone"}
-                </span>
-              )}
-
-              {isOwner && (
                 <button
-                  className="lfx-mini-btn"
-                  onClick={() => onResolve(item._id)}
-                  style={{ background: T.greenLight, color: T.green, borderColor: T.greenBorder }}
-                >
-                  <CheckCircle size={12} />
-                  Resolve
-                </button>
-              )}
-
-              {isOwner && (
-                <button
-                  className="lfx-mini-btn"
-                  onClick={() => onDelete(item._id)}
-                  style={{ background: T.redLight, color: T.red, borderColor: T.redBorder }}
+                  className="lfx-mini-btn delete"
+                  onClick={(e) => { e.stopPropagation(); onDelete(item._id); }}
                 >
                   <Trash2 size={12} />
                 </button>
-              )}
-            </div>
-          )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Author row */}
+        <div className="lfx-overlay-author">
+          <div className="lfx-overlay-avatar">
+            {(item.postedBy?.fullName || "?").split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+          </div>
+          <span style={{ fontSize: "0.71rem", color: "rgba(255,255,255,0.68)", fontWeight: 600 }}>
+            {item.postedBy?.fullName || "Unknown"} · {timeAgo(item.createdAt)}
+          </span>
         </div>
       </div>
-    </article>
+    </motion.article>
   );
 }
 
+/* ─── Main page ─────────────────────────────────────────────────── */
 export function LostFoundPage() {
   const { token, user } = useAuth();
   const userId = user?._id || user?.id || "";
 
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [filter, setFilter] = useState("all");
+  const [items,     setItems]     = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState("");
+  const [filter,    setFilter]    = useState("all");
   const [catFilter, setCatFilter] = useState("all");
-  const [search, setSearch] = useState("");
-  const [showForm, setShowForm] = useState(false);
+  const [search,    setSearch]    = useState("");
+  const [showForm,  setShowForm]  = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const [form, setForm] = useState({
-    type: "lost",
-    category: "other",
-    title: "",
-    description: "",
-    location: "",
-    date: new Date().toISOString().split("T")[0],
-    photo: "",
+    type: "lost", category: "other",
+    title: "", description: "", location: "",
+    date: new Date().toISOString().split("T")[0], photo: "",
   });
 
+  /* ── API ─────────────────────────────────────── */
   const load = useCallback(async () => {
     if (!token) return;
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
     try {
       const data = await apiRequest("/lost-found", { token });
       setItems(data.items || []);
@@ -628,25 +654,20 @@ export function LostFoundPage() {
     }
   }, [token]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
-  const visible = useMemo(() => {
-    return items.filter((item) => {
-      if (filter !== "all" && item.type !== filter) return false;
-      if (catFilter !== "all" && item.category !== catFilter) return false;
-      if (search.trim()) {
-        const q = search.toLowerCase();
-        const hit =
-          item.title?.toLowerCase().includes(q) ||
-          item.description?.toLowerCase().includes(q) ||
-          item.location?.toLowerCase().includes(q);
-        if (!hit) return false;
-      }
-      return true;
-    });
-  }, [items, filter, catFilter, search]);
+  const visible = useMemo(() => items.filter((item) => {
+    if (filter !== "all" && item.type !== filter) return false;
+    if (catFilter !== "all" && item.category !== catFilter) return false;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      const hit = item.title?.toLowerCase().includes(q) ||
+                  item.description?.toLowerCase().includes(q) ||
+                  item.location?.toLowerCase().includes(q);
+      if (!hit) return false;
+    }
+    return true;
+  }), [items, filter, catFilter, search]);
 
   function onFormChange(e) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -655,25 +676,12 @@ export function LostFoundPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.title.trim() || !form.description.trim()) return;
-    setSubmitting(true);
-    setError("");
+    setSubmitting(true); setError("");
     try {
-      const data = await apiRequest("/lost-found", {
-        token,
-        method: "POST",
-        body: form,
-      });
+      const data = await apiRequest("/lost-found", { token, method: "POST", body: form });
       setItems((prev) => [data.item, ...prev]);
       setShowForm(false);
-      setForm({
-        type: "lost",
-        category: "other",
-        title: "",
-        description: "",
-        location: "",
-        date: new Date().toISOString().split("T")[0],
-        photo: "",
-      });
+      setForm({ type: "lost", category: "other", title: "", description: "", location: "", date: new Date().toISOString().split("T")[0], photo: "" });
     } catch (err) {
       setError(err.message || "Failed to post item");
     } finally {
@@ -686,9 +694,7 @@ export function LostFoundPage() {
     try {
       const data = await apiRequest(`/lost-found/${id}/claim`, { token, method: "PATCH" });
       setItems((prev) => prev.map((i) => (i._id === id ? data.item : i)));
-    } catch (err) {
-      setError(err.message);
-    }
+    } catch (err) { setError(err.message); }
   }
 
   async function handleResolve(id) {
@@ -697,9 +703,7 @@ export function LostFoundPage() {
     try {
       const data = await apiRequest(`/lost-found/${id}/resolve`, { token, method: "PATCH" });
       setItems((prev) => prev.map((i) => (i._id === id ? data.item : i)));
-    } catch (err) {
-      setError(err.message);
-    }
+    } catch (err) { setError(err.message); }
   }
 
   async function handleDelete(id) {
@@ -708,275 +712,255 @@ export function LostFoundPage() {
     try {
       await apiRequest(`/lost-found/${id}`, { token, method: "DELETE" });
       setItems((prev) => prev.filter((i) => i._id !== id));
-    } catch (err) {
-      setError(err.message);
-    }
+    } catch (err) { setError(err.message); }
   }
+
+  const ease = [0.25, 0.46, 0.45, 0.94];
 
   return (
     <>
       <style>{CSS}</style>
       <div className="lfx-root">
         <div className="lfx-content">
-          <section className="lfx-hero">
+
+          {/* ── Hero ───────────────────────────── */}
+          <motion.section
+            className="lfx-hero"
+            initial={{ opacity: 0, y: 22 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.52, ease }}
+          >
             <div>
-              <h1 className="lfx-display" style={{ margin: 0, color: T.ink, fontSize: "clamp(2.1rem, 4.8vw, 3.3rem)", lineHeight: 0.94 }}>
-                Lost &amp; Found
-              </h1>
-              <p className="lfx-sub">
+              <h1 className="lfx-hero-title">Lost &amp; Found</h1>
+              <p className="lfx-hero-sub">
                 Report missing items, post found objects, and help residents reunite quickly through one organized board.
               </p>
-              <div className="lfx-hero-actions">
-                <button className="lfx-btn-primary" onClick={() => setShowForm((v) => !v)}>
-                  {showForm ? <><X size={14} /> Cancel</> : <><Plus size={14} /> Post Item</>}
-                </button>
-                <button className="lfx-btn-soft" onClick={load} disabled={loading}>Refresh Feed</button>
-              </div>
             </div>
-          </section>
 
-          {error && (
-            <div
-              style={{
-                marginBottom: 14,
-                borderRadius: 12,
-                border: `1px solid ${T.redBorder}`,
-                background: T.redLight,
-                color: T.red,
-                fontSize: "0.84rem",
-                padding: "11px 14px",
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-              }}
-            >
-              {error}
-              <button
-                onClick={() => setError("")}
-                style={{ marginLeft: "auto", border: "none", background: "none", color: T.red, cursor: "pointer" }}
-              >
-                <X size={14} />
-              </button>
-            </div>
-          )}
-
-          {showForm && (
-            <section className="lfx-block" style={{ position: "relative", overflow: "hidden" }}>
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 3,
-                  background: `linear-gradient(90deg, ${T.amber}, ${T.amberH})`,
-                }}
+            <div className="lfx-search-wrap">
+              <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: C.faint, pointerEvents: "none" }} />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="lfx-input"
+                placeholder="Search items, location…"
+                style={{ paddingLeft: 32, paddingRight: search ? 32 : 12 }}
               />
-              <h2 className="lfx-display" style={{ margin: "0 0 14px", color: T.ink, fontSize: "1.5rem" }}>
-                Report Lost or Found Item
-              </h2>
-
-              <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <div>
-                    <label style={{ display: "block", marginBottom: 6, color: T.text2, fontSize: "0.74rem", fontWeight: 700 }}>Type *</label>
-                    <select name="type" value={form.type} onChange={onFormChange} className="lfx-input">
-                      <option value="lost">Lost - I am looking for this</option>
-                      <option value="found">Found - I found this</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ display: "block", marginBottom: 6, color: T.text2, fontSize: "0.74rem", fontWeight: 700 }}>Category *</label>
-                    <select name="category" value={form.category} onChange={onFormChange} className="lfx-input">
-                      {CATEGORIES.map((c) => (
-                        <option key={c} value={c}>{CATEGORY_META[c].label}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ display: "block", marginBottom: 6, color: T.text2, fontSize: "0.74rem", fontWeight: 700 }}>Title *</label>
-                  <input
-                    name="title"
-                    value={form.title}
-                    onChange={onFormChange}
-                    className="lfx-input"
-                    placeholder="e.g. Lost blue umbrella near gym"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", marginBottom: 6, color: T.text2, fontSize: "0.74rem", fontWeight: 700 }}>Description *</label>
-                  <textarea
-                    name="description"
-                    value={form.description}
-                    onChange={onFormChange}
-                    rows={3}
-                    className="lfx-input"
-                    placeholder="Describe color, brand, size, and key identifiers"
-                    required
-                    style={{ minHeight: 82 }}
-                  />
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <div>
-                    <label style={{ display: "block", marginBottom: 6, color: T.text2, fontSize: "0.74rem", fontWeight: 700 }}>Location</label>
-                    <input
-                      name="location"
-                      value={form.location}
-                      onChange={onFormChange}
-                      className="lfx-input"
-                      placeholder="Near Gate B, Parking Lot, Club House"
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: "block", marginBottom: 6, color: T.text2, fontSize: "0.74rem", fontWeight: 700 }}>Date *</label>
-                    <input
-                      name="date"
-                      type="date"
-                      value={form.date}
-                      onChange={onFormChange}
-                      className="lfx-input"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ display: "block", marginBottom: 6, color: T.text2, fontSize: "0.74rem", fontWeight: 700 }}>Photo URL (optional)</label>
-                  <input
-                    name="photo"
-                    value={form.photo}
-                    onChange={onFormChange}
-                    className="lfx-input"
-                    placeholder="Paste an image URL"
-                  />
-                </div>
-
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button className="lfx-btn-primary" type="submit" disabled={submitting}>
-                    {submitting ? "Posting..." : "Post Item"}
-                  </button>
-                  <button type="button" className="lfx-btn-soft" onClick={() => setShowForm(false)}>Cancel</button>
-                </div>
-              </form>
-            </section>
-          )}
-
-          <section className="lfx-toolbar">
-            <div className="lfx-chip-row">
-              {["all", "lost", "found"].map((f) => (
-                <button key={f} className={`lfx-chip${filter === f ? " active" : ""}`} onClick={() => setFilter(f)}>
-                  {f === "all" ? "All" : f === "lost" ? "Lost" : "Found"}
-                </button>
-              ))}
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <div className="lfx-chip-row" style={{ marginBottom: 0 }}>
-                {CATEGORIES.map((c) => (
-                  <button
-                    key={c}
-                    className={`lfx-chip${catFilter === c ? " active" : ""}`}
-                    onClick={() => setCatFilter(catFilter === c ? "all" : c)}
-                  >
-                    {CATEGORY_META[c].label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="lfx-search">
-                <Search
-                  size={14}
-                  style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: T.text3, pointerEvents: "none" }}
-                />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="lfx-input"
-                  placeholder="Search title, description, location"
-                  style={{ paddingLeft: 32, paddingRight: 30 }}
-                />
-                {search && (
-                  <button
-                    onClick={() => setSearch("")}
-                    style={{
-                      position: "absolute",
-                      right: 10,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      border: "none",
-                      background: "none",
-                      color: T.text3,
-                      cursor: "pointer",
-                    }}
-                  >
-                    <X size={13} />
-                  </button>
-                )}
-              </div>
-            </div>
-          </section>
-
-          {loading ? (
-            <section className="lfx-card-grid">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <SkeletonCard key={i} />
-              ))}
-            </section>
-          ) : visible.length === 0 ? (
-            <section className="lfx-block" style={{ textAlign: "center", padding: "56px 28px" }}>
-              <div
-                style={{
-                  width: 60,
-                  height: 60,
-                  margin: "0 auto 14px",
-                  borderRadius: 16,
-                  border: `1px solid ${T.amberBorder}`,
-                  background: T.amberLight,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <PackageSearch size={26} color={T.amber} />
-              </div>
-
-              <p className="lfx-display" style={{ margin: "0 0 6px", fontSize: "1.5rem", color: T.ink }}>
-                {search || filter !== "all" || catFilter !== "all" ? "No posts match your filters" : "Nothing posted yet"}
-              </p>
-
-              <p style={{ margin: "0 0 16px", color: T.text2, fontSize: "0.84rem" }}>
-                {search || filter !== "all" || catFilter !== "all"
-                  ? "Try adjusting your filters or search terms"
-                  : "Be the first to report a lost or found item."}
-              </p>
-
-              {!showForm && (
-                <button className="lfx-btn-primary" onClick={() => setShowForm(true)}>
-                  <Plus size={14} /> Post Item
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", color: C.faint, cursor: "pointer", display: "flex" }}
+                >
+                  <X size={13} />
                 </button>
               )}
-            </section>
+            </div>
+          </motion.section>
+
+          {/* ── Error ──────────────────────────── */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                key="lf-error"
+                className="lfx-error"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25 }}
+              >
+                {error}
+                <button onClick={() => setError("")} style={{ marginLeft: "auto", border: "none", background: "none", color: C.red, cursor: "pointer", display: "flex" }}>
+                  <X size={14} />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ── Post Item form ──────────────────── */}
+          <AnimatePresence>
+            {showForm && (
+              <motion.div
+                key="lf-form"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.4, ease }}
+                style={{ overflow: "hidden" }}
+              >
+                <section className="lfx-block" style={{ position: "relative", overflow: "hidden" }}>
+                  <div style={{
+                    position: "absolute", top: 0, left: 0, right: 0, height: 3,
+                    background: `linear-gradient(90deg, ${C.indigo}, ${C.orange})`,
+                  }} />
+                  <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: C.ink, margin: "0 0 16px", letterSpacing: "-0.02em" }}>
+                    Report Lost or Found Item
+                  </h2>
+
+                  <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                      <div>
+                        <label className="lfx-form-label">Type *</label>
+                        <select name="type" value={form.type} onChange={onFormChange} className="lfx-input">
+                          <option value="lost">Lost — I'm looking for this</option>
+                          <option value="found">Found — I found this</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="lfx-form-label">Category *</label>
+                        <select name="category" value={form.category} onChange={onFormChange} className="lfx-input">
+                          {CATEGORIES.map((c) => (
+                            <option key={c} value={c}>{CATEGORY_META[c].label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="lfx-form-label">Title *</label>
+                      <input name="title" value={form.title} onChange={onFormChange} className="lfx-input" placeholder="e.g. Lost blue umbrella near gym" required />
+                    </div>
+
+                    <div>
+                      <label className="lfx-form-label">Description *</label>
+                      <textarea name="description" value={form.description} onChange={onFormChange} rows={3} className="lfx-input" placeholder="Describe color, brand, size, and key identifiers" required style={{ resize: "vertical", minHeight: 82 }} />
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                      <div>
+                        <label className="lfx-form-label">Location</label>
+                        <input name="location" value={form.location} onChange={onFormChange} className="lfx-input" placeholder="Near Gate B, Parking Lot…" />
+                      </div>
+                      <div>
+                        <label className="lfx-form-label">Date *</label>
+                        <input name="date" type="date" value={form.date} onChange={onFormChange} className="lfx-input" required />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="lfx-form-label">Photo URL (optional)</label>
+                      <input name="photo" value={form.photo} onChange={onFormChange} className="lfx-input" placeholder="Paste an image URL" />
+                    </div>
+
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button type="submit" className="lfx-btn-primary" disabled={submitting}>
+                        {submitting ? "Posting…" : <><Plus size={13} /> Post Item</>}
+                      </button>
+                      <button type="button" className="lfx-btn-soft" onClick={() => setShowForm(false)}>Cancel</button>
+                    </div>
+                  </form>
+                </section>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ── Category chips + Refresh ────────── */}
+          <motion.div
+            className="lfx-cat-bar"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease, delay: 0.1 }}
+          >
+            {CATEGORIES.map((c) => (
+              <button
+                key={c}
+                className={`lfx-chip${catFilter === c ? " active" : ""}`}
+                onClick={() => setCatFilter(catFilter === c ? "all" : c)}
+              >
+                {CATEGORY_META[c].label}
+              </button>
+            ))}
+            <button className="lfx-btn-soft" style={{ marginLeft: "auto" }} onClick={load} disabled={loading}>
+              <RefreshCw size={13} style={{ animation: loading ? "lfx-spin 1s linear infinite" : "none" }} />
+              Refresh
+            </button>
+          </motion.div>
+
+          {/* ── Masonry grid ───────────────────── */}
+          {loading ? (
+            <div className="lfx-masonry">
+              {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          ) : visible.length === 0 ? (
+            <motion.section
+              className="lfx-block"
+              style={{ textAlign: "center", padding: "60px 28px" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <div style={{
+                width: 60, height: 60, margin: "0 auto 14px",
+                borderRadius: 16, border: `1px solid ${C.indigoBr}`,
+                background: C.indigoL, display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <PackageSearch size={26} color={C.indigo} />
+              </div>
+              <p style={{ margin: "0 0 6px", fontSize: "1.15rem", fontWeight: 800, color: C.ink, letterSpacing: "-0.02em" }}>
+                {search || filter !== "all" || catFilter !== "all" ? "No posts match your filters" : "Nothing posted yet"}
+              </p>
+              <p style={{ margin: "0 0 18px", color: C.muted, fontSize: "0.84rem" }}>
+                {search || filter !== "all" || catFilter !== "all"
+                  ? "Try adjusting your filters or search terms."
+                  : "Be the first to report a lost or found item."}
+              </p>
+              {!showForm && (
+                <button className="lfx-btn-primary" onClick={() => setShowForm(true)}>
+                  <Plus size={13} /> Post Item
+                </button>
+              )}
+            </motion.section>
           ) : (
-            <section className="lfx-card-grid">
-              {visible.map((item, i) => (
-                <ItemCard
-                  key={item._id}
-                  item={item}
-                  userId={userId}
-                  onClaim={handleClaim}
-                  onResolve={handleResolve}
-                  onDelete={handleDelete}
-                  index={i}
-                />
-              ))}
-            </section>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`${filter}-${catFilter}-${search}`}
+                className="lfx-masonry"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.22 }}
+              >
+                {visible.map((item, i) => (
+                  <ItemCard
+                    key={item._id}
+                    item={item}
+                    userId={userId}
+                    onClaim={handleClaim}
+                    onResolve={handleResolve}
+                    onDelete={handleDelete}
+                    index={i}
+                  />
+                ))}
+              </motion.div>
+            </AnimatePresence>
           )}
         </div>
+
+        {/* ── Floating bottom toolbar ─────────── */}
+        <motion.div
+          className="lfx-float-bar"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease, delay: 0.18 }}
+        >
+          {[
+            { key: "all",   label: "All"   },
+            { key: "lost",  label: "Lost"  },
+            { key: "found", label: "Found" },
+          ].map(({ key, label }) => (
+            <button
+              key={key}
+              className={`lfx-bar-chip${filter === key ? " active" : ""}`}
+              onClick={() => setFilter(key)}
+            >
+              {label}
+            </button>
+          ))}
+
+          <div className="lfx-bar-divider" />
+
+          <button className="lfx-bar-post" onClick={() => setShowForm((v) => !v)}>
+            {showForm ? <><X size={12} /> Cancel</> : <><Plus size={12} /> Post Item</>}
+          </button>
+        </motion.div>
       </div>
     </>
   );

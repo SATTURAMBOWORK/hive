@@ -1,16 +1,136 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 
 const T = {
-  surface:   "#FFFFFF",
-  border:    "#E7DDC8",
-  borderHov: "#D8CDAE",
-  gold:      "#E8890C",
-  goldLight: "#C97508",
-  text:      "#24324A",
-  textSub:   "#5B6577",
-  textMuted: "#8B95A8",
-  green:     "#3d9e6e",
+  surface: "#FFFFFF",
+  border: "#E8E8ED",
+  borderHov: "#D1D5DB",
+  text: "#1C1C1E",
+  textSub: "#6B7280",
+  textMuted: "#9CA3AF",
+  indigo: "#4F46E5",
+  green: "#16A34A",
 };
+
+const CSS = `
+  .ag-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .ag-card {
+    border-radius: 18px;
+    border: 1px solid ${T.border};
+    background: ${T.surface};
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+
+  .ag-card:hover {
+    border-color: ${T.borderHov};
+    box-shadow: 0 10px 24px rgba(28,28,30,0.1);
+    transform: translateY(-2px);
+  }
+
+  .ag-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: ${T.text};
+    margin: 0 0 6px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  .ag-desc {
+    font-size: 13px;
+    color: ${T.textSub};
+    line-height: 1.5;
+    margin: 0 0 12px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .ag-chip {
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid ${T.border};
+    color: ${T.textSub};
+    background: #F9FAFB;
+  }
+
+  .ag-chip-success {
+    border-color: rgba(22,163,74,0.22);
+    color: ${T.green};
+    background: rgba(22,163,74,0.08);
+  }
+
+  .ag-book-btn {
+    width: 100%;
+    border-radius: 11px;
+    background: ${T.surface};
+    border: 1px solid ${T.border};
+    padding: 10px 0;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: ${T.text};
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, color 0.2s, transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+
+  .ag-book-btn::after {
+    content: '';
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 0;
+    height: 2px;
+    border-radius: 999px;
+    background: ${T.indigo};
+    transform: scaleX(0.2);
+    opacity: 0;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  .ag-book-btn:hover {
+    border-color: #C7C7CC;
+    box-shadow: 0 7px 16px rgba(28,28,30,0.1);
+    transform: translateY(-1px);
+  }
+
+  .ag-book-btn:hover::after {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+
+  .ag-book-btn:active {
+    transform: scale(0.97);
+  }
+
+  .ag-book-btn-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ag-book-btn-arrow {
+    transition: transform 0.18s ease;
+  }
+
+  .ag-book-btn:hover .ag-book-btn-arrow {
+    transform: translateX(2px);
+  }
+`;
 
 function PhotoCarousel({ photos }) {
   const [idx, setIdx] = useState(0);
@@ -43,7 +163,7 @@ function PhotoCarousel({ photos }) {
           <div style={{ position: "absolute", bottom: 10, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 4 }}>
             {photos.map((_, i) => (
               <button key={i} onClick={() => setIdx(i)}
-                style={{ height: 5, width: i === idx ? 16 : 5, borderRadius: 3, background: i === idx ? T.gold : "rgba(255,255,255,0.55)", border: "none", cursor: "pointer", padding: 0, transition: "all 0.2s" }} />
+                style={{ height: 5, width: i === idx ? 16 : 5, borderRadius: 3, background: i === idx ? T.indigo : "rgba(255,255,255,0.55)", border: "none", cursor: "pointer", padding: 0, transition: "all 0.2s" }} />
             ))}
           </div>
         </>
@@ -63,47 +183,51 @@ export function AmenityGrid({ amenities, onBook }) {
   }
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
-      {amenities.map(amenity => {
-        const [hovered, setHovered] = useState(false);
-        return (
-          <article key={amenity._id}
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
-            style={{ borderRadius: 18, border: `1px solid ${hovered ? T.borderHov : T.border}`, background: T.surface, overflow: "hidden", display: "flex", flexDirection: "column", transition: "border-color 0.25s, box-shadow 0.25s, transform 0.25s", boxShadow: hovered ? `0 8px 32px rgba(36,50,74,0.14)` : "none", transform: hovered ? "translateY(-2px)" : "translateY(0)" }}>
+    <>
+      <style>{CSS}</style>
+      <div className="ag-grid">
+        {amenities.map((amenity) => (
+          <motion.article
+            key={amenity._id}
+            layoutId={`amenity-${amenity._id}`}
+            className="ag-card"
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.99 }}
+            transition={{ type: "spring", stiffness: 340, damping: 28 }}
+          >
             <PhotoCarousel photos={amenity.photos} />
 
             <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: 18 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, color: T.text, margin: "0 0 6px", fontFamily: "'DM Sans', sans-serif" }}>
+              <motion.h3 layoutId={`amenity-title-${amenity._id}`} className="ag-title">
                 {amenity.name}
-              </h3>
+              </motion.h3>
               {amenity.description && (
-                <p style={{ fontSize: 13, color: T.textSub, lineHeight: 1.5, margin: "0 0 12px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                <p className="ag-desc">
                   {amenity.description}
                 </p>
               )}
 
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14, marginTop: "auto" }}>
-                <span style={{ padding: "3px 10px", borderRadius: 100, fontSize: 11, fontWeight: 600, background: `${T.gold}18`, color: T.textSub, border: `1px solid ${T.border}` }}>
+              <motion.div layoutId={`amenity-meta-${amenity._id}`} style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14, marginTop: "auto" }}>
+                <span className="ag-chip">
                   👥 Cap. {amenity.capacity}
                 </span>
                 {amenity.isAutoApprove && (
-                  <span style={{ padding: "3px 10px", borderRadius: 100, fontSize: 11, fontWeight: 600, background: `${T.green}18`, color: T.green, border: `1px solid ${T.green}44` }}>
+                  <span className="ag-chip ag-chip-success">
                     ⚡ Instant
                   </span>
                 )}
-              </div>
+              </motion.div>
 
-              <button onClick={() => onBook(amenity)}
-                style={{ width: "100%", borderRadius: 12, background: `linear-gradient(135deg, ${T.gold}, ${T.goldLight})`, boxShadow: "0 6px 18px rgba(232,137,12,0.28)", padding: "10px 0", fontSize: 13, fontWeight: 700, color: "#ffffff", border: "none", cursor: "pointer", transition: "all 0.2s" }}
-                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 10px 22px rgba(232,137,12,0.34)"; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(232,137,12,0.28)"; }}>
-                Book Now
+              <button className="ag-book-btn" onClick={() => onBook(amenity)}>
+                <span className="ag-book-btn-label">
+                  Book Now
+                  <span className="ag-book-btn-arrow">→</span>
+                </span>
               </button>
             </div>
-          </article>
-        );
-      })}
-    </div>
+          </motion.article>
+        ))}
+      </div>
+    </>
   );
 }
