@@ -367,11 +367,11 @@ const CSS = `
 
 /* ─── Nav config ─────────────────────────────── */
 const MAIN_LINKS = [
-  { to: "/", label: "Dashboard", end: true },
+  { to: "/",            label: "Dashboard",     end: true },
   { to: "/announcements", label: "Announcements" },
-  { to: "/events", label: "Events" },
-  { to: "/amenities", label: "Amenities" },
-  { to: "/tickets", label: "Tickets" },
+  { to: "/events",      label: "Events" },
+  { to: "/amenities",   label: "Amenities",     roles: ["resident","committee","super_admin"] },
+  { to: "/tickets",     label: "Tickets",       roles: ["resident","committee","super_admin"] },
 ];
 
 const COMMUNITY_LINKS = [
@@ -383,8 +383,9 @@ const COMMUNITY_LINKS = [
 ];
 
 const SECURITY_LINKS = [
-  { to: "/visitors",   label: "Visitor Log", roles: ["security","committee","super_admin"] },
-  { to: "/staff/gate", label: "Staff Gate",  roles: ["security","committee","super_admin"] },
+  { to: "/visitors",        label: "Visitor Log",    roles: ["security","committee","super_admin"] },
+  { to: "/staff/gate",      label: "Staff Gate",     roles: ["security","committee","super_admin"] },
+  { to: "/deliveries/gate", label: "Delivery Gate",  roles: ["security","committee","super_admin"] },
 ];
 
 const ADMIN_LINKS = [
@@ -462,7 +463,7 @@ export function Topbar() {
 
           {/* Main nav */}
           <nav className="tb-nav">
-            {MAIN_LINKS.map(l => (
+            {filterLinks(MAIN_LINKS, role).map(l => (
               <NavLink
                 key={l.to}
                 to={l.to}

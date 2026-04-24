@@ -192,6 +192,25 @@ export async function cancelPreReg(req, res, next) {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
+// GET /api/delivery-prereg/upcoming
+// WHO: security guard — see all active pre-regs across the tenant so they know
+//      what deliveries residents are expecting at the gate today/soon.
+// ────────────────────────────────────────────────────────────────────────────
+export async function listUpcomingPreRegs(req, res, next) {
+  try {
+    const now = new Date();
+    const items = await DeliveryPreReg.find({
+      tenantId: req.tenantId,
+      status: "active",
+      validUntil: { $gte: now },
+    }).sort({ expectedDate: 1, createdAt: 1 });
+    res.json({ items });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 // GET /api/delivery-prereg/active  (used internally by delivery controller)
 // WHO: security guard — when a delivery arrives, they search for a matching
 //      pre-reg so the system can auto-approve without bothering the resident.

@@ -19,6 +19,7 @@ import { StaffGatePage } from "./pages/StaffGatePage";
 import { PollsPage } from "./pages/PollsPage";
 import { LostFoundPage } from "./pages/LostFoundPage";
 import { DeliveriesPage } from "./pages/DeliveriesPage";
+import { GateDeliveryPage } from "./pages/GateDeliveryPage";
 import { useAuth } from "./components/AuthContext";
 
 function ProtectedDashboard() {
@@ -100,6 +101,7 @@ export function App() {
         <Route path="/staff" element={<ProtectedFeature><StaffPage /></ProtectedFeature>} />
         <Route path="/staff/gate" element={<ProtectedFeature><StaffGatePage /></ProtectedFeature>} />
         <Route path="/deliveries/my" element={<ProtectedFeature><DeliveriesPage /></ProtectedFeature>} />
+        <Route path="/deliveries/gate" element={<ProtectedFeature><GateDeliveryPage /></ProtectedFeature>} />
         <Route path="/polls" element={<ProtectedFeature><PollsPage /></ProtectedFeature>} />
         <Route path="/lost-found" element={<ProtectedFeature><LostFoundPage /></ProtectedFeature>} />
       </Route>

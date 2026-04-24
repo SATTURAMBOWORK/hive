@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   logDelivery,
   listPendingDeliveries,
+  listActiveDeliveries,
   myDeliveries,
   approveDelivery,
   rejectDelivery,
@@ -33,6 +34,13 @@ deliveryRouter.get(
   listPendingDeliveries
 );
 
+// Guard sees all active deliveries (pending + approved, not yet handed over)
+deliveryRouter.get(
+  "/active",
+  requireRoles("security", "committee", "super_admin"),
+  listActiveDeliveries
+);
+
 // Guard marks a parcel as physically handed over to the resident
 deliveryRouter.post(
   "/:id/handover",
@@ -56,17 +64,17 @@ deliveryRouter.get(
   myDeliveries
 );
 
-// Resident approves an awaiting delivery (tapped "Allow" on notification)
+// Guard approves an awaiting delivery
 deliveryRouter.post(
   "/:id/approve",
-  requireRoles("resident", "committee", "super_admin"),
+  requireRoles("security", "committee", "super_admin"),
   approveDelivery
 );
 
-// Resident rejects an awaiting delivery (tapped "Deny" on notification)
+// Guard rejects an awaiting delivery
 deliveryRouter.post(
   "/:id/reject",
-  requireRoles("resident", "committee", "super_admin"),
+  requireRoles("security", "committee", "super_admin"),
   rejectDelivery
 );
 

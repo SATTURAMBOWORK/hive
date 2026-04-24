@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   CalendarDays,
   CheckCircle2,
@@ -14,28 +15,30 @@ import {
 import { apiRequest } from "../components/api";
 import { useAuth } from "../components/AuthContext";
 
-const T = {
-  bg: "#F8FAFF",
-  panel: "#FFFFFF",
-  border: "#E3EAFB",
-  borderSoft: "#EEF3FF",
-  ink: "#0F1C3C",
-  inkSoft: "#3A4E7A",
-  muted: "#7E8EAF",
-  orange: "#E8890C",
-  orangeDeep: "#C97508",
-  orangePale: "#FFF8F0",
-  orangeLine: "#FDECC8",
-  blue: "#2563EB",
-  bluePale: "#EAF1FF",
-  green: "#16A34A",
-  greenPale: "#DCFCE7",
+const C = {
+  bg: "#FAFAFC",
+  surface: "#FFFFFF",
+  ink: "#1C1C1E",
+  ink2: "#3A3A3C",
+  muted: "#6B7280",
+  faint: "#9CA3AF",
+  border: "#E8E8ED",
+  borderL: "#F0F0F5",
+  indigo: "#4F46E5",
+  indigoD: "#4338CA",
+  indigoL: "#EEF2FF",
+  indigoBr: "#C7D2FE",
   red: "#DC2626",
-  redPale: "#FEE2E2",
-  violet: "#7C3AED",
-  violetPale: "#F3E8FF",
-  shadow: "0 14px 34px rgba(17,24,39,0.09)",
-  shadowSoft: "0 8px 22px rgba(17,24,39,0.07)",
+  redL: "#FEF2F2",
+  redBr: "#FECACA",
+  amber: "#E8890C",
+  amberD: "#D97706",
+  amberL: "#FFFBEB",
+  amberBr: "#FCD34D",
+  green: "#16A34A",
+  greenL: "#DCFCE7",
+  shadow: "0 14px 32px rgba(28,28,30,0.08)",
+  shadowSoft: "0 8px 22px rgba(28,28,30,0.06)",
 };
 
 const DELIVERY_STATUS_META = {
@@ -78,22 +81,20 @@ const FILTERS = [
   { key: "done", label: "Completed" },
 ];
 
+const MOTION_EASE = [0.22, 1, 0.36, 1];
+
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
   .dlv-root * { box-sizing: border-box; }
 
   .dlv-root {
     min-height: calc(100vh - 64px);
     padding: 22px 18px 80px;
-    background:
-      radial-gradient(780px 320px at 84% -8%, rgba(232,137,12,0.16), transparent 64%),
-      radial-gradient(680px 320px at -12% 0%, rgba(37,99,235,0.1), transparent 66%),
-      ${T.bg};
-    color: ${T.ink};
-    font-family: 'Manrope', sans-serif;
+    background: ${C.bg};
+    color: ${C.ink};
+    font-family: 'Plus Jakarta Sans', sans-serif;
     position: relative;
-    overflow: hidden;
   }
 
   .dlv-root::before {
@@ -102,93 +103,40 @@ const CSS = `
     inset: 0;
     pointer-events: none;
     background-image:
-      linear-gradient(to right, rgba(148,163,184,0.11) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(148,163,184,0.11) 1px, transparent 1px);
-    background-size: 34px 34px;
-    mask-image: radial-gradient(circle at 15% 8%, rgba(0,0,0,0.95), transparent 72%);
+      linear-gradient(to right, rgba(148,163,184,0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(148,163,184,0.08) 1px, transparent 1px);
+    background-size: 38px 38px;
+    mask-image: radial-gradient(circle at 20% 8%, rgba(0,0,0,0.8), transparent 70%);
   }
 
   .dlv-shell {
-    max-width: 1080px;
+    max-width: 1120px;
     margin: 0 auto;
     position: relative;
     z-index: 1;
   }
 
-  @keyframes dlvRise {
-    from { opacity: 0; transform: translateY(14px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes dlvPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(232,137,12,0.38); }
-    50% { box-shadow: 0 0 0 8px rgba(232,137,12,0); }
-  }
-
-  @keyframes dlvShimmer {
-    0% { background-position: 200% center; }
-    100% { background-position: -200% center; }
-  }
-
-  @keyframes dlvSpin { to { transform: rotate(360deg); } }
-
-  .dlv-enter {
-    opacity: 0;
-    animation: dlvRise 0.46s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  }
-
-  .dlv-hero {
-    position: relative;
-    border-radius: 28px;
-    border: 1px solid rgba(255,255,255,0.58);
-    background: linear-gradient(135deg, #FFFFFF 0%, #FFF9F3 44%, #FFF3E2 100%);
-    padding: 18px;
-    box-shadow: ${T.shadow};
-    overflow: hidden;
-  }
-
-  .dlv-hero::before {
-    content: '';
-    position: absolute;
-    top: -90px;
-    right: -80px;
-    width: 220px;
-    height: 220px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(232,137,12,0.2), rgba(232,137,12,0));
-    pointer-events: none;
-  }
-
-  .dlv-hero::after {
-    content: '';
-    position: absolute;
-    left: 34%;
-    bottom: -70px;
-    width: 160px;
-    height: 160px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(37,99,235,0.12), rgba(37,99,235,0));
-    pointer-events: none;
-  }
-
-  .dlv-hero-head {
+  .dlv-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 14px;
     flex-wrap: wrap;
-    position: relative;
-    z-index: 2;
+    margin-bottom: 14px;
+  }
+
+  .dlv-header-main {
+    max-width: 690px;
   }
 
   .dlv-pill {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
     border-radius: 999px;
-    border: 1px solid ${T.orangeLine};
-    background: ${T.orangePale};
-    color: ${T.orangeDeep};
+    border: 1px solid ${C.indigoBr};
+    background: ${C.indigoL};
+    color: ${C.indigoD};
     padding: 6px 11px;
     font-size: 0.72rem;
     font-weight: 800;
@@ -199,76 +147,59 @@ const CSS = `
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: ${T.orange};
-    animation: dlvPulse 2.2s ease-in-out infinite;
+    background: ${C.indigo};
   }
 
   .dlv-title {
     margin: 10px 0 0;
-    font-family: 'Outfit', sans-serif;
-    font-size: clamp(1.8rem, 4.2vw, 2.6rem);
-    line-height: 1.06;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: clamp(1.7rem, 3.8vw, 2.35rem);
+    line-height: 1.08;
     font-weight: 800;
-    color: ${T.ink};
+    color: ${C.ink};
     letter-spacing: -0.03em;
   }
 
-  .dlv-title span { color: ${T.orange}; }
+  .dlv-title span { color: ${C.indigo}; }
 
   .dlv-sub {
     margin: 8px 0 0;
     font-size: 0.88rem;
-    line-height: 1.7;
-    color: ${T.inkSoft};
+    line-height: 1.65;
+    color: ${C.muted};
     max-width: 66ch;
     font-weight: 600;
   }
 
-  .dlv-hero-actions {
+  .dlv-header-actions {
     display: flex;
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
-    margin-top: 16px;
-    position: relative;
-    z-index: 2;
+    align-self: flex-start;
+    padding-top: 6px;
   }
 
   .dlv-btn-primary,
   .dlv-btn-ghost,
   .dlv-btn-danger {
-    position: relative;
-    isolation: isolate;
-    overflow: hidden;
-    border-radius: 12px;
-    padding: 10px 15px;
+    border-radius: 11px;
+    padding: 9px 14px;
     border: 1px solid transparent;
     display: inline-flex;
     align-items: center;
     gap: 7px;
     cursor: pointer;
-    font-family: 'Manrope', sans-serif;
-    font-size: 0.81rem;
-    font-weight: 800;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.79rem;
+    font-weight: 700;
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   }
 
   .dlv-btn-primary {
-    background: linear-gradient(135deg, ${T.orange}, ${T.orangeDeep});
+    background: linear-gradient(135deg, ${C.indigo}, ${C.indigoD});
     color: #FFFFFF;
-    box-shadow: 0 9px 20px rgba(232,137,12,0.28);
-  }
-
-  .dlv-btn-primary::before,
-  .dlv-btn-ghost::before,
-  .dlv-btn-danger::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(120deg, rgba(255,255,255,0) 34%, rgba(255,255,255,0.34) 52%, rgba(255,255,255,0) 68%);
-    transform: translateX(-130%);
-    transition: transform 0.55s ease;
-    z-index: -1;
+    box-shadow: 0 8px 18px rgba(79,70,229,0.26);
   }
 
   .dlv-btn-primary:hover:not(:disabled),
@@ -278,31 +209,25 @@ const CSS = `
   }
 
   .dlv-btn-primary:hover:not(:disabled) {
-    box-shadow: 0 13px 24px rgba(232,137,12,0.34);
-  }
-
-  .dlv-btn-primary:hover:not(:disabled)::before,
-  .dlv-btn-ghost:hover:not(:disabled)::before,
-  .dlv-btn-danger:hover:not(:disabled)::before {
-    transform: translateX(130%);
+    box-shadow: 0 12px 22px rgba(79,70,229,0.33);
   }
 
   .dlv-btn-ghost {
-    border-color: #D8E2FB;
-    background: #FFFFFF;
-    color: ${T.inkSoft};
-    box-shadow: 0 6px 16px rgba(17,24,39,0.08);
+    border-color: ${C.border};
+    background: ${C.surface};
+    color: ${C.ink2};
+    box-shadow: 0 6px 14px rgba(28,28,30,0.06);
   }
 
   .dlv-btn-ghost:hover:not(:disabled) {
-    border-color: #C7D5F8;
-    box-shadow: ${T.shadowSoft};
-    color: ${T.ink};
+    border-color: #C7C7CC;
+    box-shadow: ${C.shadowSoft};
+    color: ${C.ink};
   }
 
   .dlv-btn-danger {
-    border-color: #FECACA;
-    background: #FEF2F2;
+    border-color: ${C.redBr};
+    background: ${C.redL};
     color: #B91C1C;
   }
 
@@ -320,84 +245,92 @@ const CSS = `
   }
 
   .dlv-error {
-    margin-top: 12px;
-    border-radius: 14px;
-    border: 1px solid #FECACA;
-    background: #FEF2F2;
+    margin: 10px 0 0;
+    border-radius: 12px;
+    border: 1px solid ${C.redBr};
+    background: ${C.redL};
     color: #B91C1C;
-    padding: 10px 13px;
-    font-size: 0.84rem;
+    padding: 10px 12px;
+    font-size: 0.82rem;
     font-weight: 700;
   }
 
   .dlv-metrics {
-    margin-top: 14px;
+    margin: 10px 0 0;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
+    gap: 16px;
   }
 
   .dlv-metric {
-    border-radius: 15px;
-    border: 1px solid ${T.border};
-    background: rgba(255,255,255,0.92);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    padding: 11px 12px;
+    border-radius: 16px;
+    border: 1px solid ${C.border};
+    background: ${C.surface};
+    padding: 12px;
+    box-shadow: 0 8px 20px rgba(28,28,30,0.06);
+    min-height: 92px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 
   .dlv-metric-value {
-    font-family: 'Outfit', sans-serif;
-    font-size: 1.52rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.45rem;
     line-height: 1;
     font-weight: 800;
     letter-spacing: -0.04em;
   }
 
   .dlv-metric-label {
-    margin-top: 5px;
-    color: ${T.muted};
-    font-size: 0.73rem;
+    margin-top: 6px;
+    color: ${C.muted};
+    font-size: 0.72rem;
     font-weight: 700;
   }
 
   .dlv-grid {
     margin-top: 14px;
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
-    gap: 12px;
+    grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr);
+    gap: 24px;
     align-items: start;
   }
 
   .dlv-panel {
+    position: relative;
     border-radius: 22px;
-    border: 1px solid ${T.border};
-    background: rgba(255,255,255,0.95);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    box-shadow: ${T.shadowSoft};
-    padding: 14px;
+    border: 1px solid ${C.border};
+    background: ${C.surface};
+    box-shadow: ${C.shadowSoft};
+    padding: 24px;
+  }
+
+  .dlv-sidebar {
+    position: sticky;
+    top: 22px;
+    align-self: start;
   }
 
   .dlv-panel-title {
     margin: 0;
-    font-family: 'Outfit', sans-serif;
-    color: ${T.ink};
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: ${C.ink};
     font-size: 1.2rem;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: -0.02em;
   }
 
   .dlv-panel-sub {
     margin: 4px 0 0;
     font-size: 0.8rem;
-    color: ${T.muted};
+    color: ${C.muted};
     font-weight: 600;
   }
 
   .dlv-feed-head {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
     gap: 10px;
     flex-wrap: wrap;
@@ -412,27 +345,27 @@ const CSS = `
   }
 
   .dlv-chip {
-    border: 1px solid #DCE5FB;
+    border: 1px solid ${C.border};
     border-radius: 999px;
-    background: #FFFFFF;
-    color: ${T.inkSoft};
+    background: ${C.surface};
+    color: ${C.ink2};
     font-size: 0.72rem;
     font-weight: 800;
-    font-family: 'Manrope', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     padding: 5px 11px;
     cursor: pointer;
     transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
   }
 
   .dlv-chip:hover {
-    color: ${T.ink};
-    border-color: #C8D7FC;
+    color: ${C.ink};
+    border-color: #C7C7CC;
   }
 
   .dlv-chip.active {
-    border-color: ${T.orangeLine};
-    background: ${T.orangePale};
-    color: ${T.orangeDeep};
+    border-color: ${C.indigoBr};
+    background: ${C.indigoL};
+    color: ${C.indigoD};
   }
 
   .dlv-search {
@@ -440,15 +373,15 @@ const CSS = `
     align-items: center;
     gap: 8px;
     border-radius: 12px;
-    border: 1px solid #DCE5FB;
-    background: #FFFFFF;
-    min-width: 215px;
+    border: 1px solid ${C.border};
+    background: ${C.surface};
+    min-width: 240px;
     padding: 8px 11px;
   }
 
   .dlv-search:focus-within {
-    border-color: #BFD2FF;
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    border-color: ${C.indigoBr};
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
   }
 
   .dlv-search input {
@@ -456,14 +389,14 @@ const CSS = `
     border: none;
     outline: none;
     background: transparent;
-    color: ${T.ink};
+    color: ${C.ink};
     font-size: 0.82rem;
-    font-family: 'Manrope', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-weight: 600;
   }
 
   .dlv-search input::placeholder {
-    color: ${T.muted};
+    color: ${C.faint};
     font-weight: 500;
   }
 
@@ -477,8 +410,8 @@ const CSS = `
     position: relative;
     overflow: hidden;
     border-radius: 16px;
-    border: 1px solid ${T.border};
-    background: #FFFFFF;
+    border: 1px solid ${C.border};
+    background: ${C.surface};
     padding: 12px;
     transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
   }
@@ -497,9 +430,9 @@ const CSS = `
   }
 
   .dlv-card:hover {
-    border-color: #CFDAFA;
+    border-color: #C7C7CC;
     transform: translateY(-1px);
-    box-shadow: 0 12px 22px rgba(17,24,39,0.1);
+    box-shadow: 0 12px 22px rgba(28,28,30,0.1);
   }
 
   .dlv-card:hover::before { opacity: 1; }
@@ -525,7 +458,7 @@ const CSS = `
 
   .dlv-time {
     margin-left: auto;
-    color: ${T.muted};
+    color: ${C.muted};
     font-size: 0.7rem;
     font-weight: 700;
     display: inline-flex;
@@ -535,10 +468,10 @@ const CSS = `
 
   .dlv-card-title {
     margin: 10px 0 0;
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 1rem;
-    font-weight: 700;
-    color: ${T.ink};
+    font-weight: 800;
+    color: ${C.ink};
     letter-spacing: -0.01em;
   }
 
@@ -551,14 +484,14 @@ const CSS = `
 
   .dlv-meta-item {
     border-radius: 10px;
-    border: 1px solid ${T.borderSoft};
-    background: #FBFDFF;
+    border: 1px solid ${C.borderL};
+    background: #FCFCFE;
     padding: 7px 8px;
     min-width: 0;
   }
 
   .dlv-meta-key {
-    color: ${T.muted};
+    color: ${C.muted};
     font-size: 0.66rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -567,7 +500,7 @@ const CSS = `
 
   .dlv-meta-value {
     margin-top: 3px;
-    color: ${T.inkSoft};
+    color: ${C.ink2};
     font-size: 0.79rem;
     font-weight: 700;
     white-space: nowrap;
@@ -595,12 +528,12 @@ const CSS = `
   .dlv-textarea {
     width: 100%;
     border-radius: 11px;
-    border: 1px solid ${T.border};
-    background: #FFFFFF;
+    border: 1px solid ${C.border};
+    background: ${C.surface};
     padding: 10px 11px;
-    color: ${T.ink};
+    color: ${C.ink};
     font-size: 0.82rem;
-    font-family: 'Manrope', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-weight: 600;
     outline: none;
     transition: border-color 0.18s ease, box-shadow 0.18s ease;
@@ -612,13 +545,13 @@ const CSS = `
   }
 
   .dlv-input::placeholder,
-  .dlv-textarea::placeholder { color: ${T.muted}; font-weight: 500; }
+  .dlv-textarea::placeholder { color: ${C.faint}; font-weight: 500; }
 
   .dlv-input:focus,
   .dlv-select:focus,
   .dlv-textarea:focus {
-    border-color: #BFD2FF;
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    border-color: ${C.indigoBr};
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
   }
 
   .dlv-form-grid {
@@ -629,7 +562,7 @@ const CSS = `
 
   .dlv-label {
     margin: 0 0 5px;
-    color: ${T.inkSoft};
+    color: ${C.ink2};
     font-size: 0.71rem;
     font-weight: 800;
     letter-spacing: 0.02em;
@@ -647,20 +580,20 @@ const CSS = `
 
   .dlv-suggest button {
     border-radius: 999px;
-    border: 1px solid ${T.border};
-    background: #FFFFFF;
-    color: ${T.inkSoft};
+    border: 1px solid ${C.border};
+    background: ${C.surface};
+    color: ${C.ink2};
     font-size: 0.67rem;
     font-weight: 800;
-    font-family: 'Manrope', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     padding: 4px 8px;
     cursor: pointer;
     transition: border-color 0.18s ease, color 0.18s ease;
   }
 
   .dlv-suggest button:hover {
-    border-color: ${T.orangeLine};
-    color: ${T.orangeDeep};
+    border-color: ${C.indigoBr};
+    color: ${C.indigoD};
   }
 
   .dlv-prereg-list {
@@ -672,8 +605,8 @@ const CSS = `
 
   .dlv-empty {
     border-radius: 14px;
-    border: 1px dashed #CDD9FA;
-    background: #FBFDFF;
+    border: 1px dashed ${C.border};
+    background: #FCFCFE;
     text-align: center;
     padding: 30px 14px;
   }
@@ -682,8 +615,8 @@ const CSS = `
     width: 44px;
     height: 44px;
     border-radius: 14px;
-    background: ${T.bluePale};
-    color: ${T.blue};
+    background: ${C.indigoL};
+    color: ${C.indigo};
     margin: 0 auto 10px;
     display: inline-flex;
     align-items: center;
@@ -692,27 +625,32 @@ const CSS = `
 
   .dlv-empty h3 {
     margin: 0;
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 1rem;
-    color: ${T.ink};
+    color: ${C.ink};
   }
 
   .dlv-empty p {
     margin: 5px 0 0;
     font-size: 0.78rem;
-    color: ${T.muted};
+    color: ${C.muted};
     font-weight: 600;
   }
 
   .dlv-sk {
     border-radius: 7px;
-    background: linear-gradient(90deg, #EEF3FF 25%, #E4ECFF 50%, #EEF3FF 75%);
-    background-size: 200% 100%;
-    animation: dlvShimmer 1.5s ease-in-out infinite;
+    background: #EEF0F7;
   }
 
   @media (max-width: 980px) {
     .dlv-grid { grid-template-columns: 1fr; }
+    .dlv-sidebar {
+      position: static;
+      top: auto;
+    }
+    .dlv-header-main {
+      max-width: 100%;
+    }
   }
 
   @media (max-width: 760px) {
@@ -767,9 +705,9 @@ function relativeTime(value) {
 }
 
 function toneColor(tone) {
-  if (tone === "action") return T.orange;
-  if (tone === "active") return T.blue;
-  return T.green;
+  if (tone === "action") return C.amber;
+  if (tone === "active") return C.indigo;
+  return C.green;
 }
 
 function StatusBadge({ status }) {
@@ -791,9 +729,9 @@ function PreRegStatusBadge({ status }) {
   );
 }
 
-function DeliverySkeleton({ delay }) {
+function DeliverySkeleton() {
   return (
-    <div className="dlv-card dlv-enter" style={{ animationDelay: `${delay}ms` }}>
+    <div className="dlv-card">
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
         <div className="dlv-sk" style={{ width: 124, height: 20, borderRadius: 999 }} />
         <div className="dlv-sk" style={{ width: 74, height: 12 }} />
@@ -805,26 +743,26 @@ function DeliverySkeleton({ delay }) {
   );
 }
 
-function DeliveryCard({ item, busyAction, onApprove, onReject }) {
+function DeliveryCard({ item }) {
   const statusMeta = DELIVERY_STATUS_META[item.status] || DELIVERY_STATUS_META.created;
-  const [showReject, setShowReject] = useState(false);
-  const [reason, setReason] = useState("");
-
-  const isAwaiting = item.status === "awaiting_approval";
-  const approveBusy = busyAction === `${item._id}:approve`;
-  const rejectBusy = busyAction === `${item._id}:reject`;
-
-  async function submitReject() {
-    await onReject(item._id, reason.trim());
-    setShowReject(false);
-    setReason("");
-  }
 
   return (
-    <article className="dlv-card dlv-enter" style={{ "--accent": toneColor(statusMeta.tone) }}>
+    <motion.article
+      layout
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{
+        layout: { duration: 0.32, ease: MOTION_EASE },
+        opacity: { duration: 0.28, ease: MOTION_EASE },
+        y: { duration: 0.28, ease: MOTION_EASE },
+      }}
+      className="dlv-card"
+      style={{ "--accent": toneColor(statusMeta.tone) }}
+    >
       <div className="dlv-top">
         <StatusBadge status={item.status} />
-        <span className="dlv-badge" style={{ color: T.inkSoft, background: "#F8FAFF", borderColor: T.border }}>
+        <span className="dlv-badge" style={{ color: C.ink2, background: C.bg, borderColor: C.border }}>
           {PACKAGE_TYPE_LABEL[item.packageType] || "Package"}
         </span>
         <span className="dlv-time">
@@ -854,79 +792,29 @@ function DeliveryCard({ item, busyAction, onApprove, onReject }) {
         </div>
       </div>
 
-      {isAwaiting && (
-        <>
-          <div className="dlv-action-row">
-            <button
-              type="button"
-              className="dlv-btn-primary"
-              disabled={approveBusy || rejectBusy}
-              onClick={() => onApprove(item._id)}
-            >
-              <CheckCircle2 size={14} />
-              {approveBusy ? "Approving..." : "Approve"}
-            </button>
-            <button
-              type="button"
-              className="dlv-btn-danger"
-              disabled={approveBusy || rejectBusy}
-              onClick={() => setShowReject((value) => !value)}
-            >
-              <XCircle size={14} />
-              Reject
-            </button>
-          </div>
-
-          {showReject && (
-            <div className="dlv-reject-box">
-              <p style={{ margin: "0 0 6px", fontSize: "0.73rem", fontWeight: 800, color: "#B91C1C" }}>
-                Add reason (optional)
-              </p>
-              <textarea
-                className="dlv-textarea"
-                placeholder="Example: Not expecting this delivery today"
-                value={reason}
-                onChange={(event) => setReason(event.target.value)}
-              />
-              <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button
-                  type="button"
-                  className="dlv-btn-danger"
-                  disabled={rejectBusy || approveBusy}
-                  onClick={submitReject}
-                >
-                  {rejectBusy ? "Rejecting..." : "Confirm reject"}
-                </button>
-                <button
-                  type="button"
-                  className="dlv-btn-ghost"
-                  disabled={rejectBusy || approveBusy}
-                  onClick={() => setShowReject(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-        </>
+      {item.status === "awaiting_approval" && (
+        <p style={{ marginTop: 10, fontSize: "0.76rem", color: C.amber, fontWeight: 700 }}>
+          ⏳ Waiting for gate approval
+        </p>
       )}
 
       {!!item.rejectionReason && (
-        <div style={{ marginTop: 9, borderRadius: 10, border: "1px solid #FECACA", background: "#FEF2F2", padding: "8px 9px" }}>
+        <div style={{ marginTop: 9, borderRadius: 10, border: `1px solid ${C.redBr}`, background: C.redL, padding: "8px 9px" }}>
           <p style={{ margin: 0, fontSize: "0.72rem", color: "#B91C1C", fontWeight: 700 }}>
             Reason: {item.rejectionReason}
           </p>
         </div>
       )}
-    </article>
+    </motion.article>
   );
 }
+
 
 function PreRegCard({ item, busyAction, onCancel }) {
   const cancelBusy = busyAction === `${item._id}:cancel-prereg`;
 
   return (
-    <article className="dlv-card" style={{ "--accent": T.green }}>
+    <article className="dlv-card" style={{ "--accent": C.green }}>
       <div className="dlv-top">
         <PreRegStatusBadge status={item.status} />
         <span className="dlv-time">
@@ -951,7 +839,7 @@ function PreRegCard({ item, busyAction, onCancel }) {
       </div>
 
       {!!item.instructions && (
-        <p style={{ margin: "9px 0 0", fontSize: "0.77rem", color: T.inkSoft, fontWeight: 600 }}>
+        <p style={{ margin: "9px 0 0", fontSize: "0.77rem", color: C.ink2, fontWeight: 600 }}>
           {item.instructions}
         </p>
       )}
@@ -981,7 +869,7 @@ export function DeliveriesPage() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [busyAction, setBusyAction] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(""); // busyAction kept for pre-reg cancel only
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -1010,14 +898,20 @@ export function DeliveriesPage() {
 
     setError("");
     try {
-      const [deliveryData, preRegData] = await Promise.all([
+      const [deliveryResult, preRegResult] = await Promise.allSettled([
         apiRequest("/delivery/my", { token }),
         apiRequest("/delivery-prereg", { token }),
       ]);
-      setDeliveries(deliveryData.items || []);
-      setPreRegs(preRegData.items || []);
-    } catch (err) {
-      setError(err.message || "Failed to load deliveries");
+
+      if (deliveryResult.status === "fulfilled") {
+        setDeliveries(deliveryResult.value.items || []);
+      } else {
+        setError(deliveryResult.reason?.message || "Failed to load deliveries");
+      }
+
+      if (preRegResult.status === "fulfilled") {
+        setPreRegs(preRegResult.value.items || []);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -1089,36 +983,6 @@ export function DeliveriesPage() {
     [preRegs],
   );
 
-  async function handleApprove(id) {
-    setBusyAction(`${id}:approve`);
-    setError("");
-    try {
-      const data = await apiRequest(`/delivery/${id}/approve`, { method: "POST", token });
-      setDeliveries((prev) => prev.map((item) => (item._id === id ? data.item : item)));
-    } catch (err) {
-      setError(err.message || "Unable to approve delivery");
-    } finally {
-      setBusyAction("");
-    }
-  }
-
-  async function handleReject(id, reason) {
-    setBusyAction(`${id}:reject`);
-    setError("");
-    try {
-      const data = await apiRequest(`/delivery/${id}/reject`, {
-        method: "POST",
-        token,
-        body: { rejectionReason: reason || "" },
-      });
-      setDeliveries((prev) => prev.map((item) => (item._id === id ? data.item : item)));
-    } catch (err) {
-      setError(err.message || "Unable to reject delivery");
-    } finally {
-      setBusyAction("");
-    }
-  }
-
   async function handleCancelPreReg(id) {
     setBusyAction(`${id}:cancel-prereg`);
     setError("");
@@ -1181,31 +1045,42 @@ export function DeliveriesPage() {
       <style>{CSS}</style>
       <div className="dlv-root">
         <div className="dlv-shell">
-          <section className="dlv-hero dlv-enter" style={{ animationDelay: "0ms" }}>
-            <div className="dlv-hero-head">
-              <span className="dlv-pill">
-                <span className="dlv-pill-dot" />
-                {summary.awaiting > 0
-                  ? `${summary.awaiting} delivery action${summary.awaiting > 1 ? "s" : ""} pending`
-                  : "Everything is under control"}
-              </span>
+          <motion.section
+            className="dlv-header"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: MOTION_EASE }}
+          >
+            <div className="dlv-header-main">
+              {summary.awaiting > 0 && (
+                <span className="dlv-pill">
+                  <span className="dlv-pill-dot" />
+                  {`${summary.awaiting} delivery action${summary.awaiting > 1 ? "s" : ""} pending`}
+                </span>
+              )}
+
+              <h1 className="dlv-title">
+                Deliveries, but <span>smarter.</span>
+              </h1>
+              <p className="dlv-sub">
+                Track every package, pre-register expected arrivals, and take instant actions with minimal effort.
+              </p>
             </div>
 
-            <h1 className="dlv-title">
-              Deliveries, but <span>smarter.</span>
-            </h1>
-            <p className="dlv-sub">
-              Track every package, pre-register expected arrivals, and take instant actions with minimal effort.
-            </p>
-
-            <div className="dlv-hero-actions">
+            <div className="dlv-header-actions">
               <button
                 type="button"
                 className="dlv-btn-ghost"
                 onClick={() => loadData({ soft: true })}
                 disabled={refreshing}
               >
-                <RefreshCw size={14} style={{ animation: refreshing ? "dlvSpin 1s linear infinite" : "none" }} />
+                <motion.span
+                  animate={refreshing ? { rotate: 360 } : { rotate: 0 }}
+                  transition={refreshing ? { repeat: Infinity, duration: 0.9, ease: "linear" } : { duration: 0.2 }}
+                  style={{ display: "inline-flex" }}
+                >
+                  <RefreshCw size={14} />
+                </motion.span>
                 {refreshing ? "Refreshing..." : "Refresh"}
               </button>
 
@@ -1220,27 +1095,47 @@ export function DeliveriesPage() {
                 </button>
               )}
             </div>
+          </motion.section>
 
-            {error && <div className="dlv-error">{error}</div>}
+          {error && <div className="dlv-error">{error}</div>}
 
-            <div className="dlv-metrics">
-              <div className="dlv-metric">
-                <p className="dlv-metric-value" style={{ color: T.orange }}>{summary.awaiting}</p>
-                <p className="dlv-metric-label">Awaiting approvals</p>
-              </div>
-              <div className="dlv-metric">
-                <p className="dlv-metric-value" style={{ color: T.green }}>{summary.deliveredThisMonth}</p>
-                <p className="dlv-metric-label">Delivered this month</p>
-              </div>
-              <div className="dlv-metric">
-                <p className="dlv-metric-value" style={{ color: T.blue }}>{summary.activePreRegs}</p>
-                <p className="dlv-metric-label">Active pre-registrations</p>
-              </div>
-            </div>
-          </section>
+          <div className="dlv-metrics">
+            <motion.div
+              className="dlv-metric"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05, duration: 0.4, ease: MOTION_EASE }}
+            >
+              <p className="dlv-metric-value" style={{ color: C.amber }}>{summary.awaiting}</p>
+              <p className="dlv-metric-label">Awaiting approvals</p>
+            </motion.div>
+            <motion.div
+              className="dlv-metric"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.4, ease: MOTION_EASE }}
+            >
+              <p className="dlv-metric-value" style={{ color: C.green }}>{summary.deliveredThisMonth}</p>
+              <p className="dlv-metric-label">Delivered this month</p>
+            </motion.div>
+            <motion.div
+              className="dlv-metric"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, duration: 0.4, ease: MOTION_EASE }}
+            >
+              <p className="dlv-metric-value" style={{ color: C.indigo }}>{summary.activePreRegs}</p>
+              <p className="dlv-metric-label">Active pre-registrations</p>
+            </motion.div>
+          </div>
 
           <section className="dlv-grid">
-            <div className="dlv-panel dlv-enter" style={{ animationDelay: "60ms" }}>
+            <motion.div
+              className="dlv-panel"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.18, duration: 0.42, ease: MOTION_EASE }}
+            >
               <div className="dlv-feed-head">
                 <div>
                   <h2 className="dlv-panel-title">My delivery stream</h2>
@@ -1248,7 +1143,7 @@ export function DeliveriesPage() {
                 </div>
 
                 <div className="dlv-search">
-                  <Search size={14} color={T.muted} />
+                  <Search size={14} color={C.muted} />
                   <input
                     type="search"
                     value={searchInput}
@@ -1271,41 +1166,56 @@ export function DeliveriesPage() {
                 ))}
               </div>
 
-              <div className="dlv-list">
+              <motion.div layout className="dlv-list">
                 {loading && [0, 1, 2].map((index) => (
-                  <DeliverySkeleton key={index} delay={index * 60} />
+                  <DeliverySkeleton key={index} />
                 ))}
 
-                {!loading && filteredDeliveries.length === 0 && (
-                  <div className="dlv-empty">
-                    <div className="dlv-empty-mark">
-                      <Package size={20} />
-                    </div>
-                    <h3>No deliveries found</h3>
-                    <p>Try a different filter or search keyword.</p>
-                  </div>
-                )}
+                <AnimatePresence mode="popLayout">
+                  {!loading && filteredDeliveries.length === 0 && (
+                    <motion.div
+                      key="empty-deliveries"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.28, ease: MOTION_EASE }}
+                      className="dlv-empty"
+                    >
+                      <div className="dlv-empty-mark">
+                        <Package size={20} />
+                      </div>
+                      <h3>No deliveries found</h3>
+                      <p>Try a different filter or search keyword.</p>
+                    </motion.div>
+                  )}
 
-                {!loading && filteredDeliveries.map((item, index) => (
-                  <div key={item._id} className="dlv-enter" style={{ animationDelay: `${index * 38}ms` }}>
-                    <DeliveryCard
-                      item={item}
-                      busyAction={busyAction}
-                      onApprove={handleApprove}
-                      onReject={handleReject}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
+                  {!loading && filteredDeliveries.map((item) => (
+                    <DeliveryCard key={item._id} item={item} />
+                  ))}
+                </AnimatePresence>
+              </motion.div>
+            </motion.div>
 
-            <aside className="dlv-panel dlv-enter" style={{ animationDelay: "95ms" }}>
+            <motion.aside
+              className="dlv-panel dlv-sidebar"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.22, duration: 0.4, ease: MOTION_EASE }}
+            >
               <div>
                 <h2 className="dlv-panel-title">Expected deliveries</h2>
                 <p className="dlv-panel-sub">Pre-register to speed up gate handling</p>
               </div>
 
-              {canPreRegister && showPreRegForm && (
+              <AnimatePresence initial={false}>
+                {canPreRegister && showPreRegForm && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.28, ease: MOTION_EASE }}
+                  style={{ overflow: "hidden" }}
+                >
                 <form onSubmit={handleCreatePreReg} style={{ marginTop: 12 }}>
                   <div className="dlv-form-grid">
                     <div className="dlv-form-block">
@@ -1409,12 +1319,14 @@ export function DeliveriesPage() {
                     </button>
                   </div>
                 </form>
-              )}
+                </motion.div>
+                )}
+              </AnimatePresence>
 
               <div className="dlv-prereg-list">
                 {!loading && sortedPreRegs.length === 0 && (
                   <div className="dlv-empty">
-                    <div className="dlv-empty-mark" style={{ background: T.orangePale, color: T.orange }}>
+                    <div className="dlv-empty-mark" style={{ background: C.amberL, color: C.amber }}>
                       <CalendarDays size={20} />
                     </div>
                     <h3>No pre-registrations</h3>
@@ -1431,7 +1343,7 @@ export function DeliveriesPage() {
                   />
                 ))}
               </div>
-            </aside>
+            </motion.aside>
           </section>
         </div>
       </div>

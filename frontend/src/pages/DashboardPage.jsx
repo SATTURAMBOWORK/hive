@@ -8,7 +8,6 @@ import {
 import { useAuth } from "../components/AuthContext";
 import { apiRequest } from "../components/api";
 import { getSocket } from "../components/socket";
-import { SecurityDashboard } from "./SecurityDashboard";
 import { EventChainTimeline } from "../components/EventChainTimeline";
 
 /* ─── Design tokens ────────────────────────────────────── */
@@ -581,14 +580,22 @@ const AMENITIES_ROTATING_IMAGES = [
 ];
 
 const FEATURES = [
-  { title: "Amenities",     desc: "Book gym, pool & shared spaces",      to: "/amenities",       img: PX(6012017),  roles: null },
+  // ── All roles ──────────────────────────────────────────────────────────────
   { title: "Announcements", desc: "Society notices & updates",           to: "/announcements",   img: PX(8846035),  roles: null },
   { title: "Events",        desc: "Community gatherings & programmes",   to: "/events",          img: PX(30388543), roles: null },
-  { title: "My Tickets",    desc: "Track maintenance & requests",        to: "/tickets",         img: "/images/dashboard/tickets-maintenance.jpg",  roles: null },
+
+  // ── Residents & admins only ─────────────────────────────────────────────
+  { title: "Amenities",     desc: "Book gym, pool & shared spaces",      to: "/amenities",       img: PX(6012017),  roles: ["resident","committee","super_admin"] },
+  { title: "My Tickets",    desc: "Track maintenance & requests",        to: "/tickets",         img: "/images/dashboard/tickets-maintenance.jpg", roles: ["resident","committee","super_admin"] },
   { title: "Polls",         desc: "Vote on community decisions",         to: "/polls",           img: PX(8846076),  roles: ["resident","committee","super_admin"] },
   { title: "Visitors",      desc: "Manage & pre-register guests",        to: "/visitors/prereg", img: PX(22940794), roles: ["resident","committee","super_admin"] },
   { title: "My Deliveries", desc: "Track parcels & couriers",            to: "/deliveries/my",   img: PX(7362965),  roles: ["resident","committee","super_admin"] },
-  { title: "Lost & Found",  desc: "Report lost or claim found items",    to: "/lost-found",      img: PX(5598028),  roles: null },
+  { title: "Lost & Found",  desc: "Report lost or claim found items",    to: "/lost-found",      img: PX(5598028),  roles: ["resident","committee","super_admin"] },
+
+  // ── Security & admins only ─────────────────────────────────────────────
+  { title: "Visitor Log",   desc: "Monitor & manage gate visitors",      to: "/visitors",        img: PX(1464227),  roles: ["security","committee","super_admin"] },
+  { title: "Staff Gate",    desc: "Record staff entries & exits",        to: "/staff/gate",      img: PX(3184360),  roles: ["security","committee","super_admin"] },
+  { title: "Delivery Gate", desc: "Log & approve delivery agents",       to: "/deliveries/gate", img: PX(4481326),  roles: ["security","committee","super_admin"] },
 ];
 
 /* ─── Feed config ──────────────────────────── */
@@ -641,8 +648,6 @@ function Sk({ style }) { return <div className="dp-sk" style={style} />; }
 ════════════════════════════════════════════════ */
 export function DashboardPage() {
   const { token, user, membership } = useAuth();
-
-  if (user?.role === "security") return <SecurityDashboard />;
 
   const isAdmin    = ["committee","super_admin"].includes(user?.role);
   const isResident = user?.role === "resident";

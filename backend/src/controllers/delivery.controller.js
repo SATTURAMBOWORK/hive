@@ -154,6 +154,23 @@ export async function listPendingDeliveries(req, res, next) {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
+// GET /api/delivery/active
+// WHO: security guard — all deliveries currently needing gate action
+//      (awaiting approval OR approved but not yet handed over)
+// ────────────────────────────────────────────────────────────────────────────
+export async function listActiveDeliveries(req, res, next) {
+  try {
+    const items = await Delivery.find({
+      tenantId: req.tenantId,
+      status: { $in: ["awaiting_approval", "approved_auto", "approved_manual"] },
+    }).sort({ createdAt: -1 });
+    res.json({ items });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 // GET /api/delivery/my
 // WHO: resident — sees their own delivery history.
 //
@@ -192,12 +209,8 @@ export async function approveDelivery(req, res, next) {
     // TODO: Step 1
      const delivery = await Delivery.findOne({ _id: req.params.id, tenantId: req.tenantId });
 
-    // TODO: Step 2
-     if (!delivery) throw new AppError("Delivery not found", StatusCodes.NOT_FOUND);
-    if (String(delivery.residentId) !== req.user.userId) throw new AppError("Forbidden", StatusCodes.FORBIDDEN);
-
-    // TODO: Step 3
-     if (delivery.status !== "awaiting_approval") throw new AppError(`Cannot approve a delivery that is "${delivery.status}"`, StatusCodes.BAD_REQUEST);
+    if (!delivery) throw new AppError("Delivery not found", StatusCodes.NOT_FOUND);
+    if (delivery.status !== "awaiting_approval") throw new AppError(`Cannot approve a delivery that is "${delivery.status}"`, StatusCodes.BAD_REQUEST);
 
     // TODO: Steps 4 + 5 + 6
     delivery.status     = "approved_manual";
@@ -240,14 +253,10 @@ export async function rejectDelivery(req, res, next) {
     // TODO: Step 1
     const delivery = await Delivery.findOne({ _id: req.params.id, tenantId: req.tenantId });
 
-    // TODO: Step 2
-     if (!delivery) throw new AppError("Delivery not found", StatusCodes.NOT_FOUND);
-    if (String(delivery.residentId) !== req.user.userId) throw new AppError("Forbidden", StatusCodes.FORBIDDEN);
-
-    // TODO: Step 3
-     if (delivery.status !== "awaiting_approval") {
+    if (!delivery) throw new AppError("Delivery not found", StatusCodes.NOT_FOUND);
+    if (delivery.status !== "awaiting_approval") {
       throw new AppError(`Cannot reject a delivery that is "${delivery.status}"`, StatusCodes.BAD_REQUEST);
-     }
+    }
 
      const rejectionReason = sanitizeText(req.body?.rejectionReason);
      delivery.status          = "rejected";
