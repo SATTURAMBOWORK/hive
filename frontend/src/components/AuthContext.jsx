@@ -15,7 +15,12 @@ export function AuthProvider({ children }) {
     return raw ? JSON.parse(raw) : { token: "", user: null };
   });
   const [membership, setMembership] = useState(null);
-  const [isMembershipLoading, setIsMembershipLoading] = useState(false);
+  const [isMembershipLoading, setIsMembershipLoading] = useState(() => {
+    const raw = localStorage.getItem("apthive_auth");
+    if (!raw) return false;
+    const { token } = JSON.parse(raw);
+    return Boolean(token);
+  });
 
   const persistAuth = useCallback((next) => {
     setAuth(next);
