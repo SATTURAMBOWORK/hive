@@ -91,13 +91,13 @@ export async function createPoll(req, res, next) {
       throw new AppError("Options cannot be empty strings", StatusCodes.BAD_REQUEST);
     }
 
-    // Validate endsAt
-    let endsAt = null;
-    if (endsAtRaw) {
-      endsAt = new Date(endsAtRaw);
-      if (isNaN(endsAt.getTime())) throw new AppError("endsAt is not a valid date", StatusCodes.BAD_REQUEST);
-      if (endsAt <= new Date()) throw new AppError("endsAt must be in the future", StatusCodes.BAD_REQUEST);
-    }
+    // Validate endsAt — required, must be future, max 7 days from now
+    if (!endsAtRaw) throw new AppError("Poll end time is required", StatusCodes.BAD_REQUEST);
+    const endsAt = new Date(endsAtRaw);
+    if (isNaN(endsAt.getTime())) throw new AppError("endsAt is not a valid date", StatusCodes.BAD_REQUEST);
+    if (endsAt <= new Date()) throw new AppError("End time must be in the future", StatusCodes.BAD_REQUEST);
+    const maxEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    if (endsAt > maxEndsAt) throw new AppError("End time cannot be more than 7 days from now", StatusCodes.BAD_REQUEST);
 
     const poll = await Poll.create({
       tenantId:  req.tenantId,
