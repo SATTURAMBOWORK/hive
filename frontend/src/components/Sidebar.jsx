@@ -288,8 +288,8 @@ const NAV_GROUPS = [
   {
     label: "SECURITY",
     items: [
-      { to: "/visitors",   label: "Visitor Log", Icon: Users,        roles: ["security","super_admin"] },
-      { to: "/staff/gate", label: "Staff Gate",  Icon: PackageCheck, roles: ["security","super_admin"] },
+      { to: "/visitors",   label: "Visitor Log", Icon: Users,        roles: ["security"] },
+      { to: "/staff/gate", label: "Staff Gate",  Icon: PackageCheck, roles: ["security"] },
     ],
   },
   {

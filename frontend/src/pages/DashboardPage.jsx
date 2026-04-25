@@ -858,9 +858,9 @@ const FEATURES = [
   { title: "Lost & Found",  desc: "Report lost or claim found items",    to: "/lost-found",      img: PX(5598028),  roles: ["resident","committee","super_admin"] },
 
   // ── Security & admins only ─────────────────────────────────────────────
-  { title: "Visitor Log",   desc: "Monitor & manage gate visitors",      to: "/visitors",        img: PX(1464227),  roles: ["security","super_admin"] },
-  { title: "Staff Gate",    desc: "Record staff entries & exits",        to: "/staff/gate",      img: PX(3184360),  roles: ["security","super_admin"] },
-  { title: "Delivery Gate", desc: "Log & approve delivery agents",       to: "/deliveries/gate", img: PX(4481326),  roles: ["security","super_admin"] },
+  { title: "Visitor Log",   desc: "Monitor & manage gate visitors",      to: "/visitors",        img: PX(1464227),  roles: ["security"] },
+  { title: "Staff Gate",    desc: "Record staff entries & exits",        to: "/staff/gate",      img: PX(3184360),  roles: ["security"] },
+  { title: "Delivery Gate", desc: "Log & approve delivery agents",       to: "/deliveries/gate", img: PX(4481326),  roles: ["security"] },
 ];
 
 /* ─── Feed config ──────────────────────────── */

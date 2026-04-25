@@ -173,8 +173,7 @@ const CSS = `
     padding: 7px 13px 9px;
   }
 
-  .ann-search-wrap { display: flex; flex-direction: column; gap: 3px; margin-left: auto; }
-  .ann-search-label { font-size: 0.68rem; font-weight: 700; color: #9CA3AF; letter-spacing: 0.04em; text-transform: uppercase; }
+  .ann-search-wrap { display: flex; margin-left: auto; }
   .ann-search {
     display: flex;
     align-items: center;
@@ -198,27 +197,30 @@ const CSS = `
   .ann-search input::placeholder { color: #9CA3AF; font-weight: 500; }
 
   .ann-compose-btn {
-    display: inline-flex; align-items: center; gap: 9px; padding: 8px 8px 8px 15px;
-    border-radius: 999px; border: 1.5px solid #E8E8ED; background: #FFFFFF;
-    cursor: pointer; transition: all 0.2s cubic-bezier(0.22,1,0.36,1);
-    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.78rem; font-weight: 700; color: #374151;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-    white-space: nowrap;
+    position: relative; overflow: hidden;
+    display: inline-flex; align-items: center; gap: 7px;
+    background: #FFFFFF; border: 1px solid #E8E8ED;
+    border-radius: 10px; padding: 9px 14px;
+    color: #1C1C1E; font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.8rem; font-weight: 700; cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05); white-space: nowrap;
+  }
+  .ann-compose-btn::after {
+    content: ''; position: absolute;
+    left: 8px; right: 8px; bottom: 0;
+    height: 2px; border-radius: 999px;
+    background: #4F46E5;
+    transform: scaleX(0.2); opacity: 0;
+    transition: transform 0.2s ease, opacity 0.2s ease;
   }
   .ann-compose-btn:hover {
-    border-color: #E8890C; transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(232,137,12,0.18);
-    color: #92400E;
+    border-color: #C7C7CC; color: #1C1C1E;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(28,28,30,0.09);
   }
-  .ann-compose-icon {
-    width: 30px; height: 30px; border-radius: 50%;
-    background: linear-gradient(135deg, #E8890C, #C97508);
-    display: inline-flex; align-items: center; justify-content: center;
-    color: #fff; flex-shrink: 0;
-    transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 0 2px 6px rgba(232,137,12,0.35);
-  }
-  .ann-compose-btn:hover .ann-compose-icon { transform: scale(1.12) rotate(12deg); }
+  .ann-compose-btn:hover::after { transform: scaleX(1); opacity: 1; }
+  .ann-compose-btn:active { transform: scale(0.97); }
 
   .ann-refresh-btn {
     display: inline-flex; align-items: center; justify-content: center;
@@ -997,7 +999,6 @@ export function AnnouncementsPage() {
 
             {/* Search */}
             <div className="ann-search-wrap">
-              <span className="ann-search-label">Search</span>
               <div className="ann-search">
                 <Search size={13} color="#9CA3AF" />
                 <input
@@ -1012,10 +1013,8 @@ export function AnnouncementsPage() {
             {/* Compose (admins only) */}
             {canCreate && (
               <button type="button" className="ann-compose-btn" onClick={() => setShowForm(v => !v)}>
-                {showForm ? "discard draft" : "compose notice"}
-                <span className="ann-compose-icon">
-                  {showForm ? <X size={14} /> : <Plus size={14} />}
-                </span>
+                {showForm ? <X size={13} /> : <Plus size={13} />}
+                {showForm ? "discard" : "create"}
               </button>
             )}
 

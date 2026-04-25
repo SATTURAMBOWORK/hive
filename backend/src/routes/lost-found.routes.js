@@ -1,4 +1,5 @@
 import { Router } from "express";
+import multer from "multer";
 import {
   listItems,
   createItem,
@@ -9,6 +10,17 @@ import {
 import { requireAuth, requireRoles } from "../middlewares/auth.middleware.js";
 import { requireTenantScope } from "../middlewares/tenant.middleware.js";
 import { requireApprovedMembership } from "../middlewares/membership.middleware.js";
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  fileFilter(_req, file, cb) {
+    if (!file.mimetype.startsWith("image/")) {
+      return cb(new Error("Only image files are allowed"));
+    }
+    cb(null, true);
+  },
+});
 
 /*
   📖 LEARNING NOTE — What is a Router?
@@ -63,7 +75,7 @@ lostFoundRouter.use(requireAuth, requireTenantScope, requireApprovedMembership);
 lostFoundRouter.get("/", listItems);
 
 // POST /api/lost-found       → create a new lost/found post
-lostFoundRouter.post("/", createItem);
+lostFoundRouter.post("/", upload.single("photo"), createItem);
 
 // PATCH /api/lost-found/:id/claim   → mark as "I found this" / "This is mine"
 lostFoundRouter.patch("/:id/claim", claimItem);

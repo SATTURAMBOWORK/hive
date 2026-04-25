@@ -4,6 +4,7 @@ import { LostFound } from "../models/lost-found.model.js";
 import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
 import { emitRealtime } from "../services/realtime-bus.service.js";
+import { uploadToCloudinary } from "../utils/cloudinary.js";
 
 /*
   📖 LEARNING NOTE — What is a Controller?
@@ -75,7 +76,6 @@ export async function createItem(req, res, next) {
     const title       = sanitize(req.body?.title);
     const description = sanitize(req.body?.description);
     const location    = sanitize(req.body?.location);
-    const photo       = sanitize(req.body?.photo);
     const date        = req.body?.date;
 
     // 2. Validate required fields
@@ -89,7 +89,14 @@ export async function createItem(req, res, next) {
       throw new AppError("date is required", StatusCodes.BAD_REQUEST);
     }
 
-    // 3. Save to MongoDB
+    // 3. Upload photo to Cloudinary if one was attached
+    //    req.file is set by the multer middleware on the route
+    let photo = "";
+    if (req.file) {
+      photo = await uploadToCloudinary(req.file.buffer, { folder: "lost-found" });
+    }
+
+    // 4. Save to MongoDB
     const item = await LostFound.create({
       tenantId:    req.tenantId,
       type,
@@ -102,7 +109,7 @@ export async function createItem(req, res, next) {
       postedBy:    req.user.userId,
     });
 
-    // 4. Emit socket event so all online users see it immediately
+    // 5. Emit socket event so all online users see it immediately
     //    req.app.get("io") retrieves the Socket.io instance set in server.js
     const io = req.app.get("io");
     await emitRealtime(io, {
@@ -111,7 +118,7 @@ export async function createItem(req, res, next) {
       payload: { item }
     });
 
-    // 5. Respond with the newly created document
+    // 6. Respond with the newly created document
     res.status(StatusCodes.CREATED).json({ item });
   } catch (error) {
     next(error);

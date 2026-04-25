@@ -383,9 +383,9 @@ const COMMUNITY_LINKS = [
 ];
 
 const SECURITY_LINKS = [
-  { to: "/visitors",        label: "Visitor Log",    roles: ["security","super_admin"] },
-  { to: "/staff/gate",      label: "Staff Gate",     roles: ["security","super_admin"] },
-  { to: "/deliveries/gate", label: "Delivery Gate",  roles: ["security","super_admin"] },
+  { to: "/visitors",        label: "Visitor Log",    roles: ["security"] },
+  { to: "/staff/gate",      label: "Staff Gate",     roles: ["security"] },
+  { to: "/deliveries/gate", label: "Delivery Gate",  roles: ["security"] },
 ];
 
 const ADMIN_LINKS = [
@@ -443,7 +443,7 @@ export function Topbar() {
   const initials = (user?.fullName || "")
     .split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "?";
 
-  const showSecurity  = ["security","super_admin"].includes(role);
+  const showSecurity  = role === "security";
   const showAdmin     = ["committee","super_admin"].includes(role);
   const showCommunity = ["resident","committee","super_admin"].includes(role);
 
