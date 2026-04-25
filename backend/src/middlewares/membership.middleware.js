@@ -8,7 +8,8 @@ export async function requireApprovedMembership(req, _res, next) {
       return next(new AppError("Unauthorized", StatusCodes.UNAUTHORIZED));
     }
 
-    if (req.user.role !== "resident") {
+    const ROLES_REQUIRING_MEMBERSHIP = ["resident", "committee"];
+    if (!ROLES_REQUIRING_MEMBERSHIP.includes(req.user.role)) {
       return next();
     }
 

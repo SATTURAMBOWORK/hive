@@ -33,7 +33,7 @@ function ProtectedDashboard() {
     return <p className="mx-auto mt-8 max-w-3xl text-sm text-slate-600">Loading profile...</p>;
   }
 
-  if (user?.role === "resident" && !isMembershipApproved) {
+  if (["resident", "committee"].includes(user?.role) && !isMembershipApproved) {
     return <Navigate to="/onboarding" replace />;
   }
 
@@ -51,7 +51,7 @@ function ProtectedOnboarding() {
     return <p className="mx-auto mt-8 max-w-3xl text-sm text-slate-600">Loading profile...</p>;
   }
 
-  if (user?.role !== "resident") {
+  if (!["resident", "committee"].includes(user?.role)) {
     return <Navigate to="/" replace />;
   }
 
@@ -73,7 +73,7 @@ function ProtectedFeature({ children }) {
     return <p className="mx-auto mt-8 max-w-3xl text-sm text-slate-600">Loading profile...</p>;
   }
 
-  if (user?.role === "resident" && !isMembershipApproved) {
+  if (["resident", "committee"].includes(user?.role) && !isMembershipApproved) {
     return <Navigate to="/onboarding" replace />;
   }
 

@@ -130,6 +130,33 @@ const CSS = `
   .ag-book-btn:hover .ag-book-btn-arrow {
     transform: translateX(2px);
   }
+
+  .ag-skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .ag-skeleton-card {
+    border-radius: 18px;
+    border: 1px solid ${T.border};
+    background: ${T.surface};
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+
+  .ag-skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(90deg, #EEF0F7 0%, #F7F8FC 50%, #EEF0F7 100%);
+    background-size: 200% 100%;
+    animation: ag-shimmer 1.15s linear infinite;
+  }
+
+  @keyframes ag-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
 `;
 
 function PhotoCarousel({ photos }) {
@@ -172,7 +199,35 @@ function PhotoCarousel({ photos }) {
   );
 }
 
-export function AmenityGrid({ amenities, onBook }) {
+function AmenitySkeletonCard() {
+  return (
+    <div className="ag-skeleton-card">
+      <div className="ag-skeleton-shimmer" style={{ height: 180, borderBottom: `1px solid ${T.border}` }} />
+      <div style={{ padding: 18 }}>
+        <div className="ag-skeleton-shimmer" style={{ height: 18, width: "58%", borderRadius: 999 }} />
+        <div className="ag-skeleton-shimmer" style={{ height: 12, width: "92%", borderRadius: 999, marginTop: 12 }} />
+        <div className="ag-skeleton-shimmer" style={{ height: 12, width: "76%", borderRadius: 999, marginTop: 8 }} />
+        <div style={{ display: "flex", gap: 6, marginTop: 14 }}>
+          <div className="ag-skeleton-shimmer" style={{ height: 22, width: 74, borderRadius: 999 }} />
+          <div className="ag-skeleton-shimmer" style={{ height: 22, width: 68, borderRadius: 999 }} />
+        </div>
+        <div className="ag-skeleton-shimmer" style={{ height: 38, width: "100%", borderRadius: 11, marginTop: 16 }} />
+      </div>
+    </div>
+  );
+}
+
+export function AmenityGrid({ amenities, onBook, isLoading = false }) {
+  if (isLoading) {
+    return (
+      <div className="ag-skeleton-grid" aria-busy="true" aria-live="polite">
+        <AmenitySkeletonCard />
+        <AmenitySkeletonCard />
+        <AmenitySkeletonCard />
+      </div>
+    );
+  }
+
   if (!amenities.length) {
     return (
       <div style={{ borderRadius: 18, border: `2px dashed ${T.border}`, padding: 48, textAlign: "center" }}>

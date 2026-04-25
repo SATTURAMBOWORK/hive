@@ -465,6 +465,252 @@ const CSS = `
     align-items: start;
   }
 
+  .dp-arrivals-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .dp-arrivals-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .dp-arrival-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid ${C.borderL};
+    border-radius: 14px;
+    background: linear-gradient(180deg, #FFFFFF 0%, ${C.bg} 100%);
+  }
+
+  .dp-arrival-line-main {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .dp-arrival-line-label {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: ${C.muted};
+  }
+
+  .dp-arrival-line strong {
+    font-size: 1rem;
+    line-height: 1;
+    color: ${C.ink};
+  }
+
+  .dp-arrival-line-note {
+    min-width: 0;
+    text-align: right;
+    font-size: 0.8rem;
+    color: ${C.inkSoft};
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .dp-arrivals-footnote {
+    margin: 0;
+    font-size: 0.72rem;
+    color: ${C.faint};
+    text-align: right;
+    padding-right: 2px;
+  }
+
+  .dp-arrivals-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .dp-arrivals-date-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: ${C.bg};
+    border: 1px solid ${C.border};
+    border-radius: 12px;
+    padding: 8px 10px;
+    min-width: 220px;
+  }
+
+  .dp-arrivals-date-wrap span {
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: ${C.indigo};
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .dp-arrivals-date {
+    border: none;
+    background: transparent;
+    color: ${C.ink};
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    outline: none;
+    width: 100%;
+  }
+
+  .dp-arrivals-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .dp-arrivals-stat {
+    border: 1px solid ${C.borderL};
+    background: ${C.bg};
+    border-radius: 14px;
+    padding: 11px 12px;
+  }
+
+  .dp-arrivals-stat-label {
+    margin: 0 0 5px;
+    font-size: 0.67rem;
+    font-weight: 800;
+    color: ${C.muted};
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .dp-arrivals-stat-value {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: ${C.ink};
+    line-height: 1;
+  }
+
+  .dp-arrivals-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .dp-arrivals-column {
+    border: 1px solid ${C.border};
+    border-radius: 14px;
+    background: ${C.surface};
+    padding: 14px;
+    min-width: 0;
+  }
+
+  .dp-arrivals-column-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .dp-arrivals-column-title {
+    margin: 0;
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: ${C.ink};
+  }
+
+  .dp-arrivals-column-sub {
+    margin: 3px 0 0;
+    font-size: 0.71rem;
+    color: ${C.muted};
+    font-weight: 500;
+  }
+
+  .dp-arrivals-count {
+    flex-shrink: 0;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .dp-arrivals-count.delivery { background: ${C.indigoL}; color: ${C.indigo}; }
+  .dp-arrivals-count.visitor { background: ${C.amberL}; color: ${C.amberD}; }
+
+  .dp-arrivals-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .dp-arrival-item {
+    border: 1px solid ${C.borderL};
+    background: #FCFCFE;
+    border-radius: 12px;
+    padding: 10px 11px;
+  }
+
+  .dp-arrival-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .dp-arrival-title {
+    margin: 0;
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: ${C.ink};
+  }
+
+  .dp-arrival-sub {
+    margin: 3px 0 0;
+    font-size: 0.7rem;
+    color: ${C.muted};
+    font-weight: 500;
+    line-height: 1.45;
+  }
+
+  .dp-arrival-meta {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .dp-arrival-pill {
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .dp-arrival-pill.delivery { background: ${C.indigoL}; color: ${C.indigoD}; }
+  .dp-arrival-pill.visitor { background: ${C.amberL}; color: ${C.amberD}; }
+
+  .dp-arrival-empty {
+    border-radius: 12px;
+    border: 1px dashed ${C.border};
+    background: ${C.bg};
+    padding: 18px 14px;
+    text-align: center;
+    color: ${C.faint};
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
   .dp-panel {
     background: ${C.surface};
     border: 1px solid ${C.border};
@@ -570,6 +816,25 @@ const CSS = `
   @media (max-width: 600px)  { .dp-cards-grid { grid-template-columns: 1fr; } .dp-root { padding: 20px 16px 60px; } }
 `;
 
+/* ─── Dashboard data cache ─────────────────────────────────────────────────
+   Stored outside the component so it survives page navigation.
+   When you switch away and come back, we reuse this instead of re-fetching.
+   TTL = 60 seconds. After that, we silently refresh in the background.
+─────────────────────────────────────────────────────────────────────────── */
+const CACHE_TTL_MS = 60_000;
+let _cache = null; // { data, fetchedAt, forToken }
+
+function getCached(token) {
+  if (!_cache) return null;
+  if (_cache.forToken !== token) return null;  // different user logged in
+  if (Date.now() - _cache.fetchedAt > CACHE_TTL_MS) return null; // stale
+  return _cache.data;
+}
+
+function setCache(token, data) {
+  _cache = { data, fetchedAt: Date.now(), forToken: token };
+}
+
 /* ─── Feature cards ────────────────────────── */
 const PX = id =>
   `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&fit=crop`;
@@ -593,9 +858,9 @@ const FEATURES = [
   { title: "Lost & Found",  desc: "Report lost or claim found items",    to: "/lost-found",      img: PX(5598028),  roles: ["resident","committee","super_admin"] },
 
   // ── Security & admins only ─────────────────────────────────────────────
-  { title: "Visitor Log",   desc: "Monitor & manage gate visitors",      to: "/visitors",        img: PX(1464227),  roles: ["security","committee","super_admin"] },
-  { title: "Staff Gate",    desc: "Record staff entries & exits",        to: "/staff/gate",      img: PX(3184360),  roles: ["security","committee","super_admin"] },
-  { title: "Delivery Gate", desc: "Log & approve delivery agents",       to: "/deliveries/gate", img: PX(4481326),  roles: ["security","committee","super_admin"] },
+  { title: "Visitor Log",   desc: "Monitor & manage gate visitors",      to: "/visitors",        img: PX(1464227),  roles: ["security","super_admin"] },
+  { title: "Staff Gate",    desc: "Record staff entries & exits",        to: "/staff/gate",      img: PX(3184360),  roles: ["security","super_admin"] },
+  { title: "Delivery Gate", desc: "Log & approve delivery agents",       to: "/deliveries/gate", img: PX(4481326),  roles: ["security","super_admin"] },
 ];
 
 /* ─── Feed config ──────────────────────────── */
@@ -619,9 +884,26 @@ function timeAgo(date) {
   const h = Math.floor(m / 60); if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
 }
+function toInputDate(value = new Date()) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 function fmtTime(d)  { if (!d) return ""; return new Date(d).toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit" }); }
 function fmtDay(d)   { return new Date(d).toLocaleDateString("en-IN", { day:"numeric" }); }
 function fmtMonth(d) { return new Date(d).toLocaleDateString("en-IN", { month:"short" }); }
+function fmtFullDate(d) {
+  if (!d) return "";
+  return new Date(d).toLocaleDateString("en-IN", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
 function startsIn(startAt) {
   const mins = Math.round((new Date(startAt) - Date.now()) / 60000);
   if (mins <= 0) return "starting now";
@@ -657,13 +939,35 @@ export function DashboardPage() {
   const [events,           setEvents]           = useState([]);
   const [pendingApprovals, setPendingApprovals] = useState(0);
   const [visitorRequests,  setVisitorRequests]  = useState([]);
+  const [deliveryPreRegs,  setDeliveryPreRegs]  = useState([]);
+  const [visitorPreRegs,   setVisitorPreRegs]   = useState([]);
   const [amenityImageIdx,  setAmenityImageIdx]  = useState(0);
   const [respondingId,     setRespondingId]     = useState(null);
   const [loading,          setLoading]          = useState(true);
   const [error,            setError]            = useState("");
+  const [selectedArrivalDate, setSelectedArrivalDate] = useState(() => toInputDate());
 
-  const load = useCallback(async () => {
+  const canSeeArrivals = isResident || isAdmin;
+
+  const load = useCallback(async (forceRefresh = false) => {
     if (!token) return;
+
+    // Use cache on revisit (unless the user clicked the refresh button)
+    if (!forceRefresh) {
+      const cached = getCached(token);
+      if (cached) {
+        setAnnouncements(cached.announcements);
+        setTickets(cached.tickets);
+        setEvents(cached.events);
+        setPendingApprovals(cached.pendingApprovals);
+        setVisitorRequests(cached.visitorRequests);
+          setDeliveryPreRegs(cached.deliveryPreRegs || []);
+          setVisitorPreRegs(cached.visitorPreRegs || []);
+        setLoading(false);
+        return;
+      }
+    }
+
     setLoading(true); setError("");
     try {
       const calls = [
@@ -673,27 +977,56 @@ export function DashboardPage() {
       ];
       if (isAdmin)    calls.push(apiRequest("/admin/pending-approvals", { token }));
       if (isResident) calls.push(apiRequest("/visitors/my-requests",   { token }));
+      if (canSeeArrivals) {
+        calls.push(apiRequest("/delivery-prereg", { token }));
+        calls.push(apiRequest("/visitor-prereg",  { token }));
+      }
       const results = await Promise.allSettled(calls);
       const get = r => r.status === "fulfilled" ? r.value : null;
-      setAnnouncements(get(results[0])?.items || []);
-      setTickets(get(results[1])?.items || []);
-      setEvents(get(results[2])?.items || []);
-      if (isAdmin)    setPendingApprovals((get(results[3])?.items || []).length);
-      if (isResident) setVisitorRequests(get(results[isAdmin ? 4 : 3])?.items || []);
+      let cursor = 0;
+      const fresh = {
+        announcements:    get(results[cursor++])?.items || [],
+        tickets:          get(results[cursor++])?.items || [],
+        events:           get(results[cursor++])?.items || [],
+        pendingApprovals: 0,
+        visitorRequests:  [],
+        deliveryPreRegs:  [],
+        visitorPreRegs:   [],
+      };
+      if (isAdmin) {
+        fresh.pendingApprovals = (get(results[cursor++])?.items || []).length;
+      }
+      if (isResident) {
+        fresh.visitorRequests = get(results[cursor++])?.items || [];
+      }
+      if (canSeeArrivals) {
+        fresh.deliveryPreRegs = get(results[cursor++])?.items || [];
+        fresh.visitorPreRegs = get(results[cursor++])?.items || [];
+      }
+      setCache(token, fresh);
+      setAnnouncements(fresh.announcements);
+      setTickets(fresh.tickets);
+      setEvents(fresh.events);
+      setPendingApprovals(fresh.pendingApprovals);
+      setVisitorRequests(fresh.visitorRequests);
+      setDeliveryPreRegs(fresh.deliveryPreRegs);
+      setVisitorPreRegs(fresh.visitorPreRegs);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [token, isAdmin, isResident]);
+  }, [token, isAdmin, isResident, canSeeArrivals]);
 
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
     if (!isResident) return;
     const socket = getSocket();
-    const onIncoming = ({ visitor }) =>
+    const onIncoming = ({ visitor }) => {
+      _cache = null; // visitor arrived — invalidate so next visit re-fetches
       setVisitorRequests(prev => [visitor, ...prev.filter(v => v._id !== visitor._id)]);
+    };
     socket.on("visitor:request_incoming", onIncoming);
     return () => socket.off("visitor:request_incoming", onIncoming);
   }, [isResident]);
@@ -761,9 +1094,22 @@ export function DashboardPage() {
   const flatLabel = membership?.wingId?.name && membership?.unitId?.unitNumber
     ? `${membership.wingId.name}-${membership.unitId.unitNumber}` : null;
 
-  const upcomingEvents = useMemo(() =>
-    events.filter(e => new Date(e.startAt) >= new Date())
-          .sort((a,b) => new Date(a.startAt) - new Date(b.startAt)), [events]);
+  const arrivalBuckets = useMemo(() => {
+    const matchesSelectedDate = (value) => toInputDate(value) === selectedArrivalDate;
+
+    const deliveries = deliveryPreRegs
+      .filter((item) => matchesSelectedDate(item.expectedDate) && item.status === "active")
+      .sort((a, b) => new Date(a.expectedDate) - new Date(b.expectedDate));
+
+    const visitors = visitorPreRegs
+      .filter((item) => matchesSelectedDate(item.expectedDate) && item.status === "active")
+      .sort((a, b) => new Date(a.expectedDate) - new Date(b.expectedDate));
+
+    return { deliveries, visitors };
+  }, [deliveryPreRegs, visitorPreRegs, selectedArrivalDate]);
+
+  const deliveryPreview = arrivalBuckets.deliveries[0] || null;
+  const visitorPreview = arrivalBuckets.visitors[0] || null;
 
   const feed = useMemo(() => buildFeed(announcements, tickets, events), [announcements, tickets, events]);
 
@@ -797,7 +1143,7 @@ export function DashboardPage() {
                 <ArrowRight size={12}/>
               </Link>
             )}
-            <button className="dp-refresh" onClick={load} disabled={loading}>
+            <button className="dp-refresh" onClick={() => load(true)} disabled={loading}>
               <RefreshCw size={14} style={{ animation: loading ? "dp-spin 1s linear infinite" : "none" }}/>
             </button>
           </div>
@@ -1057,41 +1403,65 @@ export function DashboardPage() {
           {/* Right column */}
           <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
 
-            {/* Upcoming events */}
+            {/* Expected arrivals for a selected day */}
             <motion.div
-              className="dp-panel"
+              className="dp-panel dp-arrivals-panel"
               initial={{ opacity:0, x:12 }}
               animate={{ opacity:1, x:0 }}
               transition={{ delay:0.22, duration:0.4, ease:[0.22,1,0.36,1] }}
             >
-              <div className="dp-section-head" style={{ marginBottom:14 }}>
+              <div className="dp-section-head" style={{ marginBottom:10 }}>
                 <div>
-                  <p className="dp-section-label">Schedule</p>
-                  <h2 className="dp-section-title">Upcoming</h2>
+                  <p className="dp-section-label">Expected Arrivals</p>
+                  <h2 className="dp-section-title">Arrivals on one date</h2>
                 </div>
-                <Link to="/events" className="dp-view-all">See all <ChevronRight size={10}/></Link>
+                <Link to="/visitors/prereg" className="dp-view-all">Manage <ChevronRight size={10}/></Link>
+              </div>
+
+              <div className="dp-arrivals-toolbar">
+                <div className="dp-arrivals-date-wrap">
+                  <Calendar size={14} color={C.indigo} />
+                  <span>Date</span>
+                  <input
+                    type="date"
+                    className="dp-arrivals-date"
+                    value={selectedArrivalDate}
+                    onChange={(event) => setSelectedArrivalDate(event.target.value)}
+                  />
+                </div>
               </div>
 
               {loading ? (
-                <><Sk style={{ height:50, marginBottom:10 }}/><Sk style={{ height:50 }}/></>
-              ) : upcomingEvents.length === 0 ? (
-                <div className="dp-empty">No upcoming events.</div>
+                <>
+                  <Sk style={{ height:54, marginBottom:10 }}/>
+                  <Sk style={{ height:54 }}/>
+                </>
               ) : (
-                upcomingEvents.slice(0,4).map(e => (
-                  <div key={e._id} className="dp-event-item">
-                    <div className="dp-event-date">
-                      <span className="dp-event-day">{fmtDay(e.startAt)}</span>
-                      <span className="dp-event-month">{fmtMonth(e.startAt)}</span>
+                <div className="dp-arrivals-compact">
+                  <div className="dp-arrival-line">
+                    <div className="dp-arrival-line-main">
+                      <span className="dp-arrival-line-label">Deliveries</span>
+                      <strong>{arrivalBuckets.deliveries.length}</strong>
                     </div>
-                    <div style={{ minWidth:0, paddingTop:2 }}>
-                      <p className="dp-event-name">{e.title}</p>
-                      <p className="dp-event-sub">
-                        <Clock size={10}/> {fmtTime(e.startAt)}
-                        {e.location && <><MapPin size={10} style={{ marginLeft:3 }}/>{e.location}</>}
-                      </p>
-                    </div>
+                    <span className="dp-arrival-line-note">
+                      {deliveryPreview
+                        ? `${deliveryPreview.expectedCourier || "Any courier"} · ${deliveryPreview.packageType || "Package"}`
+                        : "None expected"}
+                    </span>
                   </div>
-                ))
+
+                  <div className="dp-arrival-line">
+                    <div className="dp-arrival-line-main">
+                      <span className="dp-arrival-line-label">Visitors</span>
+                      <strong>{arrivalBuckets.visitors.length}</strong>
+                    </div>
+                    <span className="dp-arrival-line-note">
+                      {visitorPreview
+                        ? `${visitorPreview.visitorName || "Guest"} · ${visitorPreview.purpose || "visit"}`
+                        : "None expected"}
+                    </span>
+                  </div>
+                </div>
               )}
             </motion.div>
 

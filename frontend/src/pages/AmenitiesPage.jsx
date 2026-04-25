@@ -69,6 +69,32 @@ const bookItemVariant = {
   visible: { opacity: 1, x: 0,   transition: { duration: 0.3, ease: "easeOut" } },
 };
 
+const AMENITIES_CACHE_PREFIX = "apthive_amenities_page";
+
+function getCacheKey(scope, tenantId) {
+  return `${AMENITIES_CACHE_PREFIX}:${scope}:${tenantId || "default"}`;
+}
+
+function readCachedItems(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed?.items) ? parsed.items : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCachedItems(key, items) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ savedAt: Date.now(), items }));
+  } catch {
+    // Ignore storage quota and privacy mode failures.
+  }
+}
+
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&display=swap');
 
@@ -354,8 +380,12 @@ const CSS = `
 
 export function AmenitiesPage() {
   const { token, user } = useAuth();
-  const [amenities, setAmenities] = useState([]);
-  const [bookings, setBookings] = useState([]);
+  const tenantScope = String(user?.tenantId || "default");
+  const amenitiesCacheKey = getCacheKey("amenities", tenantScope);
+  const bookingsCacheKey = getCacheKey("bookings", tenantScope);
+
+  const [amenities, setAmenities] = useState(() => readCachedItems(amenitiesCacheKey));
+  const [bookings, setBookings] = useState(() => readCachedItems(bookingsCacheKey));
   const [activeAmenity, setActiveAmenity] = useState(null);
   const [isBookingSubmitting, setIsBookingSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState("");
@@ -377,12 +407,16 @@ export function AmenitiesPage() {
 
   async function loadAmenities() {
     const data = await apiRequest("/amenities", { token });
-    setAmenities(data.items || []);
+    const nextAmenities = data.items || [];
+    setAmenities(nextAmenities);
+    writeCachedItems(amenitiesCacheKey, nextAmenities);
   }
 
   async function loadBookings() {
     const data = await apiRequest("/amenities/bookings", { token });
-    setBookings(data.items || []);
+    const nextBookings = data.items || [];
+    setBookings(nextBookings);
+    writeCachedItems(bookingsCacheKey, nextBookings);
   }
 
   async function loadAll() {
@@ -415,7 +449,11 @@ export function AmenitiesPage() {
         token,
         body: { name, description, isAutoApprove, capacity: Number(capacity), photos, operatingHours: buildOperatingHours(openTime, closeTime) },
       });
-      setAmenities((prev) => [...prev, data.item]);
+      setAmenities((prev) => {
+        const next = [...prev, data.item];
+        writeCachedItems(amenitiesCacheKey, next);
+        return next;
+      });
       setName(""); setDescription(""); setCapacity(1); setIsAutoApprove(false);
       setOpenTime("06:00"); setCloseTime("22:00"); setPhotoFiles([]);
     } catch (err) {
@@ -428,7 +466,11 @@ export function AmenitiesPage() {
     setBookingError(""); setError(""); setIsBookingSubmitting(true);
     try {
       const data = await apiRequest("/amenities/bookings", { method: "POST", token, body: payload });
-      setBookings((prev) => [data.item, ...prev]);
+      setBookings((prev) => {
+        const next = [data.item, ...prev];
+        writeCachedItems(bookingsCacheKey, next);
+        return next;
+      });
       setActiveAmenity(null);
     } catch (err) {
       setError(err.message);
@@ -442,7 +484,11 @@ export function AmenitiesPage() {
     setError("");
     try {
       const data = await apiRequest(`/amenities/bookings/${bookingId}/status`, { method: "PATCH", token, body: { status } });
-      setBookings((prev) => prev.map((item) => (item._id === bookingId ? data.item : item)));
+      setBookings((prev) => {
+        const next = prev.map((item) => (item._id === bookingId ? data.item : item));
+        writeCachedItems(bookingsCacheKey, next);
+        return next;
+      });
     } catch (err) {
       setError(err.message);
     }
@@ -616,7 +662,7 @@ export function AmenitiesPage() {
             transition={{ duration: 0.52, ease, delay: 0.12 }}
           >
             <h2 className="amn-section-title">Available facilities</h2>
-            <AmenityGrid amenities={amenities} onBook={setActiveAmenity} />
+            <AmenityGrid amenities={amenities} onBook={setActiveAmenity} isLoading={loading && amenities.length === 0} />
           </motion.section>
 
           {/* ── My Bookings ── */}

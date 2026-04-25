@@ -1,739 +1,1193 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { apiRequest } from '../components/api';
-import { useAuth } from '../components/AuthContext';
-import { getSocket } from '../components/socket';
-import { 
-  Users, CheckCircle2, ChevronDown, Plus, X, BarChart2,
-  Lock, Trash2, Clock
-} from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { apiRequest } from "../components/api";
+import { useAuth } from "../components/AuthContext";
+import { getSocket } from "../components/socket";
+import {
+  BarChart3,
+  Bell,
+  Check,
+  Clock3,
+  Lock,
+  Plus,
+  Sparkles,
+  Trash2,
+  Wallet,
+  X,
+  ListFilter,
+} from "lucide-react";
 
-/* --- STYLES --- */
+const C = {
+  root: "#FAFAFC",
+  surface: "#FFFFFF",
+  surfaceSoft: "#F7F7FB",
+  ink: "#1C1C1E",
+  inkSoft: "#5B5B66",
+  muted: "#8A8A96",
+  border: "#E8E8ED",
+  borderStrong: "#D9D9E4",
+  indigo: "#4F46E5",
+  indigoSoft: "#EEF2FF",
+  green: "#16A34A",
+  greenSoft: "#E9F8EF",
+  danger: "#DC2626",
+  dangerSoft: "#FEE2E2",
+};
+
+const FILTERS = [
+  { id: "all", label: "All", Icon: ListFilter },
+  { id: "active", label: "Active", Icon: Clock3 },
+  { id: "closed", label: "Closed", Icon: Lock },
+];
+
+const SPRING = { type: "spring", stiffness: 260, damping: 24 };
+
 const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
   .polls-page {
     min-height: 100vh;
-    background: linear-gradient(135deg, #FAFAFC 0%, #EEF2FF 100%);
+    background:
+      radial-gradient(circle at top left, rgba(79, 70, 229, 0.07), transparent 30%),
+      radial-gradient(circle at 82% 18%, rgba(22, 163, 74, 0.05), transparent 24%),
+      ${C.root};
+    color: ${C.ink};
     font-family: 'Plus Jakarta Sans', sans-serif;
-    color: #1C1C1E;
-    padding: 48px 32px 120px;
+    padding: 36px 28px 120px;
     box-sizing: border-box;
   }
-  
-  .polls-wrapper {
-    max-width: 900px;
+
+  .polls-shell {
+    max-width: 1280px;
     margin: 0 auto;
   }
 
-  .title-editorial {
-    font-family: 'Cormorant Garamond', serif;
-    font-style: italic;
-    font-weight: 700;
-  }
-
-  /* Smart Filter */
-  .smart-filter {
-    font-size: 2.2rem;
-    font-weight: 600;
-    color: #8E8E93;
-    margin-bottom: 48px;
-    letter-spacing: -0.02em;
+  .pl-header {
     display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 18px;
     flex-wrap: wrap;
-    align-items: center;
-    gap: 12px;
   }
 
-  .dropdown-wrapper {
-    position: relative;
-    display: inline-block;
-  }
-
-  .dropdown-trigger {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 2.2rem;
-    font-weight: 800;
-    color: #1C1C1E;
-    background: transparent;
-    border: none;
-    border-bottom: 3px solid #1C1C1E;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
+  .pl-heading {
+    display: grid;
     gap: 8px;
-    padding: 0 4px 4px;
-    transition: color 0.2s ease;
+    max-width: 760px;
   }
 
-  .dropdown-trigger:hover {
-    color: #4F46E5;
-    border-color: #4F46E5;
+  .pl-kicker {
+    margin: 0;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: ${C.indigo};
   }
 
-  .dropdown-menu {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    margin-top: 12px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(16px);
-    border-radius: 16px;
-    padding: 8px;
-    min-width: 240px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-    z-index: 50;
-    border: 1px solid rgba(0,0,0,0.05);
+  .pl-title {
+    margin: 0;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    line-height: 1.04;
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    color: ${C.ink};
   }
 
-  .dropdown-item {
-    width: 100%;
-    text-align: left;
-    padding: 12px 16px;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #1C1C1E;
-    background: transparent;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: background 0.2s ease;
-  }
-  .dropdown-item:hover { background: rgba(0,0,0,0.03); }
-
-  /* Poll Card - Bento Style */
-  .poll-card {
-    background: #FFFFFF;
-    border-radius: 24px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.02);
-    overflow: hidden;
-    margin-bottom: 24px;
-    display: flex;
-    flex-direction: column;
-    border: 1px solid rgba(0,0,0,0.02);
-  }
-
-  .poll-header {
-    padding: 32px 32px 0;
-  }
-
-  .poll-meta {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-  }
-
-  .tag-active {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: #E6F4EA; color: #16A34A;
-    padding: 4px 12px; border-radius: 100px;
-    font-size: 0.75rem; font-weight: 800; text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .tag-closed {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: #F2F2F7; color: #8E8E93;
-    padding: 4px 12px; border-radius: 100px;
-    font-size: 0.75rem; font-weight: 800; text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .pulse-dot {
-    width: 6px; height: 6px;
-    background: #16A34A;
-    border-radius: 50%;
-    box-shadow: 0 0 0 rgba(22, 163, 74, 0.4);
-    animation: pulse 2s infinite;
-  }
-
-  @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4); }
-    70% { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
-  }
-
-  .poll-title {
-    font-size: 2rem;
-    line-height: 1.2;
-    color: #1C1C1E;
-    margin-bottom: 8px;
-  }
-
-  .poll-desc {
-    color: #8E8E93;
-    font-size: 1.05rem;
-    line-height: 1.5;
-    margin-bottom: 24px;
+  .pl-subtitle {
+    margin: 0;
+    max-width: 760px;
+    font-size: 0.98rem;
+    line-height: 1.65;
+    color: ${C.inkSoft};
     font-weight: 500;
   }
 
-  /* Voting Options */
-  .poll-body {
-    padding: 0 32px 32px;
-  }
-
-  .vote-option {
-    display: flex;
-    align-items: center;
-    background: #FAFAFC;
-    border: 2px solid transparent;
-    border-radius: 16px;
-    padding: 16px 20px;
-    margin-bottom: 12px;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+  .pl-create-btn {
     position: relative;
     overflow: hidden;
-  }
-
-  .vote-option:hover:not(.disabled) {
-    background: #F2F2F7;
-    transform: translateY(-2px);
-  }
-
-  .vote-option.selected {
-    border-color: #4F46E5;
-    background: #EEF2FF;
-  }
-
-  .vote-radio {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    border: 2px solid #D1D1D6;
-    margin-right: 16px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: all 0.2s ease;
+    gap: 7px;
+    background: ${C.surface};
+    border: 1px solid ${C.border};
+    border-radius: 10px;
+    padding: 9px 14px;
+    color: ${C.ink};
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   }
 
-  .vote-option.selected .vote-radio {
-    border-color: #4F46E5;
-    background: #4F46E5;
-  }
-
-  .vote-radio-inner {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #FFFFFF;
-    transform: scale(0);
-    transition: transform 0.2s ease;
-  }
-
-  .vote-option.selected .vote-radio-inner {
-    transform: scale(1);
-  }
-
-  .vote-text {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #1C1C1E;
-    flex: 1;
-    z-index: 1;
-  }
-
-  /* Results Bar */
-  .result-bar-bg {
+  .pl-create-btn::after {
+    content: '';
     position: absolute;
-    left: 0;
-    top: 0;
+    left: 8px;
+    right: 8px;
     bottom: 0;
-    background: #E5E5EA;
-    opacity: 0.4;
-    z-index: 0;
-    border-radius: 14px;
-    transition: width 1s cubic-bezier(0.25, 1, 0.5, 1);
+    height: 2px;
+    border-radius: 999px;
+    background: ${C.indigo};
+    transform: scaleX(0.2);
+    opacity: 0;
+    transition: transform 0.2s ease, opacity 0.2s ease;
   }
 
-  .vote-option.is-winner .result-bar-bg {
-    background: #EEF2FF;
+  .pl-create-btn:hover:not(:disabled) {
+    border-color: #C7C7CC;
+    color: ${C.ink};
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(28,28,30,0.09);
+  }
+
+  .pl-create-btn:hover:not(:disabled)::after {
+    transform: scaleX(1);
     opacity: 1;
   }
 
-  .vote-pct {
-    font-size: 1.1rem;
-    font-weight: 800;
-    color: #1C1C1E;
-    z-index: 1;
+  .pl-create-btn:active:not(:disabled) {
+    transform: scale(0.97);
   }
 
-  /* Submit Button */
-  .submit-vote-btn {
-    width: 100%;
-    background: #1C1C1E;
-    color: #FFFFFF;
+  .pl-create-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* ── Segmented chip rail ──────────────────── */
+  .pl-chips-rail {
+    display: inline-flex;
+    align-items: stretch;
+    gap: 0;
+    border-bottom: 1.5px solid ${C.border};
+    flex-shrink: 0;
+    margin: 24px 0 28px;
+  }
+
+  .pl-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
     border: none;
-    border-radius: 100px;
-    padding: 16px;
+    background: transparent;
+    cursor: pointer;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 1.1rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    outline: none;
+    padding: 0;
+  }
+
+  /* Sliding indigo underline — sits at bottom of active chip */
+  .pl-chip-underline {
+    position: absolute;
+    bottom: -1.5px;
+    left: 13px;
+    right: 13px;
+    height: 2px;
+    background: ${C.indigo};
+    border-radius: 2px 2px 0 0;
+  }
+
+  /* Icon + label */
+  .pl-chip-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 13px 9px;
+  }
+
+  .pl-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 18px;
+    align-items: start;
+  }
+
+  .pl-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 24px;
+    background: ${C.surface};
+    border: 1px solid ${C.border};
+    box-shadow: 0 12px 26px rgba(16, 24, 40, 0.04);
+  }
+
+  .pl-card-inner {
+    padding: 22px;
+    display: grid;
+    gap: 16px;
+  }
+
+  .pl-card-head {
+    display: grid;
+    gap: 10px;
+  }
+
+  .pl-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .pl-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border-radius: 999px;
+    padding: 6px 11px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .pl-status.active {
+    background: ${C.greenSoft};
+    color: ${C.green};
+  }
+
+  .pl-status.closed {
+    background: #F3F4F6;
+    color: #71717A;
+  }
+
+  .pl-question {
+    margin: 0;
+    font-size: 1.25rem;
+    line-height: 1.35;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: ${C.ink};
+  }
+
+  .pl-description {
+    margin: 0;
+    font-size: 0.94rem;
+    line-height: 1.65;
+    color: ${C.inkSoft};
+  }
+
+  .pl-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    color: ${C.muted};
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .pl-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .pl-options {
+    display: grid;
+    gap: 10px;
+  }
+
+  .pl-vote-button,
+  .pl-result-row {
+    width: 100%;
+    border: 1px solid ${C.border};
+    border-radius: 18px;
+    overflow: hidden;
+    background: ${C.surfaceSoft};
+    padding: 14px 15px;
+    font: inherit;
+    color: ${C.ink};
+    text-align: left;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .pl-vote-button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+
+  .pl-vote-button:hover {
+    transform: translateY(-1px);
+    border-color: rgba(79, 70, 229, 0.22);
+    background: #fff;
+    box-shadow: 0 10px 24px rgba(16, 24, 40, 0.04);
+  }
+
+  .pl-vote-button.is-selected {
+    background: ${C.indigoSoft};
+    border-color: rgba(79, 70, 229, 0.24);
+  }
+
+  .pl-option-copy {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .pl-option-title {
+    margin: 0;
+    font-size: 0.96rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: ${C.ink};
+  }
+
+  .pl-option-sub {
+    margin: 0;
+    font-size: 0.74rem;
+    color: ${C.muted};
+    font-weight: 600;
+  }
+
+  .pl-option-check {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1px solid ${C.borderStrong};
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: ${C.indigo};
+    flex-shrink: 0;
+    background: #fff;
+  }
+
+  .pl-result-row {
+    cursor: default;
+    padding: 0;
+    background: #fff;
+  }
+
+  .pl-result-track {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: 18px;
+    background: linear-gradient(90deg, rgba(79, 70, 229, 0.07), rgba(79, 70, 229, 0.03));
+  }
+
+  .pl-result-bar {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0%;
+    background: linear-gradient(90deg, rgba(79, 70, 229, 0.14), rgba(79, 70, 229, 0.08));
+  }
+
+  .pl-result-bar.is-winner {
+    background: linear-gradient(90deg, rgba(22, 163, 74, 0.22), rgba(22, 163, 74, 0.12));
+  }
+
+  .pl-result-content {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 10px;
+    padding: 14px 15px;
+  }
+
+  .pl-result-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .pl-result-label {
+    margin: 0;
+    font-size: 0.96rem;
+    font-weight: 700;
+    color: ${C.ink};
+    line-height: 1.35;
+  }
+
+  .pl-result-value {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: ${C.inkSoft};
+    flex-shrink: 0;
+  }
+
+  .pl-result-bar-wrap {
+    position: relative;
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(232, 232, 237, 0.95);
+    overflow: hidden;
+  }
+
+  .pl-result-bar-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, ${C.indigo}, rgba(79, 70, 229, 0.72));
+  }
+
+  .pl-result-row.is-winner .pl-result-label,
+  .pl-result-row.is-winner .pl-result-value {
+    color: ${C.green};
+  }
+
+  .pl-result-row.is-winner .pl-result-bar-fill {
+    background: linear-gradient(90deg, ${C.green}, rgba(22, 163, 74, 0.72));
+  }
+
+  .pl-voted-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: ${C.indigo};
+  }
+
+  .pl-footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-top: 2px;
+  }
+
+  .pl-count {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: ${C.muted};
+  }
+
+  .pl-submit {
+    width: 100%;
+    border: none;
+    border-radius: 18px;
+    background: ${C.ink};
+    color: #fff;
+    padding: 14px 16px;
+    font: inherit;
     font-weight: 700;
     cursor: pointer;
-    margin-top: 12px;
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease, opacity 0.2s ease, background 0.2s ease;
   }
-  .submit-vote-btn:disabled {
+
+  .pl-submit:hover:enabled {
+    transform: translateY(-1px);
+    background: #111113;
+  }
+
+  .pl-submit:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
 
-  /* FAB & Drawer */
-  .fab {
-    position: fixed;
-    bottom: 40px;
-    right: 40px;
-    width: 64px;
-    height: 64px;
-    border-radius: 32px;
-    background: #4F46E5;
-    color: #FFFFFF;
+  .pl-empty {
+    display: grid;
+    place-items: center;
+    gap: 10px;
+    min-height: 360px;
+    border: 1px dashed ${C.borderStrong};
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.7);
+    color: ${C.inkSoft};
+    text-align: center;
+    padding: 24px;
+  }
+
+  .pl-empty h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: ${C.ink};
+  }
+
+  .pl-empty p {
+    margin: 0;
+    max-width: 440px;
+    line-height: 1.6;
+  }
+
+  .pl-loading {
+    min-height: 220px;
+    display: grid;
+    place-items: center;
+    color: ${C.inkSoft};
+    font-weight: 600;
+  }
+
+  .pl-create-wrap {
+    margin: 0 0 16px;
+  }
+
+  .pl-create-card {
+    background: ${C.surface};
+    border: 1px solid ${C.border};
+    border-radius: 22px;
+    box-shadow: 0 12px 26px rgba(16, 24, 40, 0.04);
+    padding: 22px;
+    display: grid;
+    gap: 16px;
+  }
+
+  .pl-drawer-head {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 20px 40px rgba(79,70,229,0.3);
-    cursor: pointer;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .pl-drawer-title {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: ${C.ink};
+  }
+
+  .pl-drawer-copy {
+    margin: 8px 0 0;
+    color: ${C.inkSoft};
+    line-height: 1.6;
+    font-size: 0.92rem;
+  }
+
+  .pl-close {
     border: none;
-    z-index: 100;
+    background: transparent;
+    color: ${C.ink};
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 999px;
   }
 
-  .drawer-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.2);
-    backdrop-filter: blur(8px);
-    z-index: 150;
+  .pl-form {
+    display: grid;
+    gap: 12px;
   }
 
-  .drawer-panel {
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
+  .pl-field {
     width: 100%;
-    max-width: 500px;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(24px) saturate(180%);
-    box-shadow: -20px 0 60px rgba(0,0,0,0.1);
-    z-index: 160;
-    padding: 40px;
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-  }
-
-  .input-field {
-    width: 100%;
-    padding: 16px;
-    border-radius: 12px;
-    border: 1px solid rgba(0,0,0,0.1);
-    background: rgba(255,255,255,0.5);
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 1rem;
-    margin-bottom: 20px;
+    box-sizing: border-box;
+    border: 1px solid ${C.border};
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px 15px;
+    color: ${C.ink};
+    font: inherit;
     outline: none;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
-  .input-field:focus { border-color: #4F46E5; }
+
+  .pl-field:focus {
+    border-color: rgba(79, 70, 229, 0.42);
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.08);
+  }
+
+  .pl-label {
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: ${C.muted};
+  }
+
+  .pl-option-input-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+  }
+
+  .pl-add-option {
+    border: 1px dashed ${C.borderStrong};
+    background: transparent;
+    color: ${C.indigo};
+    border-radius: 14px;
+    padding: 12px 14px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .pl-publish {
+    border: none;
+    border-radius: 16px;
+    background: ${C.indigo};
+    color: #fff;
+    padding: 15px 18px;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  @media (max-width: 720px) {
+    .polls-page {
+      padding: 24px 16px 100px;
+    }
+
+    .pl-create-btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .pl-card-inner {
+      padding: 18px;
+    }
+
+    .pl-create-card {
+      padding: 16px;
+    }
+  }
 `;
 
-/* --- MOCK DATA & CONSTANTS --- */
-const SPRING_TRANSITION = { type: "spring", stiffness: 300, damping: 24 };
-
-/* --- COMPONENTS --- */
-
-const Dropdown = ({ value, options, onChange }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setIsOpen(false);
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  return (
-    <div className="dropdown-wrapper" ref={ref}>
-      <button className="dropdown-trigger" onClick={() => setIsOpen(!isOpen)}>
-        {value} <ChevronDown size={24} strokeWidth={3} />
-      </button>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div 
-            className="dropdown-menu"
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={SPRING_TRANSITION}
-          >
-            {options.map(opt => (
-              <button 
-                key={opt.id || opt} 
-                className="dropdown-item"
-                onClick={() => { onChange(opt.id || opt); setIsOpen(false); }}
-              >
-                {opt.label || opt}
-              </button>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-function timeLeft(endsAt) {
+function formatCountdown(endsAt) {
   if (!endsAt) return null;
   const diff = new Date(endsAt) - Date.now();
   if (diff <= 0) return "Ended";
-  const h = Math.floor(diff / 3600000);
-  const d = Math.floor(h / 24);
-  if (d > 0) return `${d}d ${h % 24}h left`;
-  const m = Math.floor((diff % 3600000) / 60000);
-  if (h > 0) return `${h}h ${m}m left`;
-  return `${m}m left`;
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(hours / 24);
+  if (days > 0) return `${days}d ${hours % 24}h left`;
+  const minutes = Math.floor((diff % 3600000) / 60000);
+  if (hours > 0) return `${hours}h ${minutes}m left`;
+  return `${minutes}m left`;
 }
 
 function PollCard({ poll, onVote, onClose, onDelete, isCommittee }) {
-  const hasVoted = poll.myVote !== null;
+  const hasVoted = Array.isArray(poll.myVote) && poll.myVote.length > 0;
   const isOpen = poll.isOpen;
-  const myVoteSet = new Set((poll.myVote || []).map(String));
-  const [selected, setSelected] = useState([]);
-  const [isVoting, setIsVoting] = useState(false);
-
   const showResults = hasVoted || !isOpen;
-  const timeStr = timeLeft(poll.endsAt);
+  const [selected, setSelected] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [countdown, setCountdown] = useState(formatCountdown(poll.endsAt));
+  const myVoteSet = useMemo(() => new Set((poll.myVote || []).map(String)), [poll.myVote]);
   const totalVotes = poll.totalVotes || 0;
+  const maxVotes = Math.max(0, ...poll.options.map((option) => option.votes || 0));
 
-  // Find the winning option to highlight it
-  const maxVotes = Math.max(...poll.options.map(o => o.votes));
-  
-  function toggleOption(optId) {
+  useEffect(() => {
+    if (showResults) setSelected([]);
+  }, [showResults]);
+
+  /* Live countdown timer — updates every second */
+  useEffect(() => {
+    if (!poll.endsAt || !isOpen) return;
+
+    const updateCountdown = () => {
+      const newCountdown = formatCountdown(poll.endsAt);
+      setCountdown(newCountdown);
+    };
+
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [poll.endsAt, isOpen]);
+
+  function toggleOption(optionId) {
     if (!isOpen || hasVoted) return;
-    if (poll.allowMultiple) {
-      setSelected(prev => prev.includes(optId) ? prev.filter(x => x !== optId) : [...prev, optId]);
-    } else {
-      setSelected([optId]);
+    setSelected((current) => {
+      if (poll.allowMultiple) {
+        return current.includes(optionId)
+          ? current.filter((id) => id !== optionId)
+          : [...current, optionId];
+      }
+      return [optionId];
+    });
+  }
+
+  async function submitVote() {
+    if (selected.length === 0) return;
+    setIsSubmitting(true);
+    try {
+      await onVote(poll._id, selected);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
-  async function handleVoteSubmit() {
-    if (selected.length === 0) return;
-    setIsVoting(true);
-    await onVote(poll._id, selected);
-    setIsVoting(false);
-  }
-
   return (
-    <motion.div 
-      className="poll-card"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={SPRING_TRANSITION}
-    >
-      <div className="poll-header">
-        <div className="poll-meta">
-          {isOpen ? (
-            <span className="tag-active"><div className="pulse-dot" /> LIVE POLL</span>
-          ) : (
-            <span className="tag-closed"><Lock size={12} /> CLOSED</span>
-          )}
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: '#8E8E93', fontWeight: 600 }}>
-            <Users size={14} /> {totalVotes} votes
-          </span>
-          {timeStr && isOpen && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: '#8E8E93', fontWeight: 600 }}>
-              <Clock size={14} /> {timeStr}
+    <motion.article className="pl-card" layout initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={SPRING}>
+      <div className="pl-card-inner">
+        <div className="pl-card-head">
+          <div className="pl-card-top">
+            <span className={`pl-status ${isOpen ? "active" : "closed"}`}>
+              {isOpen ? <Sparkles size={12} /> : <Lock size={12} />}
+              {isOpen ? "Active" : "Closed"}
             </span>
-          )}
-        </div>
-        <h3 className="title-editorial poll-title">{poll.title}</h3>
-        {poll.description && <p className="poll-desc">{poll.description}</p>}
-      </div>
-
-      <div className="poll-body">
-        {poll.options.map(opt => {
-          const isSelected = selected.includes(String(opt._id));
-          const isMyChoice = myVoteSet.has(String(opt._id));
-          const pct = totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0;
-          const isWinner = showResults && opt.votes === maxVotes && maxVotes > 0;
-
-          return (
-            <div 
-              key={opt._id}
-              className={`vote-option ${isSelected || isMyChoice ? 'selected' : ''} ${!isOpen || hasVoted ? 'disabled' : ''} ${isWinner ? 'is-winner' : ''}`}
-              onClick={() => toggleOption(String(opt._id))}
-            >
-              {showResults && (
-                <div className="result-bar-bg" style={{ width: `${pct}%` }} />
-              )}
-              
-              {!showResults && (
-                <div className="vote-radio" style={{ borderRadius: poll.allowMultiple ? '6px' : '50%' }}>
-                  <div className="vote-radio-inner" style={{ borderRadius: poll.allowMultiple ? '2px' : '50%' }} />
-                </div>
-              )}
-              
-              {showResults && isMyChoice && (
-                <div style={{ marginRight: '12px', zIndex: 1 }}>
-                  <CheckCircle2 size={20} color="#4F46E5" />
-                </div>
-              )}
-
-              <span className="vote-text" style={{ color: isWinner ? '#4F46E5' : '#1C1C1E' }}>
-                {opt.text}
-              </span>
-
-              {showResults && (
-                <span className="vote-pct" style={{ color: isWinner ? '#4F46E5' : '#1C1C1E' }}>
-                  {pct}%
-                </span>
-              )}
+            <div className="pl-meta">
+              <span className="pl-meta-item"><BarChart3 size={14} /> {totalVotes} votes</span>
+              {countdown && isOpen && <span className="pl-meta-item"><Clock3 size={14} /> {countdown}</span>}
             </div>
-          );
-        })}
+          </div>
+
+          <h3 className="pl-question">{poll.title}</h3>
+          {poll.description && <p className="pl-description">{poll.description}</p>}
+        </div>
+
+        <AnimatePresence initial={false} mode="popLayout">
+          <motion.div key={showResults ? "results" : "vote"} className="pl-options" layout>
+            {!showResults && isOpen
+              ? poll.options.map((option) => {
+                  const optionId = String(option._id);
+                  const isSelected = selected.includes(optionId);
+
+                  return (
+                    <motion.button
+                      key={optionId}
+                      type="button"
+                      className={`pl-vote-button ${isSelected ? "is-selected" : ""}`}
+                      layout
+                      onClick={() => toggleOption(optionId)}
+                      whileHover={{ y: -1 }}
+                      whileTap={{ scale: 0.99 }}
+                    >
+                      <span className="pl-option-copy">
+                        <span className="pl-option-title">{option.text}</span>
+                        <span className="pl-option-sub">{poll.allowMultiple ? "Select one or more" : "Tap to vote"}</span>
+                      </span>
+                      {isSelected && (
+                        <span className="pl-option-check" aria-hidden="true">
+                          {poll.allowMultiple ? <Sparkles size={14} /> : <Check size={14} />}
+                        </span>
+                      )}
+                    </motion.button>
+                  );
+                })
+              : poll.options.map((option) => {
+                  const optionId = String(option._id);
+                  const pct = totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
+                  const isWinner = maxVotes > 0 && option.votes === maxVotes;
+                  const isMyChoice = myVoteSet.has(optionId);
+
+                  return (
+                    <motion.div key={optionId} className={`pl-result-row ${isWinner ? "is-winner" : ""}`} layout>
+                      <motion.div
+                        className={`pl-result-bar ${isWinner ? "is-winner" : ""}`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+                      />
+                      <div className="pl-result-content">
+                        <div className="pl-result-top">
+                          <div>
+                            <p className="pl-result-label">{option.text}</p>
+                            {isMyChoice && <span className="pl-voted-pill"><Check size={12} /> Your vote</span>}
+                          </div>
+                          <span className="pl-result-value">{pct}%</span>
+                        </div>
+
+                        <div className="pl-result-bar-wrap" aria-hidden="true">
+                          <motion.div
+                            className="pl-result-bar-fill"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${pct}%` }}
+                            transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+          </motion.div>
+        </AnimatePresence>
 
         {!showResults && isOpen && (
-          <motion.button 
-            className="submit-vote-btn"
-            disabled={selected.length === 0 || isVoting}
-            onClick={handleVoteSubmit}
-            whileHover={selected.length > 0 ? { scale: 1.02 } : {}}
-            whileTap={selected.length > 0 ? { scale: 0.98 } : {}}
+          <motion.button
+            type="button"
+            className="pl-submit"
+            disabled={selected.length === 0 || isSubmitting}
+            onClick={submitVote}
+            whileHover={selected.length > 0 ? { y: -1 } : undefined}
+            whileTap={selected.length > 0 ? { scale: 0.99 } : undefined}
           >
-            {isVoting ? "Submitting..." : "Cast Your Vote"}
+            {isSubmitting ? "Submitting..." : "Cast Vote"}
           </motion.button>
         )}
 
-        {/* Committee Actions */}
         {isCommittee && (
-          <div style={{ display: 'flex', gap: '12px', marginTop: '24px', paddingTop: '20px', borderTop: '1px dashed rgba(0,0,0,0.1)' }}>
-            {isOpen && (
-              <button onClick={() => onClose(poll._id)} style={{ background: '#F2F2F7', border: 'none', padding: '8px 16px', borderRadius: '100px', fontSize: '0.85rem', fontWeight: 700, color: '#8E8E93', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Lock size={14} /> Close Poll
+          <div className="pl-footer-row">
+            <span className="pl-count">{poll.allowMultiple ? "Multiple choices" : "Single choice"}</span>
+            <div style={{ display: "flex", gap: 10 }}>
+              {isOpen && (
+                <button
+                  type="button"
+                  onClick={() => onClose(poll._id)}
+                  style={{
+                    border: "none",
+                    background: C.surfaceSoft,
+                    color: C.inkSoft,
+                    borderRadius: 999,
+                    padding: "9px 13px",
+                    font: "inherit",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  <Lock size={13} /> Close
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => onDelete(poll._id)}
+                style={{
+                  border: "none",
+                  background: C.dangerSoft,
+                  color: C.danger,
+                  borderRadius: 999,
+                  padding: "9px 13px",
+                  font: "inherit",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                <Trash2 size={13} /> Delete
               </button>
-            )}
-            <button onClick={() => onDelete(poll._id)} style={{ background: '#FEE2E2', border: 'none', padding: '8px 16px', borderRadius: '100px', fontSize: '0.85rem', fontWeight: 700, color: '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Trash2 size={14} /> Delete
-            </button>
+            </div>
           </div>
         )}
       </div>
-    </motion.div>
+    </motion.article>
   );
 }
 
-function CreatePollDrawer({ onClose, onCreated, token }) {
+function CreatePollForm({ token, onCancel, onCreated }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [options, setOptions] = useState(["", ""]);
   const [saving, setSaving] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const cleanOptions = options.map(o => o.trim()).filter(Boolean);
-    if (cleanOptions.length < 2) return alert("Add at least 2 options");
+  const canSubmit = title.trim().length > 0 && options.filter((option) => option.trim()).length >= 2;
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    const cleanOptions = options.map((option) => option.trim()).filter(Boolean);
+    if (cleanOptions.length < 2) return;
+
     setSaving(true);
     try {
-      const res = await apiRequest("/polls", {
+      const data = await apiRequest("/polls", {
         method: "POST",
+        token,
         body: { title, description, options: cleanOptions, allowMultiple: false },
-        token
       });
-      onCreated(res.item);
-    } catch(err) {
-      alert(err.message);
+      onCreated(data.item);
+    } catch (error) {
+      alert(error.message);
     } finally {
       setSaving(false);
     }
-  };
+  }
 
   return (
-    <AnimatePresence>
-      <motion.div 
-        className="drawer-backdrop"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        onClick={onClose}
-      />
-      <motion.div 
-        className="drawer-panel"
-        initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-        transition={SPRING_TRANSITION}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
-          <h2 className="title-editorial" style={{ fontSize: '2.5rem', color: '#1C1C1E', margin: 0 }}>New Poll</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px' }}>
-            <X size={28} color="#1C1C1E" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <input 
-            required className="input-field" placeholder="What do you want to ask?" 
-            value={title} onChange={e => setTitle(e.target.value)}
-          />
-          <textarea 
-            className="input-field" placeholder="Add context (optional)..." rows={3}
-            value={description} onChange={e => setDescription(e.target.value)}
-          />
-          
-          <div style={{ margin: '16px 0 8px', fontWeight: 800, fontSize: '0.85rem', color: '#8E8E93', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Voting Options
+    <motion.div
+      className="pl-create-wrap"
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0 }}
+      transition={SPRING}
+      style={{ overflow: "hidden" }}
+    >
+      <div className="pl-create-card">
+        <motion.div
+          className="pl-drawer-head"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.02, duration: 0.22 }}
+        >
+          <div>
+            <p className="pl-kicker" style={{ marginBottom: 8 }}>New poll</p>
+            <h2 className="pl-drawer-title">Create Poll</h2>
+            <p className="pl-drawer-copy">Keep it short and decisive. Publish it once the options are easy to scan.</p>
           </div>
-          
-          {options.map((opt, i) => (
-            <div key={i} style={{ display: 'flex', gap: '8px' }}>
-              <input 
-                className="input-field" placeholder={`Option ${i+1}`} style={{ marginBottom: '8px' }}
-                value={opt} onChange={e => setOptions(o => o.map((v, idx) => idx === i ? e.target.value : v))}
-              />
-            </div>
-          ))}
-          
-          <button 
-            type="button" 
-            onClick={() => setOptions(o => [...o, ""])}
-            style={{ background: 'none', border: 'none', color: '#4F46E5', fontWeight: 700, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', padding: '8px 0', width: 'fit-content' }}
-          >
-            <Plus size={18} /> Add Option
+          <button type="button" className="pl-close" onClick={onCancel} aria-label="Close form">
+            <X size={22} />
           </button>
+        </motion.div>
 
-          <motion.button 
-            type="submit" disabled={saving}
-            style={{ width: '100%', background: '#4F46E5', color: '#FFFFFF', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer', marginTop: '32px' }}
-            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+        <form className="pl-form" onSubmit={handleSubmit}>
+          <div>
+            <div className="pl-label">Question</div>
+            <input
+              className="pl-field"
+              required
+              placeholder="What should the community decide?"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+            />
+          </div>
+
+          <div>
+            <div className="pl-label">Description</div>
+            <textarea
+              className="pl-field"
+              rows={4}
+              placeholder="Add context for residents..."
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+            />
+          </div>
+
+          <div>
+            <div className="pl-label" style={{ marginBottom: 10 }}>Options</div>
+            <div style={{ display: "grid", gap: 10 }}>
+              {options.map((option, index) => (
+                <div key={index} className="pl-option-input-row">
+                  <input
+                    className="pl-field"
+                    placeholder={`Option ${index + 1}`}
+                    value={option}
+                    onChange={(event) => {
+                      const next = [...options];
+                      next[index] = event.target.value;
+                      setOptions(next);
+                    }}
+                  />
+                  {options.length > 2 && (
+                    <button
+                      type="button"
+                      className="pl-close"
+                      onClick={() => setOptions((current) => current.filter((_, i) => i !== index))}
+                      aria-label={`Remove option ${index + 1}`}
+                    >
+                      <X size={18} />
+                    </button>
+                  )}
+                </div>
+              ))}
+
+              <button
+                type="button"
+                className="pl-add-option"
+                onClick={() => setOptions((current) => [...current, ""])}
+              >
+                <Plus size={16} style={{ marginRight: 6, verticalAlign: "-2px" }} />
+                Add option
+              </button>
+            </div>
+          </div>
+
+          <motion.button
+            type="submit"
+            className="pl-publish"
+            disabled={!canSubmit || saving}
+            whileHover={canSubmit && !saving ? { y: -1 } : undefined}
+            whileTap={canSubmit && !saving ? { scale: 0.99 } : undefined}
           >
-            {saving ? "Publishing..." : "Publish Poll"}
+            {saving ? "Publishing..." : "Publish poll"}
           </motion.button>
         </form>
-      </motion.div>
-    </AnimatePresence>
+      </div>
+    </motion.div>
   );
 }
 
 export function PollsPage() {
-  const { user, token } = useAuth();
+  const { token, user } = useAuth();
   const isCommittee = user?.role === "committee" || user?.role === "super_admin";
 
   const [polls, setPolls] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('Active Polls'); // 'Active Polls' | 'Closed Polls'
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [filter, setFilter] = useState("all");
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
-  const fetchPolls = useCallback(async () => {
+  const visiblePolls = useMemo(() => {
+    if (filter === "all") return polls;
+    return polls.filter((poll) => (filter === "active" ? poll.isOpen : !poll.isOpen));
+  }, [polls, filter]);
+
+  const loadPolls = useCallback(async () => {
     setLoading(true);
-    const status = filter === 'Active Polls' ? 'active' : 'closed';
     try {
-      const data = await apiRequest(`/polls?status=${status}`, { token });
+      const data = await apiRequest("/polls", { token });
       setPolls(data.items || []);
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error(error);
     } finally {
       setLoading(false);
     }
-  }, [token, filter]);
+  }, [token]);
 
-  useEffect(() => { fetchPolls(); }, [fetchPolls]);
+  useEffect(() => {
+    loadPolls();
+  }, [loadPolls]);
 
-  // Socket updates
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
-    socket.on("poll:created", (p) => { if(filter === 'Active Polls') setPolls(prev => [p, ...prev]); });
-    socket.on("poll:updated", (p) => setPolls(prev => prev.map(x => x._id === p._id ? {...p, myVote: x.myVote} : x)));
-    socket.on("poll:deleted", ({pollId}) => setPolls(prev => prev.filter(x => x._id !== pollId)));
+
+    const handleCreated = (poll) => {
+      setPolls((current) => [poll, ...current.filter((item) => item._id !== poll._id)]);
+    };
+
+    const handleUpdated = (poll) => {
+      setPolls((current) => current.map((item) => (item._id === poll._id ? { ...poll, myVote: item.myVote } : item)));
+    };
+
+    const handleDeleted = ({ pollId }) => {
+      setPolls((current) => current.filter((item) => item._id !== pollId));
+    };
+
+    socket.on("poll:created", handleCreated);
+    socket.on("poll:updated", handleUpdated);
+    socket.on("poll:deleted", handleDeleted);
+
     return () => {
-      socket.off("poll:created"); socket.off("poll:updated"); socket.off("poll:deleted");
-    }
-  }, [filter]);
+      socket.off("poll:created", handleCreated);
+      socket.off("poll:updated", handleUpdated);
+      socket.off("poll:deleted", handleDeleted);
+    };
+  }, []);
 
   const handleVote = async (pollId, optionIds) => {
-    const data = await apiRequest(`/polls/${pollId}/vote`, { method: "POST", body: { optionIds }, token });
-    setPolls(prev => prev.map(p => p._id === pollId ? data.item : p));
+    const data = await apiRequest(`/polls/${pollId}/vote`, {
+      method: "POST",
+      token,
+      body: { optionIds },
+    });
+    setPolls((current) => current.map((poll) => (poll._id === pollId ? data.item : poll)));
   };
 
   const handleClose = async (pollId) => {
-    if(!confirm("Close poll?")) return;
+    if (!confirm("Close this poll?")) return;
     await apiRequest(`/polls/${pollId}/close`, { method: "PATCH", token });
-    setPolls(prev => prev.filter(p => p._id !== pollId));
+    setPolls((current) => current.map((poll) => (poll._id === pollId ? { ...poll, isOpen: false, status: "closed" } : poll)));
   };
 
   const handleDelete = async (pollId) => {
-    if(!confirm("Delete poll?")) return;
+    if (!confirm("Delete this poll?")) return;
     await apiRequest(`/polls/${pollId}`, { method: "DELETE", token });
-    setPolls(prev => prev.filter(p => p._id !== pollId));
+    setPolls((current) => current.filter((poll) => poll._id !== pollId));
   };
 
   return (
     <>
       <style>{styles}</style>
       <div className="polls-page">
-        <div className="polls-wrapper">
-          
-          <motion.div 
-            className="smart-filter"
-            initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-            transition={SPRING_TRANSITION}
+        <div className="polls-shell">
+          <motion.header
+            className="pl-header"
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={SPRING}
           >
-            <span style={{ color: '#1C1C1E' }}>Show me</span>
-            <Dropdown 
-              value={filter} 
-              options={[{id: 'Active Polls', label: 'Active Polls'}, {id: 'Closed Polls', label: 'Closed Polls'}]} 
-              onChange={setFilter} 
-            />
-          </motion.div>
+            <div className="pl-heading">
+              <p className="pl-kicker">Community input</p>
+              <h1 className="pl-title">Community Polls</h1>
+              <p className="pl-subtitle">
+                Keep decisions visible, vote quickly, and watch every result update without leaving the page.
+              </p>
+            </div>
+
+            {isCommittee && (
+              <motion.button
+                type="button"
+                className="pl-create-btn"
+                onClick={() => setShowCreateForm((prev) => !prev)}
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <Plus size={13} />
+                {showCreateForm ? "Close form" : "Add poll"}
+              </motion.button>
+            )}
+          </motion.header>
+
+          <AnimatePresence>
+            {isCommittee && showCreateForm && (
+              <CreatePollForm
+                token={token}
+                onCancel={() => setShowCreateForm(false)}
+                onCreated={(poll) => {
+                  setShowCreateForm(false);
+                  setPolls((current) => [poll, ...current.filter((item) => item._id !== poll._id)]);
+                }}
+              />
+            )}
+          </AnimatePresence>
+
+          <div className="pl-chips-rail" role="tablist" aria-label="Poll filter">
+            {FILTERS.map(({ id, label, Icon }) => {
+              const isActive = filter === id;
+              return (
+                <motion.button
+                  key={id}
+                  type="button"
+                  className="pl-chip"
+                  onClick={() => setFilter(id)}
+                  animate={{ color: isActive ? "#1C1C1E" : "#6B7280" }}
+                  variants={!isActive ? { "chip-hover": { color: "#374151" } } : {}}
+                  whileHover="chip-hover"
+                  whileTap={{ scale: 0.96 }}
+                  transition={{ color: { duration: 0.14 } }}
+                >
+                  {/* Sliding indigo underline */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="active-poll-filter"
+                      className="pl-chip-underline"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+
+                  <span className="pl-chip-inner">
+                    {Icon && (
+                      <motion.span
+                        style={{ display: "inline-flex" }}
+                        variants={!isActive ? {
+                          "chip-hover": { rotate: 10, scale: 1.18 },
+                        } : {}}
+                        transition={{ type: "spring", stiffness: 420, damping: 16 }}
+                      >
+                        <Icon size={12} strokeWidth={2.5} />
+                      </motion.span>
+                    )}
+                    {label}
+                  </span>
+                </motion.button>
+              );
+            })}
+          </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '100px', fontWeight: 600, color: '#8E8E93' }}>Loading polls...</div>
-          ) : polls.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '100px 0', border: '2px dashed rgba(0,0,0,0.1)', borderRadius: '24px' }}>
-              <BarChart2 size={48} color="#8E8E93" style={{ marginBottom: '16px', opacity: 0.5 }} />
-              <h3 className="title-editorial" style={{ fontSize: '2rem', marginBottom: '8px' }}>No {filter.toLowerCase()}</h3>
-              <p style={{ color: '#8E8E93', fontWeight: 500 }}>Check back later for new community decisions.</p>
+            <div className="pl-loading">Loading polls...</div>
+          ) : visiblePolls.length === 0 ? (
+            <div className="pl-empty">
+              <BarChart3 size={44} color={C.muted} />
+              <div>
+                <h3>No polls here yet</h3>
+                <p>Switch filters or create the first community question to get the board moving.</p>
+              </div>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <AnimatePresence>
-                {polls.map(poll => (
-                  <PollCard 
-                    key={poll._id} 
-                    poll={poll} 
-                    onVote={handleVote} 
-                    onClose={handleClose} 
+            <motion.div className="pl-grid" layout>
+              <AnimatePresence mode="popLayout">
+                {visiblePolls.map((poll) => (
+                  <PollCard
+                    key={poll._id}
+                    poll={poll}
+                    onVote={handleVote}
+                    onClose={handleClose}
                     onDelete={handleDelete}
                     isCommittee={isCommittee}
                   />
                 ))}
               </AnimatePresence>
-            </div>
+            </motion.div>
           )}
         </div>
 
-        {isCommittee && (
-          <motion.button 
-            className="fab"
-            whileHover={{ scale: 1.1, rotate: 90 }} whileTap={{ scale: 0.9 }}
-            onClick={() => setDrawerOpen(true)}
-          >
-            <Plus size={32} />
-          </motion.button>
-        )}
-
-        {drawerOpen && (
-          <CreatePollDrawer 
-            token={token} 
-            onClose={() => setDrawerOpen(false)} 
-            onCreated={(p) => { setDrawerOpen(false); if(filter === 'Active Polls') setPolls([p, ...polls]); }} 
-          />
-        )}
       </div>
     </>
   );
