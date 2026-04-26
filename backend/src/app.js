@@ -26,6 +26,7 @@ import { pollRouter } from "./routes/poll.routes.js";
 import { deliveryRouter } from "./routes/delivery.routes.js";
 import { deliveryPreRegRouter } from "./routes/delivery-prereg.routes.js";
 import { lostFoundRouter } from "./routes/lost-found.routes.js";
+import { sosRouter } from "./routes/sos.routes.js";
 
 const app = express();
 
@@ -66,6 +67,7 @@ app.use("/api/polls",         pollRouter);
 app.use("/api/delivery",      deliveryRouter);
 app.use("/api/delivery-prereg", deliveryPreRegRouter);
 app.use("/api/lost-found",     lostFoundRouter);
+app.use("/api/sos",            sosRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

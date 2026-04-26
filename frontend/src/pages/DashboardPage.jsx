@@ -273,6 +273,7 @@ const CSS = `
   .dp-live-btn-approve {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 8px 17px; border-radius: 9px;
+    min-height: 40px;
     font-size: 0.8rem; font-weight: 700;
     background: ${C.ink}; color: #FFFFFF;
     border: none; cursor: pointer;
@@ -292,6 +293,7 @@ const CSS = `
   .dp-live-btn-reject {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 8px 17px; border-radius: 9px;
+    min-height: 40px;
     font-size: 0.8rem; font-weight: 700;
     background: ${C.surface}; color: ${C.ink2};
     border: 1.5px solid ${C.border};
@@ -310,6 +312,7 @@ const CSS = `
   .dp-live-btn-cta {
     display: inline-flex; align-items: center; gap: 5px;
     padding: 7px 14px; border-radius: 9px;
+    min-height: 38px;
     font-size: 0.77rem; font-weight: 700;
     background: rgba(79,70,229,0.08); color: ${C.indigo};
     border: 1px solid ${C.indigoBr};
@@ -361,7 +364,9 @@ const CSS = `
   .dp-view-all {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 3px;
+    min-height: 36px;
     font-size: 0.71rem;
     font-weight: 700;
     color: ${C.indigo};
@@ -810,10 +815,98 @@ const CSS = `
   }
 
   /* Responsive */
-  @media (max-width: 1100px) { .dp-cards-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 860px)  { .dp-lower-grid { grid-template-columns: 1fr; } }
-  @media (max-width: 700px)  { .dp-live-actions { flex-wrap: wrap; } }
-  @media (max-width: 600px)  { .dp-cards-grid { grid-template-columns: 1fr; } .dp-root { padding: 20px 16px 60px; } }
+  @media (max-width: 1100px) {
+    .dp-cards-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 860px) {
+    .dp-root { padding: 24px 20px 68px; }
+    .dp-greeting { align-items: flex-start; margin-bottom: 18px; }
+    .dp-greeting-right { width: 100%; }
+    .dp-lower-grid { grid-template-columns: 1fr; }
+
+    .dp-live-head {
+      align-items: flex-start;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .dp-live-row {
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 13px 16px 13px 20px;
+    }
+
+    .dp-live-content { order: 2; flex-basis: calc(100% - 44px); }
+    .dp-live-actions {
+      order: 3;
+      width: 100%;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .dp-arrivals-date-wrap { min-width: 0; width: 100%; }
+    .dp-arrival-line-note {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: unset;
+      text-align: left;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .dp-panel { padding: 16px; border-radius: 14px; }
+    .dp-live-panel { border-radius: 14px; margin-bottom: 22px; }
+    .dp-live-empty { padding: 16px; line-height: 1.45; align-items: flex-start; }
+
+    .dp-live-actions {
+      justify-content: stretch;
+      flex-wrap: wrap;
+    }
+
+    .dp-live-btn-approve,
+    .dp-live-btn-reject,
+    .dp-live-btn-cta {
+      flex: 1;
+      min-width: 110px;
+      justify-content: center;
+    }
+
+    .dp-feed-time {
+      width: 100%;
+      margin-left: 0;
+      margin-top: 3px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .dp-root { padding: 18px 14px 56px; }
+    .dp-cards-grid { grid-template-columns: 1fr; gap: 10px; margin-bottom: 26px; }
+    .dp-card { aspect-ratio: 16 / 10; }
+    .dp-card-body { padding: 10px 11px; }
+    .dp-card-title { font-size: 0.9rem; }
+    .dp-card-desc { font-size: 0.67rem; }
+
+    .dp-arrivals-toolbar { gap: 8px; }
+    .dp-arrivals-date-wrap { padding: 8px 9px; }
+    .dp-arrivals-date-wrap span { font-size: 0.64rem; }
+
+    .dp-arrival-line {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      padding: 10px;
+    }
+    .dp-arrival-line-main { width: 100%; justify-content: space-between; }
+
+    .dp-live-title,
+    .dp-live-sub {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: unset;
+    }
+  }
 `;
 
 /* ─── Dashboard data cache ─────────────────────────────────────────────────
@@ -1082,9 +1175,9 @@ export function DashboardPage() {
 
   const hasActionable = liveItems.some(i => i.type === "visitor" || i.type === "approval");
   const dotColor = liveItems.length > 0 ? (hasActionable ? C.amber : C.green) : C.green;
-  const liveCountLabel = liveItems.length === 0
-    ? "All quiet"
-    : `${liveItems.length} update${liveItems.length > 1 ? "s" : ""}`;
+  const liveCountLabel = liveItems.length > 0
+    ? `${liveItems.length} update${liveItems.length > 1 ? "s" : ""}`
+    : "";
 
   /* ── Row class map ── */
   const rowClass = { visitor: "dp-live-row-visitor", event_soon: "dp-live-row-event-soon", notice: "dp-live-row-notice", approval: "dp-live-row-approval" };
@@ -1177,7 +1270,7 @@ export function DashboardPage() {
               />
               <span className="dp-live-label" style={{ color: dotColor }}>Live Dashboard</span>
             </div>
-            <span className="dp-live-count">{liveCountLabel}</span>
+            {liveCountLabel && <span className="dp-live-count">{liveCountLabel}</span>}
           </div>
 
           {/* Items */}
@@ -1306,9 +1399,6 @@ export function DashboardPage() {
         ══════════════════════════════════════════ */}
         <div style={{ marginBottom:12 }}>
           <p className="dp-section-label">Your Community</p>
-          <div className="dp-section-head">
-            <h2 className="dp-section-title">Explore Features</h2>
-          </div>
         </div>
 
         <div className="dp-cards-grid">
@@ -1359,7 +1449,6 @@ export function DashboardPage() {
             <div className="dp-section-head" style={{ marginBottom:16 }}>
               <div>
                 <p className="dp-section-label">Updates</p>
-                <h2 className="dp-section-title">Recent Activity</h2>
               </div>
               <Link to="/announcements" className="dp-view-all">View all <ChevronRight size={10}/></Link>
             </div>
@@ -1413,7 +1502,6 @@ export function DashboardPage() {
               <div className="dp-section-head" style={{ marginBottom:10 }}>
                 <div>
                   <p className="dp-section-label">Expected Arrivals</p>
-                  <h2 className="dp-section-title">Arrivals on one date</h2>
                 </div>
                 <Link to="/visitors/prereg" className="dp-view-all">Manage <ChevronRight size={10}/></Link>
               </div>

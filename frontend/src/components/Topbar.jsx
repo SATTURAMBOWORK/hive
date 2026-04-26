@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { NavLink, Link } from "react-router-dom";
-import { Building2, Search, ChevronDown, LogOut, User } from "lucide-react";
+import { NavLink, Link, useLocation } from "react-router-dom";
+import { Building2, Search, ChevronDown, ChevronRight, LogOut, User, Menu, X } from "lucide-react";
 import { useAuth } from "./AuthContext";
 import { NotificationBell } from "./NotificationBell";
 
@@ -25,6 +25,26 @@ const CSS = `
     display: flex;
     align-items: stretch;
     gap: 0;
+  }
+
+  .tb-mobile-toggle {
+    display: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.82);
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.18s, border-color 0.18s, color 0.18s;
+  }
+
+  .tb-mobile-toggle:hover {
+    background: rgba(79,70,229,0.16);
+    border-color: rgba(79,70,229,0.42);
+    color: #FFFFFF;
   }
 
   /* ── Logo ── */
@@ -363,6 +383,164 @@ const CSS = `
     background: rgba(79,70,229,0.15);
     color: #818CF8;
   }
+
+  .tb-mobile-panel {
+    display: none;
+  }
+
+  @media (max-width: 1100px) {
+    .tb-inner {
+      padding: 0 16px;
+      gap: 10px;
+    }
+
+    .tb-nav {
+      gap: 0;
+    }
+
+    .tb-link,
+    .tb-drop-trigger {
+      padding: 0 10px;
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+    }
+
+    .tb-right {
+      padding-left: 10px;
+      margin-left: 0;
+      gap: 6px;
+    }
+
+    .tb-search {
+      width: 120px;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .tb-inner {
+      height: 60px;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .tb-logo {
+      border-right: 0;
+      margin-right: 0;
+      padding-right: 0;
+    }
+
+    .tb-logo-name {
+      font-size: 1.04rem;
+    }
+
+    .tb-nav {
+      display: none;
+    }
+
+    .tb-right {
+      border-left: 0;
+      padding-left: 0;
+      margin-left: 0;
+    }
+
+    .tb-search {
+      display: none;
+    }
+
+    .tb-mobile-toggle {
+      display: inline-flex;
+    }
+
+    .tb-mobile-panel {
+      display: block;
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      background: #171717;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      transition: max-height 0.25s ease, opacity 0.2s ease;
+    }
+
+    .tb-mobile-panel.open {
+      max-height: calc(100vh - 60px);
+      opacity: 1;
+      overflow: auto;
+    }
+
+    .tb-mobile-scroll {
+      padding: 10px 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tb-mobile-section {
+      margin-top: 6px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .tb-mobile-section-label {
+      display: block;
+      margin: 0 8px 6px;
+      color: rgba(255,255,255,0.4);
+      font-size: 0.66rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .tb-mobile-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 44px;
+      border-radius: 10px;
+      padding: 0 12px;
+      color: rgba(255,255,255,0.74);
+      text-decoration: none;
+      font-size: 0.84rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      transition: background 0.16s, border-color 0.16s, color 0.16s;
+    }
+
+    .tb-mobile-link.active,
+    .tb-mobile-link:hover {
+      color: #FFFFFF;
+      border-color: rgba(79,70,229,0.42);
+      background: rgba(79,70,229,0.16);
+    }
+
+    .tb-profile-dropdown {
+      right: 0;
+      width: 188px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .tb-inner {
+      padding: 0 10px;
+    }
+
+    .tb-logo-box {
+      width: 30px;
+      height: 30px;
+    }
+
+    .tb-logo-name {
+      font-size: 0.96rem;
+    }
+
+    .tb-bell,
+    .tb-avatar,
+    .tb-mobile-toggle {
+      width: 34px;
+      height: 34px;
+    }
+  }
 `;
 
 /* ─── Nav config ─────────────────────────────── */
@@ -425,9 +603,11 @@ function NavDropdown({ label, links, role }) {
 /* ─── Main component ─────────────────────────── */
 export function Topbar() {
   const { user, logout } = useAuth();
+  const location = useLocation();
   const role = user?.role;
 
   const [profileOpen, setProfileOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const profileRef = useRef(null);
 
   useEffect(() => {
@@ -438,6 +618,21 @@ export function Topbar() {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    setMobileOpen(false);
+    setProfileOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    function onResize() {
+      if (window.innerWidth > 900) {
+        setMobileOpen(false);
+      }
+    }
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   const initials = (user?.fullName || "")
@@ -489,6 +684,15 @@ export function Topbar() {
 
           {/* Right controls */}
           <div className="tb-right">
+            <button
+              className="tb-mobile-toggle"
+              onClick={() => setMobileOpen(v => !v)}
+              aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
+              aria-expanded={mobileOpen}
+            >
+              {mobileOpen ? <X size={16} /> : <Menu size={16} />}
+            </button>
+
             {/* Search */}
             <div className="tb-search">
               <Search size={13} color="rgba(255,255,255,0.35)" strokeWidth={2} />
@@ -529,6 +733,70 @@ export function Topbar() {
             </div>
           </div>
 
+        </div>
+
+        <div className={`tb-mobile-panel${mobileOpen ? " open" : ""}`}>
+          <div className="tb-mobile-scroll">
+            {filterLinks(MAIN_LINKS, role).map(l => (
+              <NavLink
+                key={l.to}
+                to={l.to}
+                end={l.end}
+                className={({ isActive }) => `tb-mobile-link${isActive ? " active" : ""}`}
+              >
+                {l.label}
+                <ChevronRight size={14} />
+              </NavLink>
+            ))}
+
+            {showCommunity && (
+              <div className="tb-mobile-section">
+                <span className="tb-mobile-section-label">Community</span>
+                {filterLinks(COMMUNITY_LINKS, role).map(l => (
+                  <NavLink
+                    key={l.to}
+                    to={l.to}
+                    className={({ isActive }) => `tb-mobile-link${isActive ? " active" : ""}`}
+                  >
+                    {l.label}
+                    <ChevronRight size={14} />
+                  </NavLink>
+                ))}
+              </div>
+            )}
+
+            {showSecurity && (
+              <div className="tb-mobile-section">
+                <span className="tb-mobile-section-label">Security</span>
+                {filterLinks(SECURITY_LINKS, role).map(l => (
+                  <NavLink
+                    key={l.to}
+                    to={l.to}
+                    className={({ isActive }) => `tb-mobile-link${isActive ? " active" : ""}`}
+                  >
+                    {l.label}
+                    <ChevronRight size={14} />
+                  </NavLink>
+                ))}
+              </div>
+            )}
+
+            {showAdmin && (
+              <div className="tb-mobile-section">
+                <span className="tb-mobile-section-label">Admin</span>
+                {filterLinks(ADMIN_LINKS, role).map(l => (
+                  <NavLink
+                    key={l.to}
+                    to={l.to}
+                    className={({ isActive }) => `tb-mobile-link${isActive ? " active" : ""}`}
+                  >
+                    {l.label}
+                    <ChevronRight size={14} />
+                  </NavLink>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </header>
     </>

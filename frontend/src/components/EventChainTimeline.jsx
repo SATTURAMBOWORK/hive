@@ -533,7 +533,6 @@ export function EventChainTimeline({ events = [] }) {
         <div className="ect-header">
           <div>
             <span className="ect-section-lbl">Schedule</span>
-            <h3 className="ect-section-title">7-Day Timeline</h3>
             <span className="ect-month-badge">{monthLabel}</span>
           </div>
           <Link to="/events" className="ect-view-all">
