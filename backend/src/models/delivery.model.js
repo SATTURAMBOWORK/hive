@@ -55,7 +55,7 @@ const deliverySchema = new mongoose.Schema(
 
     // ── Delivery agent details ─────────────────────────────────
     courierName: { type: String, required: true, trim: true },   // e.g. "Amazon"
-    agentName:   { type: String, required: true, trim: true },   // agent's name
+    agentName:   { type: String, default: "",    trim: true },
     agentPhone:  { type: String, default: "",    trim: true },
 
     // ── Package details ────────────────────────────────────────

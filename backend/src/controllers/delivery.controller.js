@@ -64,8 +64,8 @@ export async function logDelivery(req, res, next) {
      const flatNumber  = sanitizeText(req.body?.flatNumber);
      const courierName = sanitizeText(req.body?.courierName);
      const agentName   = sanitizeText(req.body?.agentName);
-     if (!flatNumber || !courierName || !agentName) {
-      throw new AppError("flatNumber, courierName and agentName are required", StatusCodes.BAD_REQUEST);
+     if (!flatNumber || !courierName) {
+      throw new AppError("flatNumber and courierName are required", StatusCodes.BAD_REQUEST);
      }
 
     // Step 2 — find resident by flat (splits "A-101" → wing + unit → membership)
@@ -222,7 +222,7 @@ export async function approveDelivery(req, res, next) {
     // TODO: Step 7
     const io = req.app.get("io");
     await emitRealtime(io, {
-      room: `tenant:${req.tenantId}:security`,
+      room: `tenant:${req.tenantId}`,
       event: SOCKET_EVENTS.DELIVERY_APPROVED,
       payload: { delivery }
     });
@@ -269,7 +269,7 @@ export async function rejectDelivery(req, res, next) {
 
     const io = req.app.get("io");
     await emitRealtime(io, {
-      room: `tenant:${req.tenantId}:security`,
+      room: `tenant:${req.tenantId}`,
       event: SOCKET_EVENTS.DELIVERY_REJECTED,
       payload: { delivery }
     });

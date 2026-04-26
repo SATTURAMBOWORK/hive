@@ -19,7 +19,9 @@ const notificationSchema = new mongoose.Schema(
         "group_pass_used",
         "staff_entry",
         "staff_leave_toggled",
-        "poll_created"
+        "poll_created",
+        "delivery_arrived",
+        "delivery_approval_request"
       ],
       required: true
     },

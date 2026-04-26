@@ -2,14 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   CalendarDays,
-  CheckCircle2,
   Clock3,
+  Home,
   Package,
-  Plus,
   RefreshCw,
   Search,
   ShieldCheck,
   Truck,
+  User2,
   XCircle,
 } from "lucide-react";
 import { apiRequest } from "../components/api";
@@ -81,6 +81,11 @@ const FILTERS = [
   { key: "done", label: "Completed" },
 ];
 
+const VIEW_TABS = [
+  { key: "live", label: "Live Stream" },
+  { key: "prereg", label: "Pre-Registrations" },
+];
+
 const MOTION_EASE = [0.22, 1, 0.36, 1];
 
 const CSS = `
@@ -127,6 +132,9 @@ const CSS = `
 
   .dlv-header-main {
     max-width: 690px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
   .dlv-pill {
@@ -256,85 +264,149 @@ const CSS = `
   }
 
   .dlv-metrics {
-    margin: 10px 0 0;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin: -2px 0 0;
+    padding-top: 10px;
+    border-top: 1px solid rgba(232,232,237,0.92);
   }
 
   .dlv-metric {
-    border-radius: 16px;
-    border: 1px solid ${C.border};
-    background: ${C.surface};
-    padding: 12px;
-    box-shadow: 0 8px 20px rgba(28,28,30,0.06);
-    min-height: 92px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 7px;
+    min-width: 0;
   }
 
   .dlv-metric-value {
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 1.45rem;
+    font-size: 1.02rem;
     line-height: 1;
     font-weight: 800;
-    letter-spacing: -0.04em;
+    letter-spacing: -0.03em;
   }
 
   .dlv-metric-label {
-    margin-top: 6px;
     color: ${C.muted};
     font-size: 0.72rem;
     font-weight: 700;
   }
 
-  .dlv-grid {
+  .dlv-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
     margin-top: 14px;
-    display: grid;
-    grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr);
-    gap: 24px;
-    align-items: start;
   }
 
-  .dlv-panel {
+  .dlv-tab {
     position: relative;
-    border-radius: 22px;
     border: 1px solid ${C.border};
-    background: ${C.surface};
-    box-shadow: ${C.shadowSoft};
-    padding: 24px;
+    background: rgba(255,255,255,0.72);
+    color: ${C.ink2};
+    border-radius: 999px;
+    padding: 9px 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 800;
+    overflow: hidden;
+    transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease, transform 0.18s ease;
   }
 
-  .dlv-sidebar {
-    position: sticky;
-    top: 22px;
-    align-self: start;
+  .dlv-tab:hover {
+    transform: translateY(-1px);
+    border-color: #C7C7CC;
+    color: ${C.ink};
   }
 
-  .dlv-panel-title {
+  .dlv-tab.active {
+    color: ${C.indigoD};
+    border-color: ${C.indigoBr};
+    background: ${C.indigoL};
+  }
+
+  .dlv-tab-count {
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.9);
+    color: inherit;
+    font-size: 0.69rem;
+    font-weight: 800;
+  }
+
+  .dlv-view {
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .dlv-control-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 0 0;
+  }
+
+  .dlv-section-title {
     margin: 0;
     font-family: 'Plus Jakarta Sans', sans-serif;
     color: ${C.ink};
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: 800;
     letter-spacing: -0.02em;
   }
 
-  .dlv-panel-sub {
+  .dlv-section-sub {
     margin: 4px 0 0;
     font-size: 0.8rem;
     color: ${C.muted};
     font-weight: 600;
   }
 
-  .dlv-feed-head {
+  .dlv-search {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 12px;
+    gap: 8px;
+    border-radius: 999px;
+    border: 1px solid ${C.border};
+    background: rgba(255,255,255,0.88);
+    min-width: 240px;
+    padding: 8px 11px;
+    box-shadow: 0 6px 14px rgba(28,28,30,0.04);
+  }
+
+  .dlv-search:focus-within {
+    border-color: ${C.indigoBr};
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+  }
+
+  .dlv-search input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: ${C.ink};
+    font-size: 0.82rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 600;
+  }
+
+  .dlv-search input::placeholder {
+    color: ${C.faint};
+    font-weight: 500;
   }
 
   .dlv-chip-row {
@@ -368,38 +440,6 @@ const CSS = `
     color: ${C.indigoD};
   }
 
-  .dlv-search {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border-radius: 12px;
-    border: 1px solid ${C.border};
-    background: ${C.surface};
-    min-width: 240px;
-    padding: 8px 11px;
-  }
-
-  .dlv-search:focus-within {
-    border-color: ${C.indigoBr};
-    box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
-  }
-
-  .dlv-search input {
-    width: 100%;
-    border: none;
-    outline: none;
-    background: transparent;
-    color: ${C.ink};
-    font-size: 0.82rem;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-weight: 600;
-  }
-
-  .dlv-search input::placeholder {
-    color: ${C.faint};
-    font-weight: 500;
-  }
-
   .dlv-list {
     display: flex;
     flex-direction: column;
@@ -412,7 +452,7 @@ const CSS = `
     border-radius: 16px;
     border: 1px solid ${C.border};
     background: ${C.surface};
-    padding: 12px;
+    padding: 11px 12px;
     transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
   }
 
@@ -467,9 +507,9 @@ const CSS = `
   }
 
   .dlv-card-title {
-    margin: 10px 0 0;
+    margin: 8px 0 0;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 1rem;
+    font-size: 0.98rem;
     font-weight: 800;
     color: ${C.ink};
     letter-spacing: -0.01em;
@@ -477,35 +517,26 @@ const CSS = `
 
   .dlv-meta {
     margin-top: 7px;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 7px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    color: ${C.ink2};
+    font-size: 0.77rem;
+    font-weight: 600;
   }
 
   .dlv-meta-item {
-    border-radius: 10px;
-    border: 1px solid ${C.borderL};
-    background: #FCFCFE;
-    padding: 7px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     min-width: 0;
-  }
-
-  .dlv-meta-key {
-    color: ${C.muted};
-    font-size: 0.66rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  .dlv-meta-value {
-    margin-top: 3px;
-    color: ${C.ink2};
-    font-size: 0.79rem;
-    font-weight: 700;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  }
+
+  .dlv-meta-sep {
+    color: ${C.faint};
+    font-weight: 700;
   }
 
   .dlv-action-row {
@@ -637,17 +668,33 @@ const CSS = `
     font-weight: 600;
   }
 
+  .dlv-form-shell {
+    border-radius: 18px;
+    border: 1px solid ${C.border};
+    background: rgba(255,255,255,0.84);
+    box-shadow: 0 10px 24px rgba(28,28,30,0.05);
+    padding: 16px;
+  }
+
+  .dlv-form-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+
+  .dlv-form-shell .dlv-action-row {
+    margin-top: 12px;
+  }
+
   .dlv-sk {
     border-radius: 7px;
     background: #EEF0F7;
   }
 
   @media (max-width: 980px) {
-    .dlv-grid { grid-template-columns: 1fr; }
-    .dlv-sidebar {
-      position: static;
-      top: auto;
-    }
     .dlv-header-main {
       max-width: 100%;
     }
@@ -655,10 +702,11 @@ const CSS = `
 
   @media (max-width: 760px) {
     .dlv-root { padding: 16px 12px 72px; }
-    .dlv-metrics { grid-template-columns: 1fr; }
-    .dlv-form-grid { grid-template-columns: 1fr; }
-    .dlv-meta { grid-template-columns: 1fr; }
+    .dlv-metrics { gap: 8px 10px; }
+    .dlv-control-bar { align-items: stretch; }
     .dlv-search { width: 100%; min-width: 0; }
+    .dlv-form-grid { grid-template-columns: 1fr; }
+    .dlv-meta { gap: 6px 8px; }
   }
 `;
 
@@ -708,6 +756,15 @@ function toneColor(tone) {
   if (tone === "action") return C.amber;
   if (tone === "active") return C.indigo;
   return C.green;
+}
+
+function MetaItem({ icon: Icon, children }) {
+  return (
+    <span className="dlv-meta-item">
+      {Icon && <Icon size={12} strokeWidth={2.2} />}
+      <span>{children}</span>
+    </span>
+  );
 }
 
 function StatusBadge({ status }) {
@@ -773,23 +830,14 @@ function DeliveryCard({ item }) {
 
       <h3 className="dlv-card-title">{item.courierName || "Unknown courier"}</h3>
 
-      <div className="dlv-meta">
-        <div className="dlv-meta-item">
-          <p className="dlv-meta-key">Agent</p>
-          <p className="dlv-meta-value">{item.agentName || "Not available"}</p>
-        </div>
-        <div className="dlv-meta-item">
-          <p className="dlv-meta-key">Flat</p>
-          <p className="dlv-meta-value">{item.flatNumber || "-"}</p>
-        </div>
-        <div className="dlv-meta-item">
-          <p className="dlv-meta-key">Arrival</p>
-          <p className="dlv-meta-value">{formatDateTime(item.entryTime || item.createdAt)}</p>
-        </div>
-        <div className="dlv-meta-item">
-          <p className="dlv-meta-key">Handover mode</p>
-          <p className="dlv-meta-value">{FULFILLMENT_LABEL[item.fulfillmentMode] || "-"}</p>
-        </div>
+      <div className="dlv-meta" aria-label="Delivery details">
+        <MetaItem icon={User2}>{item.agentName || "Agent unavailable"}</MetaItem>
+        <span className="dlv-meta-sep">•</span>
+        <MetaItem icon={Home}>Flat {item.flatNumber || "-"}</MetaItem>
+        <span className="dlv-meta-sep">•</span>
+        <MetaItem icon={Clock3}>{formatDateTime(item.entryTime || item.createdAt)}</MetaItem>
+        <span className="dlv-meta-sep">•</span>
+        <MetaItem icon={Truck}>{FULFILLMENT_LABEL[item.fulfillmentMode] || "Handed over"}</MetaItem>
       </div>
 
       {item.status === "awaiting_approval" && (
@@ -825,17 +873,12 @@ function PreRegCard({ item, busyAction, onCancel }) {
 
       <h3 className="dlv-card-title">{item.expectedCourier || "Any courier"}</h3>
 
-      <div className="dlv-meta" style={{ marginTop: 8 }}>
-        <div className="dlv-meta-item">
-          <p className="dlv-meta-key">Package</p>
-          <p className="dlv-meta-value">
-            {PACKAGE_TYPE_LABEL[item.packageType] || "Package"} x {item.packageCount || 1}
-          </p>
-        </div>
-        <div className="dlv-meta-item">
-          <p className="dlv-meta-key">Drop mode</p>
-          <p className="dlv-meta-value">{FULFILLMENT_LABEL[item.fulfillmentMode] || "-"}</p>
-        </div>
+      <div className="dlv-meta" aria-label="Pre-registration details">
+        <MetaItem icon={Package}>
+          {PACKAGE_TYPE_LABEL[item.packageType] || "Package"} x {item.packageCount || 1}
+        </MetaItem>
+        <span className="dlv-meta-sep">•</span>
+        <MetaItem icon={Truck}>{FULFILLMENT_LABEL[item.fulfillmentMode] || "Drop mode"}</MetaItem>
       </div>
 
       {!!item.instructions && (
@@ -870,10 +913,10 @@ export function DeliveriesPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [busyAction, setBusyAction] = useState("");
   const [error, setError] = useState(""); // busyAction kept for pre-reg cancel only
+  const [activeTab, setActiveTab] = useState("live");
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [showPreRegForm, setShowPreRegForm] = useState(false);
   const [submittingPreReg, setSubmittingPreReg] = useState(false);
   const [preRegForm, setPreRegForm] = useState({
     expectedDate: toInputDate(),
@@ -1028,7 +1071,6 @@ export function DeliveriesPage() {
         fulfillmentMode: "keep_at_gate",
         instructions: "",
       });
-      setShowPreRegForm(false);
     } catch (err) {
       setError(err.message || "Unable to create pre-registration");
     } finally {
@@ -1065,6 +1107,7 @@ export function DeliveriesPage() {
               <p className="dlv-sub">
                 Track every package, pre-register expected arrivals, and take instant actions with minimal effort.
               </p>
+
             </div>
 
             <div className="dlv-header-actions">
@@ -1083,268 +1126,285 @@ export function DeliveriesPage() {
                 </motion.span>
                 {refreshing ? "Refreshing..." : "Refresh"}
               </button>
-
-              {canPreRegister && (
-                <button
-                  type="button"
-                  className="dlv-btn-primary"
-                  onClick={() => setShowPreRegForm((value) => !value)}
-                >
-                  <Plus size={14} />
-                  {showPreRegForm ? "Close pre-registration" : "Pre-register delivery"}
-                </button>
-              )}
             </div>
           </motion.section>
 
           {error && <div className="dlv-error">{error}</div>}
 
-          <div className="dlv-metrics">
-            <motion.div
-              className="dlv-metric"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05, duration: 0.4, ease: MOTION_EASE }}
-            >
-              <p className="dlv-metric-value" style={{ color: C.amber }}>{summary.awaiting}</p>
-              <p className="dlv-metric-label">Awaiting approvals</p>
-            </motion.div>
-            <motion.div
-              className="dlv-metric"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.4, ease: MOTION_EASE }}
-            >
-              <p className="dlv-metric-value" style={{ color: C.green }}>{summary.deliveredThisMonth}</p>
-              <p className="dlv-metric-label">Delivered this month</p>
-            </motion.div>
-            <motion.div
-              className="dlv-metric"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15, duration: 0.4, ease: MOTION_EASE }}
-            >
-              <p className="dlv-metric-value" style={{ color: C.indigo }}>{summary.activePreRegs}</p>
-              <p className="dlv-metric-label">Active pre-registrations</p>
-            </motion.div>
+          <div className="dlv-tabs" role="tablist" aria-label="Deliveries views">
+            {VIEW_TABS.map((tab) => {
+              const isActive = activeTab === tab.key;
+              const count = tab.key === "live" ? deliveries.length : preRegs.length;
+
+              return (
+                <motion.button
+                  key={tab.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  className={`dlv-tab${isActive ? " active" : ""}`}
+                  onClick={() => setActiveTab(tab.key)}
+                  whileHover={{ y: -1 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="delivery-tab-rail"
+                      style={{ position: "absolute", left: 12, right: 12, bottom: 6, height: 2, borderRadius: 999, background: C.indigo }}
+                    />
+                  )}
+                  <span>{tab.label}</span>
+                  <span className="dlv-tab-count">{count}</span>
+                </motion.button>
+              );
+            })}
           </div>
 
-          <section className="dlv-grid">
-            <motion.div
-              className="dlv-panel"
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.18, duration: 0.42, ease: MOTION_EASE }}
-            >
-              <div className="dlv-feed-head">
-                <div>
-                  <h2 className="dlv-panel-title">My delivery stream</h2>
-                  <p className="dlv-panel-sub">Quickly filter and act on deliveries</p>
-                </div>
+          <AnimatePresence mode="wait" initial={false}>
+            {activeTab === "live" ? (
+              <motion.section
+                key="live-stream"
+                className="dlv-view"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.32, ease: MOTION_EASE }}
+              >
+                <div className="dlv-control-bar">
+                  <div>
+                    <h2 className="dlv-section-title">My delivery stream</h2>
+                    <p className="dlv-section-sub">Quickly filter and act on deliveries</p>
+                  </div>
 
-                <div className="dlv-search">
-                  <Search size={14} color={C.muted} />
-                  <input
-                    type="search"
-                    value={searchInput}
-                    onChange={(event) => setSearchInput(event.target.value)}
-                    placeholder="Search courier or agent"
-                  />
-                </div>
-              </div>
-
-              <div className="dlv-chip-row" style={{ marginBottom: 10 }}>
-                {FILTERS.map((filter) => (
-                  <button
-                    key={filter.key}
-                    type="button"
-                    className={`dlv-chip${statusFilter === filter.key ? " active" : ""}`}
-                    onClick={() => setStatusFilter(filter.key)}
-                  >
-                    {filter.label}
-                  </button>
-                ))}
-              </div>
-
-              <motion.div layout className="dlv-list">
-                {loading && [0, 1, 2].map((index) => (
-                  <DeliverySkeleton key={index} />
-                ))}
-
-                <AnimatePresence mode="popLayout">
-                  {!loading && filteredDeliveries.length === 0 && (
-                    <motion.div
-                      key="empty-deliveries"
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={{ duration: 0.28, ease: MOTION_EASE }}
-                      className="dlv-empty"
-                    >
-                      <div className="dlv-empty-mark">
-                        <Package size={20} />
-                      </div>
-                      <h3>No deliveries found</h3>
-                      <p>Try a different filter or search keyword.</p>
-                    </motion.div>
-                  )}
-
-                  {!loading && filteredDeliveries.map((item) => (
-                    <DeliveryCard key={item._id} item={item} />
-                  ))}
-                </AnimatePresence>
-              </motion.div>
-            </motion.div>
-
-            <motion.aside
-              className="dlv-panel dlv-sidebar"
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.22, duration: 0.4, ease: MOTION_EASE }}
-            >
-              <div>
-                <h2 className="dlv-panel-title">Expected deliveries</h2>
-                <p className="dlv-panel-sub">Pre-register to speed up gate handling</p>
-              </div>
-
-              <AnimatePresence initial={false}>
-                {canPreRegister && showPreRegForm && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.28, ease: MOTION_EASE }}
-                  style={{ overflow: "hidden" }}
-                >
-                <form onSubmit={handleCreatePreReg} style={{ marginTop: 12 }}>
-                  <div className="dlv-form-grid">
-                    <div className="dlv-form-block">
-                      <p className="dlv-label">Expected date</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    <div className="dlv-search">
+                      <Search size={14} color={C.muted} />
                       <input
-                        className="dlv-input"
-                        type="date"
-                        value={preRegForm.expectedDate}
-                        onChange={(event) => updatePreRegField("expectedDate", event.target.value)}
-                        required
+                        type="search"
+                        value={searchInput}
+                        onChange={(event) => setSearchInput(event.target.value)}
+                        placeholder="Search courier or agent"
                       />
                     </div>
 
-                    <div className="dlv-form-block">
-                      <p className="dlv-label">Package type</p>
-                      <select
-                        className="dlv-select"
-                        value={preRegForm.packageType}
-                        onChange={(event) => updatePreRegField("packageType", event.target.value)}
-                      >
-                        {Object.entries(PACKAGE_TYPE_LABEL).map(([value, label]) => (
-                          <option key={value} value={value}>
-                            {label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="dlv-form-block">
-                    <p className="dlv-label">Courier</p>
-                    <input
-                      className="dlv-input"
-                      placeholder="Amazon, Blinkit, Swiggy, etc."
-                      value={preRegForm.expectedCourier}
-                      onChange={(event) => updatePreRegField("expectedCourier", event.target.value)}
-                    />
-                    <div className="dlv-suggest">
-                      {["Amazon", "Blinkit", "Swiggy", "Zepto"].map((name) => (
+                    <div className="dlv-chip-row" role="toolbar" aria-label="Delivery status filters">
+                      {FILTERS.map((filter) => (
                         <button
-                          key={name}
+                          key={filter.key}
                           type="button"
-                          onClick={() => updatePreRegField("expectedCourier", name)}
+                          className={`dlv-chip${statusFilter === filter.key ? " active" : ""}`}
+                          onClick={() => setStatusFilter(filter.key)}
                         >
-                          {name}
+                          {filter.label}
                         </button>
                       ))}
                     </div>
                   </div>
+                </div>
 
-                  <div className="dlv-form-grid">
-                    <div className="dlv-form-block">
-                      <p className="dlv-label">Count</p>
-                      <input
-                        className="dlv-input"
-                        type="number"
-                        min="1"
-                        value={preRegForm.packageCount}
-                        onChange={(event) => updatePreRegField("packageCount", event.target.value)}
-                      />
-                    </div>
+                <motion.div layout className="dlv-list">
+                  {loading && [0, 1, 2].map((index) => (
+                    <DeliverySkeleton key={index} />
+                  ))}
 
-                    <div className="dlv-form-block">
-                      <p className="dlv-label">Handover</p>
-                      <select
-                        className="dlv-select"
-                        value={preRegForm.fulfillmentMode}
-                        onChange={(event) => updatePreRegField("fulfillmentMode", event.target.value)}
+                  <AnimatePresence mode="popLayout">
+                    {!loading && filteredDeliveries.length === 0 && (
+                      <motion.div
+                        key="empty-deliveries"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.28, ease: MOTION_EASE }}
+                        className="dlv-empty"
                       >
-                        {Object.entries(FULFILLMENT_LABEL).map(([value, label]) => (
-                          <option key={value} value={value}>
-                            {label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
+                        <div className="dlv-empty-mark">
+                          <Package size={20} />
+                        </div>
+                        <h3>No deliveries found</h3>
+                        <p>Try a different filter or search keyword.</p>
+                      </motion.div>
+                    )}
 
-                  <div className="dlv-form-block">
-                    <p className="dlv-label">Instructions</p>
-                    <textarea
-                      className="dlv-textarea"
-                      placeholder="Optional handling instructions"
-                      value={preRegForm.instructions}
-                      onChange={(event) => updatePreRegField("instructions", event.target.value)}
-                    />
-                  </div>
-
-                  <div className="dlv-action-row" style={{ marginTop: 10 }}>
-                    <button type="submit" className="dlv-btn-primary" disabled={submittingPreReg}>
-                      <Truck size={14} />
-                      {submittingPreReg ? "Creating..." : "Create pre-registration"}
-                    </button>
-                    <button
-                      type="button"
-                      className="dlv-btn-ghost"
-                      disabled={submittingPreReg}
-                      onClick={() => setShowPreRegForm(false)}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
+                    {!loading && filteredDeliveries.map((item) => (
+                      <DeliveryCard key={item._id} item={item} />
+                    ))}
+                  </AnimatePresence>
                 </motion.div>
-                )}
-              </AnimatePresence>
+              </motion.section>
+            ) : (
+              <motion.section
+                key="pre-registrations"
+                className="dlv-view"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.32, ease: MOTION_EASE }}
+              >
+                <div className="dlv-control-bar">
+                  <div>
+                    <h2 className="dlv-section-title">Expected deliveries</h2>
+                    <p className="dlv-section-sub">Pre-register to speed up gate handling</p>
+                  </div>
 
-              <div className="dlv-prereg-list">
-                {!loading && sortedPreRegs.length === 0 && (
+                  {canPreRegister && (
+                    <span className="dlv-pill" style={{ marginLeft: "auto" }}>
+                      <span className="dlv-pill-dot" />
+                      {`${summary.activePreRegs} active pre-reg${summary.activePreRegs === 1 ? "" : "s"}`}
+                    </span>
+                  )}
+                </div>
+
+                {canPreRegister ? (
+                  <div className="dlv-form-shell">
+                    <div className="dlv-form-head">
+                      <div>
+                        <h3 className="dlv-section-title">Create expected delivery</h3>
+                        <p className="dlv-section-sub">Keep the gate informed before the package arrives.</p>
+                      </div>
+                    </div>
+
+                    <form onSubmit={handleCreatePreReg}>
+                      <div className="dlv-form-grid">
+                        <div className="dlv-form-block">
+                          <p className="dlv-label">Expected date</p>
+                          <input
+                            className="dlv-input"
+                            type="date"
+                            value={preRegForm.expectedDate}
+                            onChange={(event) => updatePreRegField("expectedDate", event.target.value)}
+                            required
+                          />
+                        </div>
+
+                        <div className="dlv-form-block">
+                          <p className="dlv-label">Package type</p>
+                          <select
+                            className="dlv-select"
+                            value={preRegForm.packageType}
+                            onChange={(event) => updatePreRegField("packageType", event.target.value)}
+                          >
+                            {Object.entries(PACKAGE_TYPE_LABEL).map(([value, label]) => (
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="dlv-form-block">
+                        <p className="dlv-label">Courier</p>
+                        <input
+                          className="dlv-input"
+                          placeholder="Amazon, Blinkit, Swiggy, etc."
+                          value={preRegForm.expectedCourier}
+                          onChange={(event) => updatePreRegField("expectedCourier", event.target.value)}
+                        />
+                        <div className="dlv-suggest">
+                          {["Amazon", "Blinkit", "Swiggy", "Zepto"].map((name) => (
+                            <button
+                              key={name}
+                              type="button"
+                              onClick={() => updatePreRegField("expectedCourier", name)}
+                            >
+                              {name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="dlv-form-grid">
+                        <div className="dlv-form-block">
+                          <p className="dlv-label">Count</p>
+                          <input
+                            className="dlv-input"
+                            type="number"
+                            min="1"
+                            value={preRegForm.packageCount}
+                            onChange={(event) => updatePreRegField("packageCount", event.target.value)}
+                          />
+                        </div>
+
+                        <div className="dlv-form-block">
+                          <p className="dlv-label">Handover</p>
+                          <select
+                            className="dlv-select"
+                            value={preRegForm.fulfillmentMode}
+                            onChange={(event) => updatePreRegField("fulfillmentMode", event.target.value)}
+                          >
+                            {Object.entries(FULFILLMENT_LABEL).map(([value, label]) => (
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="dlv-form-block">
+                        <p className="dlv-label">Instructions</p>
+                        <textarea
+                          className="dlv-textarea"
+                          placeholder="Optional handling instructions"
+                          value={preRegForm.instructions}
+                          onChange={(event) => updatePreRegField("instructions", event.target.value)}
+                        />
+                      </div>
+
+                      <div className="dlv-action-row">
+                        <button type="submit" className="dlv-btn-primary" disabled={submittingPreReg}>
+                          <Truck size={14} />
+                          {submittingPreReg ? "Creating..." : "Create pre-registration"}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                ) : (
                   <div className="dlv-empty">
-                    <div className="dlv-empty-mark" style={{ background: C.amberL, color: C.amber }}>
+                    <div className="dlv-empty-mark" style={{ background: C.indigoL, color: C.indigo }}>
                       <CalendarDays size={20} />
                     </div>
-                    <h3>No pre-registrations</h3>
-                    <p>Create one to reduce approval friction at the gate.</p>
+                    <h3>Pre-registration access only</h3>
+                    <p>This view is still available for review, but creating entries is limited to residents and committee users.</p>
                   </div>
                 )}
 
-                {sortedPreRegs.map((item) => (
-                  <PreRegCard
-                    key={item._id}
-                    item={item}
-                    busyAction={busyAction}
-                    onCancel={handleCancelPreReg}
-                  />
-                ))}
-              </div>
-            </motion.aside>
-          </section>
+                <motion.div layout className="dlv-list">
+                  {loading && [0, 1, 2].map((index) => (
+                    <DeliverySkeleton key={index} />
+                  ))}
+
+                  <AnimatePresence mode="popLayout">
+                    {!loading && sortedPreRegs.length === 0 && canPreRegister && (
+                      <motion.div
+                        key="empty-preregs"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.28, ease: MOTION_EASE }}
+                        className="dlv-empty"
+                      >
+                        <div className="dlv-empty-mark" style={{ background: C.amberL, color: C.amber }}>
+                          <CalendarDays size={20} />
+                        </div>
+                        <h3>No pre-registrations</h3>
+                        <p>Create one to reduce approval friction at the gate.</p>
+                      </motion.div>
+                    )}
+
+                    {!loading && sortedPreRegs.map((item) => (
+                      <PreRegCard
+                        key={item._id}
+                        item={item}
+                        busyAction={busyAction}
+                        onCancel={handleCancelPreReg}
+                      />
+                    ))}
+                  </AnimatePresence>
+                </motion.div>
+              </motion.section>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </>

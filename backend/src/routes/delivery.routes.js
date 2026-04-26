@@ -64,17 +64,17 @@ deliveryRouter.get(
   myDeliveries
 );
 
-// Guard approves an awaiting delivery
+// Guard or resident approves an awaiting delivery
 deliveryRouter.post(
   "/:id/approve",
-  requireRoles("security", "committee", "super_admin"),
+  requireRoles("resident", "security", "committee", "super_admin"),
   approveDelivery
 );
 
-// Guard rejects an awaiting delivery
+// Guard or resident rejects an awaiting delivery
 deliveryRouter.post(
   "/:id/reject",
-  requireRoles("security", "committee", "super_admin"),
+  requireRoles("resident", "security", "committee", "super_admin"),
   rejectDelivery
 );
 
