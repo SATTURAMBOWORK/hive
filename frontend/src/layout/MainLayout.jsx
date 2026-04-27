@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { Topbar } from "../components/Topbar";
 import { VisitorRequestPopup } from "../components/VisitorRequestPopup";
+import { DeliveryRequestPopup } from "../components/DeliveryRequestPopup";
 import { SosButton } from "../components/SosButton";
 import { SosAlertPanel } from "../components/SosAlertPanel";
 
@@ -12,6 +13,7 @@ export function MainLayout() {
         <Outlet />
       </main>
       <VisitorRequestPopup />
+      <DeliveryRequestPopup />
       <SosButton />
       <SosAlertPanel />
     </div>

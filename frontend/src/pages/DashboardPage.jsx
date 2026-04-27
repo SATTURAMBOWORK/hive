@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "../components/AuthContext";
 import { apiRequest } from "../components/api";
-import { getSocket } from "../components/socket";
 import { EventChainTimeline } from "../components/EventChainTimeline";
 
 /* ─── Design tokens ────────────────────────────────────── */
@@ -1031,12 +1030,9 @@ export function DashboardPage() {
   const [tickets,          setTickets]          = useState([]);
   const [events,           setEvents]           = useState([]);
   const [pendingApprovals, setPendingApprovals] = useState(0);
-  const [visitorRequests,  setVisitorRequests]  = useState([]);
-  const [deliveryRequests, setDeliveryRequests] = useState([]);
   const [deliveryPreRegs,  setDeliveryPreRegs]  = useState([]);
   const [visitorPreRegs,   setVisitorPreRegs]   = useState([]);
   const [amenityImageIdx,  setAmenityImageIdx]  = useState(0);
-  const [respondingId,     setRespondingId]     = useState(null);
   const [loading,          setLoading]          = useState(true);
   const [error,            setError]            = useState("");
   const [selectedArrivalDate, setSelectedArrivalDate] = useState(() => toInputDate());
@@ -1054,8 +1050,6 @@ export function DashboardPage() {
         setTickets(cached.tickets);
         setEvents(cached.events);
         setPendingApprovals(cached.pendingApprovals);
-        setVisitorRequests(cached.visitorRequests);
-        setDeliveryRequests(cached.pendingDeliveries || []);
         setDeliveryPreRegs(cached.deliveryPreRegs || []);
         setVisitorPreRegs(cached.visitorPreRegs || []);
         setLoading(false);
@@ -1071,8 +1065,6 @@ export function DashboardPage() {
         apiRequest("/events",        { token }),
       ];
       if (isAdmin)    calls.push(apiRequest("/admin/pending-approvals", { token }));
-      if (isResident) calls.push(apiRequest("/visitors/my-requests",   { token }));
-      if (isResident) calls.push(apiRequest("/delivery/my",            { token }));
       if (canSeeArrivals) {
         calls.push(apiRequest("/delivery-prereg", { token }));
         calls.push(apiRequest("/visitor-prereg",  { token }));
@@ -1085,19 +1077,11 @@ export function DashboardPage() {
         tickets:          get(results[cursor++])?.items || [],
         events:           get(results[cursor++])?.items || [],
         pendingApprovals: 0,
-        visitorRequests:  [],
-        pendingDeliveries: [],
         deliveryPreRegs:  [],
         visitorPreRegs:   [],
       };
       if (isAdmin) {
         fresh.pendingApprovals = (get(results[cursor++])?.items || []).length;
-      }
-      if (isResident) {
-        fresh.visitorRequests = get(results[cursor++])?.items || [];
-        // Only deliveries waiting for this resident's approval
-        fresh.pendingDeliveries = (get(results[cursor++])?.items || [])
-          .filter(d => d.status === "awaiting_approval");
       }
       if (canSeeArrivals) {
         fresh.deliveryPreRegs = get(results[cursor++])?.items || [];
@@ -1108,8 +1092,6 @@ export function DashboardPage() {
       setTickets(fresh.tickets);
       setEvents(fresh.events);
       setPendingApprovals(fresh.pendingApprovals);
-      setVisitorRequests(fresh.visitorRequests);
-      setDeliveryRequests(fresh.pendingDeliveries);
       setDeliveryPreRegs(fresh.deliveryPreRegs);
       setVisitorPreRegs(fresh.visitorPreRegs);
     } catch (err) {
@@ -1122,75 +1104,16 @@ export function DashboardPage() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    if (!isResident) return;
-    const socket = getSocket();
-    const onIncoming = ({ visitor }) => {
-      _cache = null;
-      setVisitorRequests(prev => [visitor, ...prev.filter(v => v._id !== visitor._id)]);
-    };
-    socket.on("visitor:request_incoming", onIncoming);
-    return () => socket.off("visitor:request_incoming", onIncoming);
-  }, [isResident]);
-
-  useEffect(() => {
-    if (!isResident) return;
-    const socket = getSocket();
-    const onDelivery = ({ delivery }) => {
-      _cache = null;
-      setDeliveryRequests(prev => [delivery, ...prev.filter(d => d._id !== delivery._id)]);
-    };
-    const onDeliveryDone = ({ delivery }) => {
-      setDeliveryRequests(prev => prev.filter(d => d._id !== delivery._id));
-    };
-    socket.on("delivery:incoming", onDelivery);
-    socket.on("delivery:approved",  onDeliveryDone);
-    socket.on("delivery:rejected",  onDeliveryDone);
-    return () => {
-      socket.off("delivery:incoming", onDelivery);
-      socket.off("delivery:approved",  onDeliveryDone);
-      socket.off("delivery:rejected",  onDeliveryDone);
-    };
-  }, [isResident]);
-
-  useEffect(() => {
     const intervalId = setInterval(() => {
       setAmenityImageIdx(prev => (prev + 1) % AMENITIES_ROTATING_IMAGES.length);
     }, 5000);
     return () => clearInterval(intervalId);
   }, []);
 
-  async function respondToVisitor(visitorId, decision) {
-    setRespondingId(visitorId);
-    try {
-      await apiRequest(`/visitors/${visitorId}/respond`, { token, method:"PATCH", body:{ decision } });
-      setVisitorRequests(prev => prev.filter(v => v._id !== visitorId));
-    } catch (err) { setError(err.message); }
-    finally { setRespondingId(null); }
-  }
-
-  async function respondToDelivery(deliveryId, decision) {
-    setRespondingId(deliveryId);
-    try {
-      await apiRequest(`/delivery/${deliveryId}/${decision}`, { token, method: "POST", body: {} });
-      setDeliveryRequests(prev => prev.filter(d => d._id !== deliveryId));
-    } catch (err) { setError(err.message); }
-    finally { setRespondingId(null); }
-  }
-
   /* ── Build priority-sorted live feed ── */
   const liveItems = useMemo(() => {
     const items = [];
     const now = Date.now();
-
-    /* Visitor requests — highest priority, need immediate action */
-    visitorRequests.forEach(v => items.push({
-      id: `v-${v._id}`, type: "visitor", pri: 1, data: v,
-    }));
-
-    /* Delivery at gate — needs immediate approval */
-    deliveryRequests.forEach(d => items.push({
-      id: `d-${d._id}`, type: "delivery", pri: 1, data: d,
-    }));
 
     /* Admin approvals pending — needs action */
     if (isAdmin && pendingApprovals > 0) {
@@ -1213,16 +1136,16 @@ export function DashboardPage() {
       .forEach(a => items.push({ id: `an-${a._id}`, type: "notice", pri: 4, data: a }));
 
     return items.sort((a, b) => a.pri - b.pri);
-  }, [visitorRequests, deliveryRequests, events, announcements, isAdmin, pendingApprovals]);
+  }, [events, announcements, isAdmin, pendingApprovals]);
 
-  const hasActionable = liveItems.some(i => i.type === "visitor" || i.type === "approval");
+  const hasActionable = liveItems.some(i => i.type === "approval");
   const dotColor = liveItems.length > 0 ? (hasActionable ? C.amber : C.green) : C.green;
   const liveCountLabel = liveItems.length > 0
     ? `${liveItems.length} update${liveItems.length > 1 ? "s" : ""}`
     : "";
 
   /* ── Row class map ── */
-  const rowClass = { visitor: "dp-live-row-visitor", delivery: "dp-live-row-visitor", event_soon: "dp-live-row-event-soon", notice: "dp-live-row-notice", approval: "dp-live-row-approval" };
+  const rowClass = { event_soon: "dp-live-row-event-soon", notice: "dp-live-row-notice", approval: "dp-live-row-approval" };
 
   const { word, first } = greeting(user?.fullName);
   const today = new Date().toLocaleDateString("en-IN", { weekday:"long", day:"numeric", month:"long" });
@@ -1251,9 +1174,6 @@ export function DashboardPage() {
   const role = user?.role;
   const visibleFeatures = FEATURES.filter(f => !f.roles || f.roles.includes(role));
 
-  const Spinner = (
-    <span style={{ width:11, height:11, display:"inline-block", borderRadius:"50%", border:"2px solid rgba(255,255,255,0.35)", borderTopColor:"#fff", animation:"dp-spin .7s linear infinite" }} />
-  );
 
   return (
     <>
@@ -1326,7 +1246,7 @@ export function DashboardPage() {
                 exit={{ opacity:0 }}
               >
                 <CheckCircle size={15} color={C.green}/>
-                All quiet · Live monitoring active. Events, visitor arrivals & notices will appear here.
+                All quiet · Live monitoring active. Events, notices & updates will appear here.
               </motion.div>
             ) : (
               liveItems.map(item => (
@@ -1338,73 +1258,6 @@ export function DashboardPage() {
                   exit={{ opacity:0, x:10, height:0, padding:0 }}
                   transition={{ duration:0.28, ease:[0.22,1,0.36,1] }}
                 >
-
-                  {/* ── VISITOR ── */}
-                  {item.type === "visitor" && (
-                    <>
-                      <div className="dp-live-icon" style={{ background:"rgba(245,158,11,0.10)", border:"1px solid rgba(245,158,11,0.25)" }}>
-                        👤
-                      </div>
-                      <div className="dp-live-content">
-                        <span className="dp-live-type" style={{ background:"rgba(245,158,11,0.14)", color:C.amberD }}>Visitor at Gate</span>
-                        <p className="dp-live-title">{item.data.visitorName}</p>
-                        <p className="dp-live-sub">
-                          {item.data.purpose}
-                          {item.data.visitorPhone ? ` · ${item.data.visitorPhone}` : ""}
-                        </p>
-                      </div>
-                      <div className="dp-live-actions">
-                        <button
-                          className="dp-live-btn-reject"
-                          onClick={() => respondToVisitor(item.data._id, "rejected")}
-                          disabled={respondingId === item.data._id}
-                        >
-                          <XCircle size={13}/> Reject
-                        </button>
-                        <button
-                          className="dp-live-btn-approve"
-                          onClick={() => respondToVisitor(item.data._id, "approved")}
-                          disabled={respondingId === item.data._id}
-                        >
-                          {respondingId === item.data._id ? Spinner : <><CheckCircle size={13}/> Approve</>}
-                        </button>
-                      </div>
-                    </>
-                  )}
-
-                  {/* ── DELIVERY AT GATE ── */}
-                  {item.type === "delivery" && (
-                    <>
-                      <div className="dp-live-icon" style={{ background:"rgba(79,70,229,0.08)", border:`1px solid ${C.indigoBr}` }}>
-                        📦
-                      </div>
-                      <div className="dp-live-content">
-                        <span className="dp-live-type" style={{ background:C.indigoL, color:C.indigo }}>Delivery at Gate</span>
-                        <p className="dp-live-title">{item.data.courierName}</p>
-                        <p className="dp-live-sub">
-                          {item.data.agentName}
-                          {item.data.packageType ? ` · ${item.data.packageType}` : ""}
-                          {item.data.packageCount > 1 ? ` · ${item.data.packageCount} pkgs` : ""}
-                        </p>
-                      </div>
-                      <div className="dp-live-actions">
-                        <button
-                          className="dp-live-btn-reject"
-                          onClick={() => respondToDelivery(item.data._id, "reject")}
-                          disabled={respondingId === item.data._id}
-                        >
-                          <XCircle size={13}/> Reject
-                        </button>
-                        <button
-                          className="dp-live-btn-approve"
-                          onClick={() => respondToDelivery(item.data._id, "approve")}
-                          disabled={respondingId === item.data._id}
-                        >
-                          {respondingId === item.data._id ? Spinner : <><CheckCircle size={13}/> Approve</>}
-                        </button>
-                      </div>
-                    </>
-                  )}
 
                   {/* ── EVENT STARTING SOON ── */}
                   {item.type === "event_soon" && (
