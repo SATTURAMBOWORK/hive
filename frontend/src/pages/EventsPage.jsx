@@ -1,703 +1,954 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiRequest } from '../components/api';
 import { useAuth } from '../components/AuthContext';
-import { 
-  Calendar, MapPin, Check, Plus, X, ChevronDown, 
-  ArrowRight, Users, Ticket, CheckCircle2, CalendarPlus
-} from 'lucide-react';
+import { Clock, MapPin, Plus, X, ArrowRight } from 'lucide-react';
 
-/* --- STYLES --- */
-const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+/* ─── Design tokens (shared with dashboard) ─────────────────── */
+const C = {
+  bg:       '#FAFAFC',
+  surface:  '#FFFFFF',
+  ink:      '#1C1C1E',
+  ink2:     '#3A3A3C',
+  muted:    '#6B7280',
+  faint:    '#9CA3AF',
+  border:   '#E8E8ED',
+  borderL:  '#F0F0F5',
+  indigo:   '#4F46E5',
+  indigoD:  '#4338CA',
+  indigoL:  '#EEF2FF',
+  indigoBr: '#C7D2FE',
+  red:      '#DC2626',
+};
 
-  .page-container {
+const SPRING = { type: 'spring', stiffness: 320, damping: 26 };
+
+const CATEGORIES = [
+  { id: 'All Events', label: 'All Events' },
+  { id: 'General',    label: 'General'    },
+  { id: 'Cultural',   label: 'Cultural'   },
+  { id: 'Workshop',   label: 'Workshop'   },
+];
+
+/* ─── CSS ────────────────────────────────────────────────────── */
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,700&display=swap');
+
+  .ep * { box-sizing: border-box; }
+
+  .ep {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: ${C.bg};
+    color: ${C.ink};
     min-height: 100vh;
-    background: linear-gradient(135deg, #FAFAFC 0%, #EEF2FF 100%);
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    color: #1C1C1E;
-    padding: 48px 32px 120px;
-    box-sizing: border-box;
-  }
-  
-  .content-wrapper {
-    max-width: 1280px;
-    margin: 0 auto;
+    padding: 32px 32px 80px;
   }
 
-  /* Typography */
-  h1, h2, h3, h4, h5, h6 {
-    margin: 0;
-  }
+  .ep-shell { max-width: 1120px; margin: 0 auto; }
 
-  .title-editorial {
-    font-family: 'Cormorant Garamond', serif;
-    font-style: italic;
-    font-weight: 700;
-  }
-
-  /* Smart Filter */
-  .smart-filter {
-    font-size: 2.2rem;
-    font-weight: 600;
-    color: #8E8E93;
-    margin-bottom: 48px;
-    letter-spacing: -0.02em;
+  /* ── Header ── */
+  .ep-header {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .smart-filter-text {
-    color: #1C1C1E;
-  }
-
-  .dropdown-wrapper {
-    position: relative;
-    display: inline-block;
-  }
-
-  .dropdown-trigger {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 2.2rem;
-    font-weight: 800;
-    color: #1C1C1E;
-    background: transparent;
-    border: none;
-    border-bottom: 3px solid #1C1C1E;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 4px 4px;
-    transition: color 0.2s ease;
-  }
-
-  .dropdown-trigger:hover {
-    color: #4F46E5;
-    border-color: #4F46E5;
-  }
-
-  .dropdown-menu {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    margin-top: 12px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(16px);
-    border-radius: 16px;
-    padding: 8px;
-    min-width: 240px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05);
-    z-index: 50;
-    border: 1px solid rgba(0,0,0,0.05);
-  }
-
-  .dropdown-item {
-    width: 100%;
-    text-align: left;
-    padding: 12px 16px;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #1C1C1E;
-    background: transparent;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: background 0.2s ease;
-  }
-
-  .dropdown-item:hover {
-    background: rgba(0,0,0,0.03);
-  }
-
-  /* Hero Layout */
-  .hero-card {
-    background: #FFFFFF;
-    border-radius: 24px;
-    overflow: hidden;
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-    margin-bottom: 32px;
-    min-height: 400px;
-    position: relative;
-  }
-
-  .hero-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .hero-content {
-    padding: 48px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-
-  .hero-tag {
-    display: inline-block;
-    padding: 6px 14px;
-    border-radius: 100px;
-    font-size: 0.85rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 24px;
-    width: fit-content;
-  }
-
-  .hero-title {
-    font-size: 3rem;
-    line-height: 1.1;
-    color: #1C1C1E;
-    margin-bottom: 16px;
-  }
-
-  .hero-meta {
-    display: flex;
-    align-items: center;
+    align-items: flex-end;
+    justify-content: space-between;
     gap: 16px;
-    color: #8E8E93;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .ep-title {
+    margin: 0;
+    font-size: clamp(1.6rem, 3vw, 2.1rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: ${C.ink};
+    line-height: 1.1;
+  }
+
+  .ep-sub {
+    margin: 6px 0 0;
+    font-size: 0.88rem;
     font-weight: 600;
-    font-size: 1rem;
-    margin-bottom: 32px;
+    color: ${C.muted};
   }
 
-  /* Bento Box Layout */
-  .bento-grid {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: 24px;
-    auto-flow: dense;
+  .ep-create-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px;
+    border-radius: 10px;
+    border: 1px solid ${C.border};
+    background: ${C.surface};
+    color: ${C.ink};
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s;
+    flex-shrink: 0;
+  }
+  .ep-create-btn:hover {
+    border-color: ${C.indigoBr};
+    box-shadow: 0 4px 12px rgba(79,70,229,0.14);
+    transform: translateY(-1px);
   }
 
-  /* Ticket Card (Digital Passbook) */
-  .ticket-wrapper {
-    perspective: 1500px;
-    height: 100%;
-    min-height: 380px;
+  /* ── Tab rail ── */
+  .ep-tabs {
+    display: inline-flex;
+    align-items: stretch;
+    border-bottom: 1.5px solid ${C.border};
+    margin-bottom: 24px;
+    overflow-x: auto;
+    max-width: 100%;
   }
 
-  .ticket-inner {
+  .ep-tab {
     position: relative;
-    width: 100%;
-    height: 100%;
-    transform-style: preserve-3d;
-    transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px 10px;
+    border: none;
+    background: transparent;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: ${C.muted};
+    cursor: pointer;
+    white-space: nowrap;
+    outline: none;
+    transition: color 0.18s;
+  }
+  .ep-tab.active { color: ${C.ink}; }
+
+  .ep-tab-count {
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 1px 6px;
+    border-radius: 99px;
+    background: ${C.borderL};
+    color: ${C.faint};
+    transition: background 0.18s, color 0.18s;
+  }
+  .ep-tab.active .ep-tab-count {
+    background: ${C.indigoL};
+    color: ${C.indigo};
   }
 
-  .ticket-inner.flipped {
-    transform: rotateY(180deg);
-  }
-
-  .ticket-face {
+  .ep-tab-line {
     position: absolute;
-    inset: 0;
-    backface-visibility: hidden;
-    background: #FFFFFF;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    bottom: -1.5px;
+    left: 10px;
+    right: 10px;
+    height: 2px;
+    background: ${C.indigo};
+    border-radius: 2px 2px 0 0;
+  }
+
+  /* ── Card grid ── */
+  .ep-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+
+  /* ── Card ── */
+  .ep-card {
+    background: ${C.surface};
+    border: 1px solid ${C.border};
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     display: flex;
     flex-direction: column;
+    transition: box-shadow 0.22s, transform 0.22s, border-color 0.22s;
+  }
+  .ep-card:hover {
+    box-shadow: 0 12px 28px rgba(28,28,30,0.09);
+    transform: translateY(-2px);
+    border-color: ${C.indigoBr};
   }
 
-  .ticket-back {
-    transform: rotateY(180deg);
-    background: #FAFAFC;
-    border: 1px solid rgba(0,0,0,0.05);
+  .ep-card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 18px 18px 14px;
+  }
+
+  /* Date anchor block */
+  .ep-date-anchor {
+    flex-shrink: 0;
+    width: 52px;
+    border-radius: 12px;
+    background: ${C.indigoL};
+    border: 1px solid ${C.indigoBr};
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 32px;
+    padding: 8px 4px 6px;
     text-align: center;
   }
 
-  .ticket-top {
-    padding: 24px 24px 20px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+  .ep-date-day {
+    font-size: 1.55rem;
+    font-weight: 800;
+    line-height: 1;
+    color: ${C.indigo};
+    letter-spacing: -0.03em;
   }
 
-  .ticket-divider {
-    position: relative;
-    height: 24px;
-    display: flex;
-    align-items: center;
+  .ep-date-month {
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: ${C.indigo};
+    opacity: 0.7;
+    margin-top: 3px;
+  }
+
+  .ep-card-info { flex: 1; min-width: 0; }
+
+  .ep-card-category {
+    display: inline-block;
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: ${C.indigo};
+    margin-bottom: 5px;
+  }
+
+  .ep-card-title {
+    margin: 0 0 10px;
+    font-size: 0.96rem;
+    font-weight: 800;
+    line-height: 1.35;
+    letter-spacing: -0.02em;
+    color: ${C.ink};
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
   }
 
-  .ticket-cutout-left, .ticket-cutout-right {
-    position: absolute;
-    width: 24px;
-    height: 24px;
-    background: linear-gradient(135deg, #FAFAFC 0%, #EEF2FF 100%);
-    border-radius: 50%;
-    top: 0;
-    box-shadow: inset 0 3px 6px rgba(0,0,0,0.02);
-  }
-
-  .ticket-cutout-left { left: -12px; }
-  .ticket-cutout-right { right: -12px; }
-
-  .ticket-dash {
-    width: 100%;
-    margin: 0 24px;
-    border-top: 2px dashed rgba(0,0,0,0.1);
-  }
-
-  .ticket-bottom {
-    padding: 20px 24px 24px;
-    background: #FFFFFF;
-    border-radius: 0 0 20px 20px;
-  }
-
-  .rsvp-button {
-    width: 100%;
-    padding: 12px;
-    border-radius: 12px;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-weight: 700;
-    font-size: 1rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    border: none;
-    transition: all 0.2s ease;
-  }
-
-  /* FAB & Drawer */
-  .fab {
-    position: fixed;
-    bottom: 40px;
-    right: 40px;
-    width: 64px;
-    height: 64px;
-    border-radius: 32px;
-    background: #1C1C1E;
-    color: #FFFFFF;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-    cursor: pointer;
-    border: none;
-    z-index: 100;
-  }
-
-  .drawer-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.2);
-    backdrop-filter: blur(8px);
-    z-index: 150;
-  }
-
-  .drawer-panel {
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    max-width: 500px;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(24px) saturate(180%);
-    box-shadow: -20px 0 60px rgba(0,0,0,0.1);
-    z-index: 160;
-    padding: 40px;
+  .ep-card-meta {
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
+    gap: 5px;
   }
 
-  /* Social Proof */
-  .avatar-group {
+  .ep-card-meta-row {
     display: flex;
     align-items: center;
+    gap: 6px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: ${C.muted};
   }
-  .avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: 2px solid #FFFFFF;
-    background: #E5E5EA;
-    margin-left: -12px;
+
+  /* Card footer */
+  .ep-card-footer {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 11px 16px;
+    border-top: 1px solid ${C.borderL};
+  }
+
+  .ep-view-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.76rem;
+    font-weight: 800;
+    color: ${C.indigo};
+    cursor: pointer;
+    padding: 4px 0;
+    letter-spacing: 0.01em;
+    transition: gap 0.18s, opacity 0.18s;
+  }
+  .ep-view-btn:hover { gap: 8px; opacity: 0.8; }
+
+  /* ── Empty / Loading ── */
+  .ep-empty {
+    grid-column: 1 / -1;
+    border-radius: 16px;
+    border: 1.5px dashed ${C.border};
+    background: ${C.surface};
+    padding: 48px 20px;
+    text-align: center;
+    color: ${C.muted};
+    font-size: 0.86rem;
+    font-weight: 600;
+  }
+
+  /* ── Modal backdrop ── */
+  .ep-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: #fff;
+    padding: 20px;
+    background: rgba(28,28,30,0.28);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
   }
-  .avatar:first-child { margin-left: 0; }
 
-  /* Form Elements */
-  .input-field {
-    width: 100%;
-    padding: 16px;
-    border-radius: 12px;
-    border: 1px solid rgba(0,0,0,0.1);
-    background: rgba(255,255,255,0.5);
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 1rem;
-    margin-bottom: 20px;
-    outline: none;
-    transition: border-color 0.2s ease;
+  /* ── Modal ── */
+  .ep-modal {
+    width: min(560px, 100%);
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    border-radius: 24px;
+    background: ${C.surface};
+    border: 1px solid ${C.border};
+    box-shadow: 0 32px 80px rgba(28,28,30,0.2);
   }
-  .input-field:focus { border-color: #4F46E5; }
+
+  .ep-modal-header {
+    padding: 22px 24px 18px;
+    border-bottom: 1px solid ${C.borderL};
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .ep-modal-date {
+    flex-shrink: 0;
+    width: 58px;
+    border-radius: 14px;
+    background: ${C.indigoL};
+    border: 1px solid ${C.indigoBr};
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 4px 8px;
+    text-align: center;
+  }
+
+  .ep-modal-date-day {
+    font-size: 1.8rem;
+    font-weight: 800;
+    line-height: 1;
+    color: ${C.indigo};
+    letter-spacing: -0.04em;
+  }
+
+  .ep-modal-date-month {
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: ${C.indigo};
+    opacity: 0.7;
+    margin-top: 3px;
+  }
+
+  .ep-modal-head-body { flex: 1; min-width: 0; }
+
+  .ep-modal-category {
+    display: inline-block;
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: ${C.indigo};
+    margin-bottom: 6px;
+  }
+
+  .ep-modal-title {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.2;
+    color: ${C.ink};
+  }
+
+  .ep-modal-close {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid ${C.border};
+    background: ${C.bg};
+    color: ${C.muted};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.18s, color 0.18s;
+  }
+  .ep-modal-close:hover { border-color: ${C.ink}; color: ${C.ink}; }
+
+  .ep-modal-body { padding: 20px 24px 24px; }
+
+  .ep-modal-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 18px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid ${C.borderL};
+  }
+
+  .ep-modal-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: ${C.muted};
+  }
+
+  .ep-modal-desc-label {
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: ${C.faint};
+    margin: 0 0 8px;
+  }
+
+  .ep-modal-desc {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.75;
+    font-weight: 500;
+    color: ${C.ink2};
+    white-space: pre-wrap;
+  }
+
+  .ep-modal-footer {
+    padding: 0 24px 20px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .ep-modal-close-btn {
+    padding: 9px 20px;
+    border-radius: 10px;
+    border: 1px solid ${C.border};
+    background: ${C.bg};
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: ${C.ink2};
+    cursor: pointer;
+    transition: border-color 0.18s, background 0.18s;
+  }
+  .ep-modal-close-btn:hover { border-color: ${C.ink2}; background: ${C.surface}; }
+
+  /* ── Drawer ── */
+  .ep-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(28,28,30,0.2);
+    backdrop-filter: blur(8px);
+    z-index: 400;
+  }
+
+  .ep-drawer {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: min(500px, 100%);
+    background: ${C.surface};
+    border-left: 1px solid ${C.border};
+    box-shadow: -20px 0 50px rgba(28,28,30,0.1);
+    z-index: 410;
+    overflow-y: auto;
+    padding: 28px 28px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .ep-drawer-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .ep-drawer-title {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: ${C.ink};
+  }
+
+  .ep-drawer-sub {
+    margin: 5px 0 0;
+    font-size: 0.84rem;
+    color: ${C.muted};
+    font-weight: 600;
+  }
+
+  .ep-field {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 11px;
+    border: 1px solid ${C.border};
+    background: ${C.bg};
+    color: ${C.ink};
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.18s, box-shadow 0.18s;
+  }
+  .ep-field::placeholder { color: ${C.faint}; }
+  .ep-field:focus {
+    border-color: ${C.indigoBr};
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+    background: ${C.surface};
+  }
+
+  .ep-field-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: ${C.muted};
+    margin-bottom: 5px;
+  }
+
+  .ep-field-group { display: flex; flex-direction: column; gap: 4px; }
+
+  .ep-drawer-submit {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    background: ${C.indigo};
+    color: #FFFFFF;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(79,70,229,0.25);
+    transition: background 0.18s, transform 0.18s, box-shadow 0.18s, opacity 0.18s;
+  }
+  .ep-drawer-submit:hover:not(:disabled) {
+    background: ${C.indigoD};
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px rgba(79,70,229,0.3);
+  }
+  .ep-drawer-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .ep-form-error {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: ${C.red};
+    margin: 0;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .ep-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 640px) {
+    .ep { padding: 20px 16px 64px; }
+    .ep-grid { grid-template-columns: 1fr; }
+    .ep-header { align-items: flex-start; }
+    .ep-create-btn { width: 100%; }
+    .ep-modal { border-radius: 20px; }
+    .ep-backdrop { padding: 12px; }
+    .ep-drawer { padding: 20px 18px 32px; }
+  }
 `;
 
-/* --- MOCK DATA & CONSTANTS --- */
-const SPRING_TRANSITION = { type: "spring", stiffness: 300, damping: 24 };
+/* ─── Helpers ────────────────────────────────────────────────── */
+function fmtDay(d)   { return new Date(d).getDate(); }
+function fmtMonth(d) { return new Date(d).toLocaleDateString('en-US', { month: 'short' }); }
+function fmtTime(d) {
+  return new Date(d).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+}
+function fmtFullDate(d) {
+  return new Date(d).toLocaleDateString('en-US', {
+    weekday: 'short', month: 'long', day: 'numeric', year: 'numeric',
+  });
+}
+function getCategoryLabel(cat) {
+  return CATEGORIES.find(c => c.id === cat)?.label || cat || 'General';
+}
+function getCategoryCounts(items) {
+  return CATEGORIES.reduce((acc, cat) => {
+    acc[cat.id] = cat.id === 'All Events'
+      ? items.length
+      : items.filter(e => (e.category || 'General') === cat.id).length;
+    return acc;
+  }, {});
+}
 
-const CATEGORIES = [
-  { id: 'All Events', label: 'All Events', color: '#1C1C1E', bg: '#F2F2F7' },
-  { id: 'General', label: 'General', color: '#E8890C', bg: '#FFF4E5' },
-  { id: 'Cultural', label: 'Cultural', color: '#6D28D9', bg: '#F3E8FF' },
-  { id: 'Workshop', label: 'Workshop', color: '#16A34A', bg: '#E6F4EA' }
-];
-
-const TIME_FILTERS = ['Anytime', 'Today', 'This Week', 'This Month'];
-
-/* --- COMPONENTS --- */
-
-const Dropdown = ({ value, options, onChange }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setIsOpen(false);
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
+/* ─── EventCard ─────────────────────────────────────────────── */
+function EventCard({ event, onOpen }) {
   return (
-    <div className="dropdown-wrapper" ref={ref}>
-      <button className="dropdown-trigger" onClick={() => setIsOpen(!isOpen)}>
-        {value} <ChevronDown size={24} strokeWidth={3} />
-      </button>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div 
-            className="dropdown-menu"
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={SPRING_TRANSITION}
-          >
-            {options.map(opt => (
-              <button 
-                key={opt.id || opt} 
-                className="dropdown-item"
-                onClick={() => { onChange(opt.id || opt); setIsOpen(false); }}
-              >
-                {opt.label || opt}
-              </button>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-const SocialProof = () => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-    <div className="avatar-group">
-      <div className="avatar" style={{ background: '#E8890C', zIndex: 3 }}>A</div>
-      <div className="avatar" style={{ background: '#6D28D9', zIndex: 2 }}>P</div>
-      <div className="avatar" style={{ background: '#16A34A', zIndex: 1 }}>R</div>
-    </div>
-    <span style={{ fontSize: '0.85rem', color: '#8E8E93', fontWeight: 600 }}>
-      Amit, Priya, and 12 others are going.
-    </span>
-  </div>
-);
-
-const QRCodeMock = () => (
-  <div style={{ width: '120px', height: '120px', background: '#FFFFFF', borderRadius: '12px', padding: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', display: 'flex', flexWrap: 'wrap', gap: '4px', alignContent: 'flex-start' }}>
-    {Array.from({ length: 25 }).map((_, i) => (
-      <div key={i} style={{ width: '20px', height: '20px', background: Math.random() > 0.3 ? '#1C1C1E' : 'transparent', borderRadius: '4px' }} />
-    ))}
-  </div>
-);
-
-const TicketCard = ({ event, span }) => {
-  const [flipped, setFlipped] = useState(false);
-  const cat = CATEGORIES.find(c => c.id === (event.category || 'General')) || CATEGORIES[1];
-
-  return (
-    <motion.div 
-      className="ticket-wrapper" 
-      style={{ gridColumn: `span ${span}` }}
-      initial={{ opacity: 0, y: 30 }}
+    <motion.article
+      className="ep-card"
+      initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={SPRING_TRANSITION}
+      exit={{ opacity: 0, scale: 0.97 }}
+      transition={SPRING}
+      layout
     >
-      <div className={`ticket-inner ${flipped ? 'flipped' : ''}`}>
-        
-        {/* Front Face */}
-        <div className="ticket-face">
-          <div className="ticket-top">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-              <span style={{ background: cat.bg, color: cat.color, padding: '4px 12px', borderRadius: '100px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {cat.label}
-              </span>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', color: '#8E8E93', fontWeight: 600, fontSize: '0.85rem' }}>
-                <span style={{ color: '#1C1C1E', fontWeight: 700 }}>{new Date(event.startAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>
-                <span>{new Date(event.startAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
-              </div>
+      <div className="ep-card-top">
+        {/* Date anchor */}
+        <div className="ep-date-anchor">
+          <span className="ep-date-day">{fmtDay(event.startAt)}</span>
+          <span className="ep-date-month">{fmtMonth(event.startAt)}</span>
+        </div>
+
+        {/* Info */}
+        <div className="ep-card-info">
+          <span className="ep-card-category">{getCategoryLabel(event.category || 'General')}</span>
+          <h3 className="ep-card-title">{event.title}</h3>
+          <div className="ep-card-meta">
+            <div className="ep-card-meta-row">
+              <Clock size={12} strokeWidth={2.5} />
+              <span>{fmtTime(event.startAt)}</span>
             </div>
-            
-            <h3 className="title-editorial" style={{ fontSize: '1.8rem', lineHeight: 1.2, color: '#1C1C1E', flex: 1 }}>
-              {event.title}
-            </h3>
-            
             {event.location && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#8E8E93', fontSize: '0.9rem', fontWeight: 600, marginTop: '16px' }}>
-                <MapPin size={16} /> {event.location}
+              <div className="ep-card-meta-row">
+                <MapPin size={12} strokeWidth={2.5} />
+                <span>{event.location}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="ep-card-footer">
+        <button className="ep-view-btn" onClick={() => onOpen(event)}>
+          View Details <ArrowRight size={13} strokeWidth={2.5} />
+        </button>
+      </div>
+    </motion.article>
+  );
+}
+
+/* ─── SmartModal ────────────────────────────────────────────── */
+function SmartModal({ event, onClose }) {
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = e => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [onClose]);
+
+  if (!event) return null;
+
+  return (
+    <motion.div
+      className="ep-backdrop"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.18 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="ep-modal"
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={SPRING}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="ep-modal-header">
+          <div className="ep-modal-date">
+            <span className="ep-modal-date-day">{fmtDay(event.startAt)}</span>
+            <span className="ep-modal-date-month">{fmtMonth(event.startAt)}</span>
+          </div>
+          <div className="ep-modal-head-body">
+            <span className="ep-modal-category">{getCategoryLabel(event.category || 'General')}</span>
+            <h2 className="ep-modal-title">{event.title}</h2>
+          </div>
+          <button className="ep-modal-close" onClick={onClose} aria-label="Close">
+            <X size={16} strokeWidth={2.4} />
+          </button>
+        </div>
+
+        {/* Meta */}
+        <div className="ep-modal-body">
+          <div className="ep-modal-meta">
+            <div className="ep-modal-meta-row">
+              <Clock size={14} strokeWidth={2.3} />
+              <span>{fmtFullDate(event.startAt)} · {fmtTime(event.startAt)} – {fmtTime(event.endAt)}</span>
+            </div>
+            {event.location && (
+              <div className="ep-modal-meta-row">
+                <MapPin size={14} strokeWidth={2.3} />
+                <span>{event.location}</span>
               </div>
             )}
           </div>
 
-          <div className="ticket-divider">
-            <div className="ticket-cutout-left" />
-            <div className="ticket-dash" />
-            <div className="ticket-cutout-right" />
-          </div>
-
-          <div className="ticket-bottom">
-            <div style={{ marginBottom: '16px' }}>
-              <SocialProof />
-            </div>
-            <motion.button 
-              className="rsvp-button"
-              style={{ background: '#1C1C1E', color: '#FFFFFF' }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setFlipped(true)}
-            >
-              RSVP to Event
-            </motion.button>
-          </div>
-        </div>
-
-        {/* Back Face */}
-        <div className="ticket-face ticket-back">
-          <QRCodeMock />
-          <h4 style={{ margin: '24px 0 8px', fontSize: '1.4rem', fontWeight: 800, color: '#1C1C1E' }}>Confirmed!</h4>
-          <p style={{ color: '#8E8E93', fontWeight: 500, fontSize: '0.95rem', marginBottom: '32px' }}>
-            You're on the guest list.
+          {/* Description */}
+          <p className="ep-modal-desc-label">About this event</p>
+          <p className="ep-modal-desc">
+            {event.description || 'No description provided for this event.'}
           </p>
-          
-          <motion.button 
-            style={{ 
-              background: 'transparent', border: '2px solid #1C1C1E', padding: '10px 20px', 
-              borderRadius: '100px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' 
-            }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <CalendarPlus size={18} /> Add to Calendar
-          </motion.button>
-          
-          <button 
-            onClick={() => setFlipped(false)}
-            style={{ background: 'none', border: 'none', color: '#8E8E93', fontWeight: 600, marginTop: '24px', cursor: 'pointer', textDecoration: 'underline' }}
-          >
-            Close Ticket
-          </button>
         </div>
 
-      </div>
+        <div className="ep-modal-footer">
+          <button className="ep-modal-close-btn" onClick={onClose}>Close</button>
+        </div>
+      </motion.div>
     </motion.div>
   );
-};
+}
 
+/* ─── Constants ─────────────────────────────────────────────── */
+const EMPTY_FORM = { title: '', category: 'General', location: '', startAt: '', endAt: '', description: '' };
+
+/* ─── EventsPage ────────────────────────────────────────────── */
 export function EventsPage() {
   const { token, user } = useAuth();
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
-  // Filters
-  const [category, setCategory] = useState('All Events');
-  const [time, setTime] = useState('Anytime');
-  
-  // Drawer
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [events,       setEvents]       = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [selCategory,  setSelCategory]  = useState('All Events');
+  const [selEvent,     setSelEvent]     = useState(null);
+  const [drawerOpen,   setDrawerOpen]   = useState(false);
+  const [form,         setForm]         = useState(EMPTY_FORM);
+  const [submitting,   setSubmitting]   = useState(false);
+  const [formError,    setFormError]    = useState('');
 
+  /* ── Fetch ── */
   useEffect(() => {
     apiRequest('/events', { token })
       .then(data => { setEvents(data.items || []); setLoading(false); })
-      .catch(err => { console.error(err); setLoading(false); });
+      .catch(() => setLoading(false));
   }, [token]);
 
-  const upcoming = useMemo(() => events.filter(e => new Date(e.startAt) >= new Date()).sort((a,b) => new Date(a.startAt) - new Date(b.startAt)), [events]);
-  
-  const filtered = useMemo(() => {
-    return upcoming.filter(e => {
-      const catMatch = category === 'All Events' || (e.category || 'General') === category;
-      return catMatch; // Basic filtering for demo
-    });
-  }, [upcoming, category, time]);
+  /* ── Form helpers ── */
+  function setField(key, value) {
+    setForm(prev => ({ ...prev, [key]: value }));
+  }
 
-  const heroEvent = filtered[0];
-  const bentoEvents = filtered.slice(1);
-  const spans = [4, 4, 4, 6, 6, 8, 4]; // Organic bento layout
+  async function handleCreate() {
+    setFormError('');
+    if (!form.title.trim())          return setFormError('Event title is required.');
+    if (!form.startAt)               return setFormError('Start date & time is required.');
+    if (!form.endAt)                 return setFormError('End date & time is required.');
+    const startDate = new Date(form.startAt);
+    const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000);
+    if (startDate < oneHourFromNow)  return setFormError('Event must start at least 1 hour from now.');
+    if (form.endAt <= form.startAt)  return setFormError('End time must be after start time.');
+
+    setSubmitting(true);
+    try {
+      const { item } = await apiRequest('/events', {
+        token, method: 'POST',
+        body: {
+          title:       form.title.trim(),
+          category:    form.category,
+          location:    form.location.trim(),
+          startAt:     form.startAt,
+          endAt:       form.endAt,
+          description: form.description.trim(),
+        },
+        notifySuccess: true,
+        successMessage: 'Event published!',
+      });
+      setEvents(prev => [...prev, item]);
+      setForm(EMPTY_FORM);
+      setDrawerOpen(false);
+    } catch {
+      /* toast shown by apiRequest */
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  /* ── Derived ── */
+  const upcoming = useMemo(() =>
+    events
+      .filter(e => new Date(e.startAt) >= new Date())
+      .sort((a, b) => new Date(a.startAt) - new Date(b.startAt)),
+    [events]
+  );
+
+  const filtered = useMemo(() =>
+    selCategory === 'All Events'
+      ? upcoming
+      : upcoming.filter(e => (e.category || 'General') === selCategory),
+    [upcoming, selCategory]
+  );
+
+  const counts = useMemo(() => getCategoryCounts(upcoming), [upcoming]);
+
+  const canCreate = ['committee', 'super_admin'].includes(user?.role);
 
   return (
     <>
-      <style>{styles}</style>
-      <div className="page-container">
-        <div className="content-wrapper">
-          
-          <motion.div 
-            className="smart-filter"
-            initial={{ opacity: 0, y: -20 }}
+      <style>{CSS}</style>
+      <div className="ep">
+        <div className="ep-shell">
+
+          {/* Header */}
+          <motion.div
+            className="ep-header"
+            initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ ...SPRING_TRANSITION, delay: 0.1 }}
+            transition={{ ...SPRING, delay: 0.04 }}
           >
-            <span className="smart-filter-text">Show me</span>
-            <Dropdown value={category} options={CATEGORIES} onChange={setCategory} />
-            <span className="smart-filter-text">happening</span>
-            <Dropdown value={time} options={TIME_FILTERS} onChange={setTime} />
-            <span className="smart-filter-text">.</span>
+            <div>
+              <h1 className="ep-title">Events</h1>
+              <p className="ep-sub">Upcoming community events &amp; gatherings</p>
+            </div>
+            {canCreate && (
+              <button className="ep-create-btn" onClick={() => setDrawerOpen(true)}>
+                <Plus size={15} /> Create Event
+              </button>
+            )}
           </motion.div>
 
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '100px', fontWeight: 600, color: '#8E8E93' }}>Loading events...</div>
-          ) : !heroEvent ? (
-            <div style={{ textAlign: 'center', padding: '100px', fontWeight: 600, color: '#8E8E93' }}>No events found for this filter.</div>
-          ) : (
-            <>
-              {/* Hero Section */}
-              <motion.div 
-                className="hero-card"
-                initial={{ opacity: 0, scale: 0.98, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                transition={{ ...SPRING_TRANSITION, delay: 0.2 }}
-              >
-                <div className="hero-content">
-                  <span className="hero-tag" style={{ background: '#F3E8FF', color: '#6D28D9' }}>
-                    {heroEvent.category || 'Featured'}
-                  </span>
-                  <h2 className="title-editorial hero-title">{heroEvent.title}</h2>
-                  <div className="hero-meta">
-                    <span><Calendar size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '6px' }} /> {new Date(heroEvent.startAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
-                    {heroEvent.location && <span><MapPin size={18} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '6px' }} /> {heroEvent.location}</span>}
-                  </div>
-                  <div style={{ marginTop: 'auto' }}>
-                    <SocialProof />
-                    <motion.button 
-                      style={{ background: '#1C1C1E', color: '#FFFFFF', padding: '16px 32px', borderRadius: '100px', border: 'none', fontWeight: 700, fontSize: '1.1rem', marginTop: '24px', cursor: 'pointer' }}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => {
-                        window.scrollTo({
-                          top: document.querySelector('.bento-grid') ? document.querySelector('.bento-grid').offsetTop - 100 : 0,
-                          behavior: 'smooth'
-                        });
-                      }}
-                    >
-                      Reserve your spot <ArrowRight size={20} style={{ display: 'inline', verticalAlign: 'middle', marginLeft: '8px' }} />
-                    </motion.button>
-                  </div>
-                </div>
-                <div style={{ height: '100%', background: '#F2F2F7', overflow: 'hidden' }}>
-                  <img 
-                    src={heroEvent.coverImage || "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=1200&q=80"} 
-                    alt="Event Cover" 
-                    className="hero-image"
-                  />
-                </div>
-              </motion.div>
+          {/* Tab rail */}
+          <motion.div
+            className="ep-tabs"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...SPRING, delay: 0.08 }}
+          >
+            {CATEGORIES.map(cat => {
+              const active = selCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  className={`ep-tab${active ? ' active' : ''}`}
+                  onClick={() => setSelCategory(cat.id)}
+                >
+                  {cat.label}
+                  <span className="ep-tab-count">{counts[cat.id] ?? 0}</span>
+                  {active && (
+                    <motion.div
+                      layoutId="ep-active-tab"
+                      className="ep-tab-line"
+                      transition={SPRING}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </motion.div>
 
-              {/* Bento Grid */}
-              <div className="bento-grid">
-                <AnimatePresence>
-                  {bentoEvents.map((ev, i) => (
-                    <TicketCard key={ev._id} event={ev} span={spans[i % spans.length]} />
-                  ))}
-                </AnimatePresence>
-              </div>
-            </>
-          )}
-
+          {/* Grid */}
+          <div className="ep-grid">
+            {loading ? (
+              <div className="ep-empty">Loading events…</div>
+            ) : filtered.length === 0 ? (
+              <div className="ep-empty">No upcoming events in this category.</div>
+            ) : (
+              <AnimatePresence mode="popLayout">
+                {filtered.map(event => (
+                  <EventCard key={event._id} event={event} onOpen={setSelEvent} />
+                ))}
+              </AnimatePresence>
+            )}
+          </div>
         </div>
 
-        {/* FAB for Admins */}
-        {['committee', 'super_admin'].includes(user?.role) && (
-          <motion.button 
-            className="fab"
-            whileHover={{ scale: 1.1, rotate: 90 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setDrawerOpen(true)}
-          >
-            <Plus size={32} />
-          </motion.button>
-        )}
+        {/* Detail modal */}
+        <AnimatePresence>
+          {selEvent && <SmartModal event={selEvent} onClose={() => setSelEvent(null)} />}
+        </AnimatePresence>
 
-        {/* Side Drawer */}
+        {/* Create drawer */}
         <AnimatePresence>
           {drawerOpen && (
             <>
-              <motion.div 
-                className="drawer-backdrop"
+              <motion.div
+                className="ep-drawer-backdrop"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setDrawerOpen(false)}
               />
-              <motion.div 
-                className="drawer-panel"
+              <motion.aside
+                className="ep-drawer"
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
-                transition={SPRING_TRANSITION}
+                transition={SPRING}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
-                  <h2 className="title-editorial" style={{ fontSize: '2.5rem', color: '#1C1C1E' }}>Host Event</h2>
-                  <button onClick={() => setDrawerOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px' }}>
-                    <X size={28} color="#1C1C1E" />
+                <div className="ep-drawer-head">
+                  <div>
+                    <h2 className="ep-drawer-title">Create Event</h2>
+                    <p className="ep-drawer-sub">Fill in the details and publish to all residents.</p>
+                  </div>
+                  <button className="ep-modal-close" onClick={() => setDrawerOpen(false)} aria-label="Close">
+                    <X size={16} strokeWidth={2.4} />
                   </button>
                 </div>
 
-                <form>
-                  <input type="text" className="input-field" placeholder="Event Title (e.g. Diwali Rooftop Mixer)" />
-                  <select className="input-field">
-                    <option>Cultural</option>
-                    <option>Workshop</option>
-                    <option>General</option>
-                  </select>
-                  <input type="text" className="input-field" placeholder="Location" />
-                  <input type="datetime-local" className="input-field" />
-                  <textarea className="input-field" placeholder="Description" rows={4} />
-                  
-                  <motion.button 
-                    type="button"
-                    style={{ width: '100%', background: '#1C1C1E', color: '#FFFFFF', padding: '18px', borderRadius: '14px', border: 'none', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer', marginTop: '20px' }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setDrawerOpen(false)}
-                  >
-                    Publish Event
-                  </motion.button>
+                <form
+                  style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
+                  onSubmit={e => { e.preventDefault(); handleCreate(); }}
+                >
+                  <div className="ep-field-group">
+                    <label className="ep-field-label">Title *</label>
+                    <input className="ep-field" placeholder="e.g. Diwali Celebration" value={form.title} onChange={e => setField('title', e.target.value)} />
+                  </div>
+
+                  <div className="ep-field-group">
+                    <label className="ep-field-label">Category</label>
+                    <select className="ep-field" value={form.category} onChange={e => setField('category', e.target.value)}>
+                      <option value="General">General</option>
+                      <option value="Cultural">Cultural</option>
+                      <option value="Workshop">Workshop</option>
+                    </select>
+                  </div>
+
+                  <div className="ep-field-group">
+                    <label className="ep-field-label">Location</label>
+                    <input className="ep-field" placeholder="e.g. Club House" value={form.location} onChange={e => setField('location', e.target.value)} />
+                  </div>
+
+                  <div className="ep-field-group">
+                    <label className="ep-field-label">Start date &amp; time *</label>
+                    <input className="ep-field" type="datetime-local" value={form.startAt} onChange={e => setField('startAt', e.target.value)} />
+                  </div>
+
+                  <div className="ep-field-group">
+                    <label className="ep-field-label">End date &amp; time *</label>
+                    <input className="ep-field" type="datetime-local" value={form.endAt} onChange={e => setField('endAt', e.target.value)} />
+                  </div>
+
+                  <div className="ep-field-group">
+                    <label className="ep-field-label">Description</label>
+                    <textarea className="ep-field" placeholder="What's this event about?" rows={4} value={form.description} onChange={e => setField('description', e.target.value)} />
+                  </div>
+
+                  {formError && <p className="ep-form-error">{formError}</p>}
+
+                  <button type="submit" className="ep-drawer-submit" disabled={submitting}>
+                    {submitting ? 'Publishing…' : 'Publish Event'}
+                  </button>
                 </form>
-              </motion.div>
+              </motion.aside>
             </>
           )}
         </AnimatePresence>
-
       </div>
     </>
   );

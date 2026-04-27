@@ -36,6 +36,8 @@ export async function createEvent(req, res, next) {
     const title = sanitizeText(req.body?.title);
     const description = sanitizeText(req.body?.description);
     const location = sanitizeText(req.body?.location) || "Club House";
+    const category = sanitizeText(req.body?.category) || "General";
+    const coverImage = sanitizeText(req.body?.coverImage);
     const startAt = req.body?.startAt;
     const endAt = req.body?.endAt;
 
@@ -61,6 +63,8 @@ export async function createEvent(req, res, next) {
       startAt: startDate,
       endAt: endDate,
       location,
+      category,
+      coverImage,
       createdBy: req.user.userId
     });
 
