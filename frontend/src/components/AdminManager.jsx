@@ -1,51 +1,112 @@
-import { tok, fonts, card, btn } from "../lib/tokens";
+const C = {
+  surface:  "#FFFFFF",
+  bg:       "#FAFAFC",
+  ink:      "#1C1C1E",
+  ink2:     "#3A3A3C",
+  muted:    "#6B7280",
+  faint:    "#9CA3AF",
+  border:   "#E8E8ED",
+  borderL:  "#F0F0F5",
+  green:    "#16A34A",
+  greenL:   "#DCFCE7",
+  greenBr:  "#BBF7D0",
+  red:      "#DC2626",
+  redL:     "#FEF2F2",
+  redBr:    "#FECACA",
+  amber:    "#F59E0B",
+  amberD:   "#D97706",
+  amberL:   "#FFFBEB",
+  amberBr:  "#FCD34D",
+};
+
+const ACTION_CFG = {
+  approved:  { bg: C.greenL, color: C.green,  border: C.greenBr },
+  rejected:  { bg: C.redL,   color: C.red,    border: C.redBr   },
+  cancelled: { bg: C.bg,     color: C.muted,  border: C.border  },
+};
 
 const STATUS_OPTIONS = ["approved", "rejected", "cancelled"];
-
-const STATUS_CFG = {
-  approved:  { bg: tok.emeraldLight, color: tok.emerald, border: tok.emeraldBorder },
-  rejected:  { bg: tok.roseLight,    color: tok.rose,    border: tok.roseBorder    },
-  cancelled: { bg: tok.stone100,     color: tok.stone600, border: tok.stone200     },
-};
 
 export function AdminManager({ items, onStatusUpdate }) {
   if (!items.length) {
     return (
-      <div style={{ ...card, textAlign: "center", padding: 40 }}>
-        <p style={{ fontSize: 14, color: tok.stone400 }}>No pending booking requests.</p>
+      <div style={{
+        borderRadius: 12,
+        border: `1.5px dashed ${C.border}`,
+        padding: "20px 14px",
+        textAlign: "center",
+        color: C.faint,
+        fontSize: "0.8rem",
+        fontWeight: 600,
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+      }}>
+        No pending requests.
       </div>
     );
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {items.map(item => (
-        <article key={item._id} style={{ ...card, borderLeft: `4px solid ${tok.amber}` }}>
-          <div style={{ marginBottom: 8 }}>
-            <h4 style={{ fontSize: 15, fontWeight: 600, color: tok.stone800, margin: "0 0 4px", fontFamily: fonts.sans }}>
-              {item.amenityId?.name || item.amenityName}
-            </h4>
-            <p style={{ fontSize: 13, color: tok.stone600, margin: 0 }}>
-              📅 {item.date} · {item.startTime}–{item.endTime}
-            </p>
-            <p style={{ fontSize: 12, color: tok.stone400, marginTop: 4 }}>
-              👤 {item.residentId?.fullName || item.requestedBy?.fullName || "Resident"}
-            </p>
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${tok.stone100}` }}>
+        <article
+          key={item._id}
+          style={{
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+            borderLeft: `4px solid ${C.amber}`,
+            borderRadius: 13,
+            padding: "12px 14px",
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+          }}
+        >
+          {/* Booking info */}
+          <p style={{ margin: "0 0 2px", fontSize: "0.88rem", fontWeight: 800, color: C.ink }}>
+            {item.amenityId?.name || item.amenityName || "Facility"}
+          </p>
+          <p style={{ margin: "0 0 2px", fontSize: "0.74rem", fontWeight: 600, color: C.muted }}>
+            {item.date} · {item.startTime}–{item.endTime}
+          </p>
+          <p style={{ margin: 0, fontSize: "0.72rem", color: C.faint, fontWeight: 500 }}>
+            {item.residentId?.fullName || item.requestedBy?.fullName || "Resident"}
+            {item.residentFlat && (
+              <span style={{ marginLeft: 6, padding: "1px 7px", borderRadius: 99, background: C.borderL, color: C.muted, fontSize: "0.66rem", fontWeight: 700 }}>
+                {item.residentFlat}
+              </span>
+            )}
+          </p>
+
+          {/* Action buttons */}
+          <div style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 6,
+            marginTop: 10,
+            paddingTop: 10,
+            borderTop: `1px solid ${C.borderL}`,
+          }}>
             {STATUS_OPTIONS.map(status => {
-              const cfg = STATUS_CFG[status];
+              const cfg = ACTION_CFG[status];
               return (
                 <button
                   key={status}
                   type="button"
                   onClick={() => onStatusUpdate(item._id, status)}
                   style={{
-                    padding: "5px 14px", borderRadius: 100, fontSize: 12, fontWeight: 600,
-                    cursor: "pointer", textTransform: "capitalize", fontFamily: fonts.sans,
-                    background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`,
-                    transition: "opacity .15s",
+                    padding: "4px 12px",
+                    borderRadius: 99,
+                    fontSize: "0.68rem",
+                    fontWeight: 800,
+                    textTransform: "capitalize",
+                    letterSpacing: "0.03em",
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    cursor: "pointer",
+                    background: cfg.bg,
+                    color: cfg.color,
+                    border: `1px solid ${cfg.border}`,
+                    transition: "opacity 0.15s, transform 0.15s",
                   }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = "0.75"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = "1";    e.currentTarget.style.transform = "";                   }}
                 >
                   {status}
                 </button>

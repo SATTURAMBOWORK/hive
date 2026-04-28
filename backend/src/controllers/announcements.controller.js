@@ -39,7 +39,10 @@ export async function listAnnouncements(req, res, next) {
     const search = sanitizeText(req.query?.q);
     const category = sanitizeText(req.query?.category);
 
-    const filter = { tenantId: req.tenantId };
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const filter = { tenantId: req.tenantId, createdAt: { $gte: sixMonthsAgo } };
     if (category && category !== "All") {
       filter.category = category;
     }

@@ -383,8 +383,8 @@ const CSS = `
     margin-bottom: 14px;
     box-shadow: 0 4px 12px rgba(232,137,12,0.18);
   }
-  .ann-empty h3 { font-size: 1rem; font-weight: 700; color: #374151; margin-bottom: 6px; }
-  .ann-empty p  { font-size: 0.84rem; color: #9CA3AF; font-weight: 500; }
+  .ann-empty h3 { font-size: 1.2rem; color: #1C1C1E; margin: 0 0 6px; }
+  .ann-empty p  { color: #6B7280; line-height: 1.6; margin: 0; max-width: 440px; display: inline-block; }
 
   /* ── Error ────────────────────────────────── */
   .ann-error {
@@ -788,7 +788,7 @@ function ComposeForm({ onPost, onCancel, submitting, error }) {
             <label className="ann-field-label">Title</label>
             <input
               className="ann-field-input"
-              placeholder="e.g. Water supply maintenance tomorrow"
+              placeholder="Title"
               value={title}
               onChange={e => setTitle(e.target.value)}
               required
@@ -804,7 +804,7 @@ function ComposeForm({ onPost, onCancel, submitting, error }) {
             formats={editorFormats}
             value={body}
             onChange={setBody}
-            placeholder="Write the announcement body..."
+            placeholder="Body"
           />
         </div>
 
@@ -1057,8 +1057,8 @@ export function AnnouncementsPage() {
                   animate={{ opacity: 1, scale: 1 }}
                 >
                   <div className="ann-empty-icon"><Megaphone size={22} /></div>
-                  <h3>No announcements yet</h3>
-                  <p>The first update from your community will appear here.</p>
+                  <h3>Nothing here yet</h3>
+                  <p>Switch categories or check back later for updates from your community.</p>
                 </motion.div>
               )}
 

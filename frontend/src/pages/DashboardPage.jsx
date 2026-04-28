@@ -1006,11 +1006,22 @@ function startsIn(startAt) {
 }
 
 function buildFeed(announcements, tickets, events) {
+  const now = new Date();
+  const weekAgo  = new Date(now - 7 * 24 * 60 * 60 * 1000);
+  const weekAhead = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
   const items = [];
-  announcements.slice(0,5).forEach(a => items.push({ type:"announcement", date:a.createdAt, data:a }));
-  tickets.filter(t => !["resolved","closed"].includes(t.status)).slice(0,4)
+  announcements
+    .filter(a => new Date(a.createdAt) >= weekAgo)
+    .slice(0, 5)
+    .forEach(a => items.push({ type:"announcement", date:a.createdAt, data:a }));
+  tickets
+    .filter(t => !["resolved","closed"].includes(t.status) && new Date(t.createdAt) >= weekAgo)
+    .slice(0, 4)
     .forEach(t => items.push({ type:"ticket", date:t.createdAt, data:t }));
-  events.filter(e => new Date(e.startAt) >= new Date()).slice(0,3)
+  events
+    .filter(e => new Date(e.startAt) >= now && new Date(e.startAt) <= weekAhead)
+    .slice(0, 3)
     .forEach(e => items.push({ type:"event", date:e.startAt, data:e }));
   return items.sort((a,b) => new Date(b.date) - new Date(a.date));
 }
@@ -1422,7 +1433,7 @@ export function DashboardPage() {
           <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
 
             {/* Expected arrivals for a selected day */}
-            <motion.div
+            {canSeeArrivals && <motion.div
               className="dp-panel dp-arrivals-panel"
               initial={{ opacity:0, x:12 }}
               animate={{ opacity:1, x:0 }}
@@ -1480,7 +1491,7 @@ export function DashboardPage() {
                   </div>
                 </div>
               )}
-            </motion.div>
+            </motion.div>}
 
             {/* Admin workspace */}
             {isAdmin && (

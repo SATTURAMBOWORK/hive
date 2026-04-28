@@ -833,10 +833,15 @@ export function EventsPage() {
             {CATEGORIES.map(cat => {
               const active = selCategory === cat.id;
               return (
-                <button
+                <motion.button
                   key={cat.id}
                   className={`ep-tab${active ? ' active' : ''}`}
                   onClick={() => setSelCategory(cat.id)}
+                  animate={{ color: active ? C.ink : C.muted }}
+                  variants={!active ? { "tab-hover": { color: C.ink2 } } : {}}
+                  whileHover="tab-hover"
+                  whileTap={{ scale: 0.96 }}
+                  transition={{ color: { duration: 0.14 } }}
                 >
                   {cat.label}
                   <span className="ep-tab-count">{counts[cat.id] ?? 0}</span>
@@ -847,7 +852,7 @@ export function EventsPage() {
                       transition={SPRING}
                     />
                   )}
-                </button>
+                </motion.button>
               );
             })}
           </motion.div>

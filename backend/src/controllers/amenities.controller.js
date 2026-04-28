@@ -2,6 +2,7 @@ import { StatusCodes } from "http-status-codes";
 import mongoose from "mongoose";
 import { Amenity } from "../models/amenity.model.js";
 import { AmenityBooking } from "../models/amenity-booking.model.js";
+import { Membership } from "../models/membership.model.js";
 import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
 import { hasAmenityBookingConflict } from "../utils/booking-conflict.js";
@@ -167,10 +168,49 @@ export async function listAmenityBookings(req, res, next) {
       .populate("residentId", "fullName role")
       .populate("amenityId", "name isAutoApprove capacity");
 
+    const residentIds = [...new Set(items.map(b => b.residentId?._id).filter(Boolean))];
+    const memberships = await Membership.find({
+      tenantId: req.tenantId,
+      userId: { $in: residentIds },
+      status: "approved"
+    })
+      .populate("wingId", "name")
+      .populate("unitId", "unitNumber")
+      .lean();
+
+    const flatMap = {};
+    for (const m of memberships) {
+      const uid = String(m.userId);
+      if (!flatMap[uid]) {
+        flatMap[uid] = `${m.wingId?.name || ""}–${m.unitId?.unitNumber || ""}`.replace(/^–|–$/, "");
+      }
+    }
+
     const mapped = items.map((booking) => ({
       ...booking.toObject(),
       amenityName: booking.amenityId?.name || booking.amenityName,
-      requestedBy: booking.residentId
+      requestedBy: booking.residentId,
+      residentFlat: flatMap[String(booking.residentId?._id)] || null
+    }));
+
+    res.json({ items: mapped });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function listMyAmenityBookings(req, res, next) {
+  try {
+    const items = await AmenityBooking.find({
+      societyId: req.tenantId,
+      residentId: req.user.userId
+    })
+      .sort({ date: -1, startTime: 1 })
+      .populate("amenityId", "name isAutoApprove capacity");
+
+    const mapped = items.map((booking) => ({
+      ...booking.toObject(),
+      amenityName: booking.amenityId?.name || booking.amenityName
     }));
 
     res.json({ items: mapped });
@@ -275,6 +315,57 @@ export async function createAmenityBooking(req, res, next) {
         }
       }
     }
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateAmenity(req, res, next) {
+  try {
+    const amenityId = sanitizeText(req.params?.amenityId);
+    if (!mongoose.Types.ObjectId.isValid(amenityId)) {
+      throw new AppError("Invalid amenityId", StatusCodes.BAD_REQUEST);
+    }
+
+    const amenity = await Amenity.findOne({ _id: amenityId, societyId: req.tenantId });
+    if (!amenity) throw new AppError("Amenity not found", StatusCodes.NOT_FOUND);
+
+    if (req.body?.name !== undefined) {
+      const name = sanitizeText(req.body.name);
+      if (!name) throw new AppError("name cannot be empty", StatusCodes.BAD_REQUEST);
+      amenity.name = name;
+    }
+    if (req.body?.description !== undefined) {
+      amenity.description = sanitizeText(req.body.description);
+    }
+    if (req.body?.isAutoApprove !== undefined) {
+      amenity.isAutoApprove = Boolean(req.body.isAutoApprove);
+    }
+    if (req.body?.capacity !== undefined) {
+      const cap = Number(req.body.capacity);
+      if (!Number.isFinite(cap) || cap < 1) {
+        throw new AppError("capacity must be at least 1", StatusCodes.BAD_REQUEST);
+      }
+      amenity.capacity = cap;
+    }
+    if (req.body?.photos !== undefined) {
+      amenity.photos = normalizePhotos(req.body.photos);
+    }
+    if (req.body?.operatingHours !== undefined) {
+      amenity.operatingHours = normalizeOperatingHours(req.body.operatingHours);
+    }
+
+    await amenity.save();
+    await cache.del(cacheKey("amenities", req.tenantId));
+
+    const io = req.app.get("io");
+    await emitRealtime(io, {
+      room: `tenant:${req.tenantId}`,
+      event: SOCKET_EVENTS.AMENITY_UPDATED,
+      payload: { item: amenity }
+    });
+
+    res.json({ item: amenity });
   } catch (error) {
     next(error);
   }

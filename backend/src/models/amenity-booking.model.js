@@ -21,7 +21,7 @@ const amenityBookingSchema = new mongoose.Schema(
 );
 
 amenityBookingSchema.index(
-  { societyId: 1, amenityId: 1, date: 1, startTime: 1, endTime: 1 },
+  { societyId: 1, amenityId: 1, date: 1, startTime: 1 },
   { unique: true }
 );
 

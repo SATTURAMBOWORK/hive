@@ -2,9 +2,11 @@ import { Router } from "express";
 import multer from "multer";
 import {
 	createAmenity,
+	updateAmenity,
 	createAmenityBooking,
 	listAmenities,
 	listAmenityBookings,
+	listMyAmenityBookings,
 	updateAmenityBookingStatus,
 	uploadAmenityPhotos
 } from "../controllers/amenities.controller.js";
@@ -33,7 +35,9 @@ amenityRouter.post(
 	upload.array("photos", 5),
 	uploadAmenityPhotos
 );
-amenityRouter.get("/bookings", listAmenityBookings);
+amenityRouter.patch("/:amenityId", requireRoles("committee", "super_admin"), updateAmenity);
+amenityRouter.get("/bookings/mine", listMyAmenityBookings);
+amenityRouter.get("/bookings", requireRoles("committee", "super_admin"), listAmenityBookings);
 amenityRouter.post("/bookings", createAmenityBooking);
 amenityRouter.patch(
 	"/bookings/:bookingId/status",
