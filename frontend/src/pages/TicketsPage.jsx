@@ -31,18 +31,8 @@ const C = {
 
 /* ─── Status config ───────────────────────────────────────────────── */
 const STATUS_CFG = {
-  open: {
-    label: "Open",
-    sub: "Ticket",
-    Icon: Ticket,
-    color: C.indigo,
-    bg: C.indigoL,
-    border: C.indigoBr,
-    accent: C.indigo,
-  },
   in_progress: {
     label: "In Progress",
-    sub: "Amber",
     Icon: Clock,
     color: C.amberD,
     bg: C.amberL,
@@ -51,25 +41,13 @@ const STATUS_CFG = {
   },
   resolved: {
     label: "Resolved",
-    sub: "Resolved",
     Icon: BookmarkCheck,
     color: C.green,
     bg: C.greenL,
     border: C.greenBr,
     accent: C.green,
   },
-  closed: {
-    label: "Closed",
-    sub: "Archived",
-    Icon: Tag,
-    color: C.ink2,
-    bg: "#F3F4F6",
-    border: "#D1D5DB",
-    accent: C.faint,
-  },
 };
-
-const STATUS_OPTIONS = ["open", "in_progress", "resolved", "closed"];
 
 /* ─── Helpers ─────────────────────────────────────────────────────── */
 function timeAgo(date) {
@@ -292,45 +270,11 @@ const CSS = `
   .tp-refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .tp-body {
-    display: grid;
-    grid-template-columns: 168px 1fr;
-    gap: 18px;
+    display: block;
   }
 
   @media (max-width: 780px) {
-    .tp-body { grid-template-columns: 1fr; }
     .tp-refresh-btn { margin-left: 0; }
-  }
-
-  .tp-sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .tp-sidebar-btn {
-    display: block;
-    width: 100%;
-    padding: 9px 13px;
-    border-radius: 10px;
-    border: 1px solid transparent;
-    background: transparent;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 0.79rem;
-    font-weight: 700;
-    color: ${C.muted};
-    cursor: pointer;
-    text-align: left;
-    transition: all 0.18s;
-  }
-
-  .tp-sidebar-btn:hover { background: #FFFFFF; color: ${C.ink}; border-color: ${C.border}; }
-
-  .tp-sidebar-btn.active {
-    background: #FFFFFF;
-    color: ${C.ink};
-    border-color: ${C.border};
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   }
 
   .tp-grid {
@@ -392,8 +336,8 @@ const CSS = `
   }
 
   .tp-card-title {
-    font-size: 0.96rem;
-    font-weight: 800;
+    font-size: 0.92rem;
+    font-weight: 700;
     line-height: 1.35;
     color: ${C.ink};
     letter-spacing: -0.2px;
@@ -414,8 +358,8 @@ const CSS = `
 
   .tp-card-preview {
     margin-top: 8px;
-    font-size: 0.8rem;
-    font-weight: 500;
+    font-size: 0.76rem;
+    font-weight: 400;
     color: ${C.muted};
     line-height: 1.6;
     display: -webkit-box;
@@ -449,8 +393,8 @@ const CSS = `
   }
 
   .tp-author-info { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
-  .tp-author-cat { font-size: 0.72rem; font-weight: 800; color: ${C.ink2}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tp-author-name { font-size: 0.65rem; font-weight: 600; color: ${C.faint}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tp-author-cat { font-size: 0.72rem; font-weight: 700; color: ${C.ink2}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tp-author-name { font-size: 0.65rem; font-weight: 400; color: ${C.faint}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   .tp-card-photos { display: flex; gap: 4px; }
   .tp-card-photo {
@@ -607,24 +551,25 @@ const CSS = `
     gap: 7px;
     padding: 9px 16px;
     border-radius: 10px;
-    border: 1px solid ${C.indigoBr};
-    background: ${C.indigo};
+    border: 1.5px solid #E8890C;
+    background: #E8890C;
     color: #fff;
     font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.8rem;
     font-weight: 800;
     cursor: pointer;
-    transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
-    box-shadow: 0 3px 10px rgba(79,70,229,0.25);
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(232,137,12,0.28);
   }
 
   .tp-btn-primary:hover:not(:disabled) {
-    background: ${C.indigoD};
+    background: #C97508;
+    border-color: #C97508;
     transform: translateY(-1px);
-    box-shadow: 0 7px 16px rgba(79,70,229,0.3);
+    box-shadow: 0 4px 14px rgba(232,137,12,0.36);
   }
 
-  .tp-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .tp-btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
 
   .tp-btn-ghost {
     display: inline-flex;
@@ -785,7 +730,7 @@ const CSS = `
 
 /* ─── Pill component ──────────────────────────────────────────────── */
 function StatusPill({ status }) {
-  const c = STATUS_CFG[status] || STATUS_CFG.open;
+  const c = STATUS_CFG[status] || STATUS_CFG.in_progress;
   const Icon = c.Icon;
   return (
     <span className="tp-pill" style={{ color: c.color, background: c.bg, borderColor: c.border }}>
@@ -806,7 +751,7 @@ function Lightbox({ url, onClose }) {
 
 /* ─── Ticket card ─────────────────────────────────────────────────── */
 function TCard({ item, active, onOpen }) {
-  const cfg = STATUS_CFG[item.status] || STATUS_CFG.open;
+  const cfg = STATUS_CFG[item.status] || STATUS_CFG.in_progress;
 
   return (
     <motion.article
@@ -835,8 +780,8 @@ function TCard({ item, active, onOpen }) {
         <div className="tp-card-author">
           <span className="tp-avatar">{(item.createdBy?.fullName || "R")[0].toUpperCase()}</span>
           <div className="tp-author-info">
-            <span className="tp-author-cat">{item.category || "General"}</span>
-            <span className="tp-author-name">{item.createdBy?.fullName || "Resident"} · {timeAgo(item.createdAt)}</span>
+            <span className="tp-author-cat">{item.createdBy?.fullName || "Resident"}</span>
+            <span className="tp-author-name">{timeAgo(item.createdAt)}</span>
           </div>
         </div>
 
@@ -874,7 +819,13 @@ function SkCard() {
 
 /* ─── Smart modal detail ─────────────────────────────────────────── */
 function DetailPanel({ item, onClose, onStatusUpdate, canUpdateStatus }) {
-  const [lightbox, setLightbox] = useState(null);
+  const [lightbox,        setLightbox]        = useState(null);
+  const [showResolveForm, setShowResolveForm] = useState(false);
+  const [resolutionDesc,  setResolutionDesc]  = useState("");
+  const [resPhotos,       setResPhotos]       = useState([]);
+  const [resPhotoUrls,    setResPhotoUrls]    = useState([]);
+  const [uploading,       setUploading]       = useState(false);
+  const { token } = useAuth();
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -927,28 +878,150 @@ function DetailPanel({ item, onClose, onStatusUpdate, canUpdateStatus }) {
               </div>
             )}
 
-            <p className="tp-detail-meta">Category: {item.category || "General"}</p>
 
-            {canUpdateStatus && (
-              <div>
-                <p style={{ fontSize: "0.7rem", fontWeight: 800, color: C.faint, marginTop: 16, marginBottom: 8 }}>MOVE TO</p>
-                <div className="tp-status-update">
-                  {STATUS_OPTIONS.filter((s) => s !== item.status).map((s) => {
-                    const sc = STATUS_CFG[s];
-                    return (
-                      <button
-                        key={s}
-                        className="tp-status-pill-btn"
-                        style={{ color: sc.color, background: sc.bg, borderColor: sc.border }}
-                        onClick={() => onStatusUpdate(item._id, s)}
-                      >
-                        {sc.label}
-                      </button>
-                    );
-                  })}
-                </div>
+            {/* Resolution display for resolved tickets */}
+            {item.status === "resolved" && item.resolution?.description && (
+              <div style={{ marginTop: 16, padding: "12px 14px", background: C.greenL, border: `1px solid ${C.greenBr}`, borderRadius: 12 }}>
+                <p style={{ margin: "0 0 6px", fontSize: "0.68rem", fontWeight: 800, color: C.green, textTransform: "uppercase", letterSpacing: "0.06em" }}>Resolution</p>
+                <p style={{ margin: 0, fontSize: "0.83rem", color: C.ink, fontWeight: 500, lineHeight: 1.55 }}>{item.resolution.description}</p>
+                {item.resolution.photos?.length > 0 && (
+                  <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+                    {item.resolution.photos.map((url, i) => (
+                      <img key={i} src={url} alt="" onClick={() => setLightbox(url)}
+                        style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8, border: `1px solid ${C.greenBr}`, cursor: "pointer" }} />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
+
+            {/* Resolve button */}
+            {canUpdateStatus && item.status === "in_progress" && (
+              <div style={{ marginTop: 16 }}>
+                <button
+                  onClick={() => setShowResolveForm(true)}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    padding: "8px 13px", borderRadius: 10,
+                    background: C.indigo, color: "#fff", border: "none",
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    fontSize: "0.76rem", fontWeight: 800, cursor: "pointer",
+                    boxShadow: "0 4px 12px rgba(79,70,229,0.3)",
+                    transition: "background 0.18s, transform 0.18s, box-shadow 0.18s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = C.indigoD; e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 16px rgba(79,70,229,0.38)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = C.indigo; e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 12px rgba(79,70,229,0.3)"; }}
+                >
+                  <BookmarkCheck size={13} /> Mark as Resolved
+                </button>
+              </div>
+            )}
+
+            {/* Resolution popup */}
+            <AnimatePresence>
+              {showResolveForm && (
+                <>
+                  <motion.div
+                    key="resolve-backdrop"
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    onClick={() => { setShowResolveForm(false); setResolutionDesc(""); setResPhotos([]); }}
+                    style={{ position: "fixed", inset: 0, background: "rgba(28,28,30,0.45)", backdropFilter: "blur(6px)", zIndex: 600 }}
+                  />
+                  <div
+                    key="resolve-popup-wrap"
+                    style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 610, pointerEvents: "none" }}
+                  >
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.94, y: 16 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.94, y: 16 }}
+                    transition={{ type: "spring", stiffness: 340, damping: 28 }}
+                    style={{
+                      width: "min(480px, 92vw)",
+                      background: "#fff", borderRadius: 20,
+                      boxShadow: "0 24px 64px rgba(28,28,30,0.18)",
+                      padding: "28px",
+                      fontFamily: "'Plus Jakarta Sans', sans-serif",
+                      pointerEvents: "all",
+                    }}
+                  >
+                    {/* Header */}
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: C.ink, letterSpacing: "-0.02em" }}>Mark as Resolved</h3>
+                        <p style={{ margin: "4px 0 0", fontSize: "0.78rem", color: C.muted, fontWeight: 500 }}>{item.title}</p>
+                      </div>
+                      <button
+                        onClick={() => { setShowResolveForm(false); setResolutionDesc(""); setResPhotos([]); }}
+                        style={{ width: 32, height: 32, borderRadius: "50%", border: `1px solid ${C.border}`, background: C.bg, color: C.muted, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
+                      ><X size={13} /></button>
+                    </div>
+
+                    {/* Description */}
+                    <div style={{ marginBottom: 14 }}>
+                      <p style={{ margin: "0 0 6px", fontSize: "0.68rem", fontWeight: 800, color: C.faint, textTransform: "uppercase", letterSpacing: "0.07em" }}>What was done</p>
+                      <textarea
+                        style={{ width: "100%", minHeight: 100, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 12px", fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "0.85rem", color: C.ink, outline: "none", resize: "vertical", boxSizing: "border-box", transition: "border-color 0.18s" }}
+                        placeholder="Description"
+                        value={resolutionDesc}
+                        onChange={e => setResolutionDesc(e.target.value)}
+                        onFocus={e => e.target.style.borderColor = C.indigoBr}
+                        onBlur={e => e.target.style.borderColor = C.border}
+                      />
+                    </div>
+
+                    {/* Photos */}
+                    <div style={{ marginBottom: 20 }}>
+                      <p style={{ margin: "0 0 6px", fontSize: "0.68rem", fontWeight: 800, color: C.faint, textTransform: "uppercase", letterSpacing: "0.07em" }}>Photos (optional)</p>
+                      <input type="file" accept="image/*" multiple style={{ fontSize: "0.78rem", width: "100%" }}
+                        onChange={e => setResPhotos(Array.from(e.target.files).slice(0, 5))} />
+                      {resPhotos.length > 0 && <p style={{ fontSize: "0.7rem", color: C.muted, marginTop: 5, fontWeight: 600 }}>{resPhotos.length} photo{resPhotos.length > 1 ? "s" : ""} selected</p>}
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        disabled={uploading}
+                        onClick={async () => {
+                          setUploading(true);
+                          try {
+                            let photoUrls = [];
+                            if (resPhotos.length > 0) {
+                              const fd = new FormData();
+                              resPhotos.forEach(f => fd.append("photos", f));
+                              const up = await apiRequest("/tickets/upload-photos", { method: "POST", token, formData: fd });
+                              photoUrls = up.urls || [];
+                            }
+                            await onStatusUpdate(item._id, "resolved", {
+                              resolutionDescription: resolutionDesc,
+                              resolutionPhotos: photoUrls
+                            });
+                            setShowResolveForm(false);
+                            setResolutionDesc(""); setResPhotos([]);
+                          } catch { /* error handled upstream */ }
+                          finally { setUploading(false); }
+                        }}
+                        style={{
+                          flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                          padding: "10px 16px", borderRadius: 10,
+                          background: uploading ? C.muted : C.indigo, color: "#fff", border: "none",
+                          fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "0.82rem", fontWeight: 800,
+                          cursor: uploading ? "not-allowed" : "pointer",
+                          boxShadow: "0 4px 12px rgba(79,70,229,0.3)",
+                        }}
+                      >
+                        <BookmarkCheck size={14} /> {uploading ? "Saving…" : "Confirm Resolved"}
+                      </button>
+                      <button
+                        onClick={() => { setShowResolveForm(false); setResolutionDesc(""); setResPhotos([]); }}
+                        style={{ padding: "10px 16px", borderRadius: 10, border: `1px solid ${C.border}`, background: "#fff", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif", color: C.ink }}
+                      >Cancel</button>
+                    </div>
+                  </motion.div>
+                  </div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
 
           <div className="tp-modal-foot">
@@ -956,7 +1029,6 @@ function DetailPanel({ item, onClose, onStatusUpdate, canUpdateStatus }) {
               <span className="tp-avatar">{(item.createdBy?.fullName || "R")[0].toUpperCase()}</span>
               <div className="tp-author-info">
                 <span className="tp-author-cat">{item.createdBy?.fullName || "Resident"}</span>
-                <span className="tp-author-name">{item.category || "General"}</span>
               </div>
             </div>
           </div>
@@ -974,41 +1046,26 @@ export function TicketsPage() {
   const [items, setItems] = useState([]);
   const [title, setTitle] = useState("");
   const [description, setDesc] = useState("");
-  const [category, setCategory] = useState("General");
   const [photoFiles, setPhotoFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [activeStatus, setActiveStatus] = useState("All");
-  const [activeCategory, setActiveCategory] = useState("All");
   const [selectedItem, setSelectedItem] = useState(null);
   const [visibleCount, setVisibleCount] = useState(9);
 
   const canUpdateStatus = useMemo(() => ["committee", "staff", "super_admin"].includes(user?.role), [user?.role]);
 
   /* ── Counts ─────────────────────────────────── */
-  const openCount = useMemo(() => items.filter((t) => t.status === "open").length, [items]);
   const inProgCount = useMemo(() => items.filter((t) => t.status === "in_progress").length, [items]);
-  const resolvedCount = useMemo(() => items.filter((t) => ["resolved", "closed"].includes(t.status)).length, [items]);
-
-  /* ── Sidebar categories ──────────────────────── */
-  const categories = useMemo(() => {
-    const cats = [...new Set(items.map((t) => t.category).filter(Boolean))];
-    return ["All", ...cats];
-  }, [items]);
+  const resolvedCount = useMemo(() => items.filter((t) => t.status === "resolved").length, [items]);
 
   /* ── Filtered items ──────────────────────────── */
   const filteredItems = useMemo(
     () =>
-      items.filter((item) => {
-        const statusOk =
-          activeStatus === "All" ||
-          (activeStatus === "resolved" ? ["resolved", "closed"].includes(item.status) : item.status === activeStatus);
-        const catOk = activeCategory === "All" || item.category === activeCategory;
-        return statusOk && catOk;
-      }),
-    [items, activeStatus, activeCategory]
+      items.filter((item) => activeStatus === "All" || item.status === activeStatus),
+    [items, activeStatus]
   );
 
   const visibleItems = filteredItems.slice(0, visibleCount);
@@ -1041,11 +1098,10 @@ export function TicketsPage() {
         photos = up.urls || [];
         setIsUploading(false);
       }
-      const data = await apiRequest("/tickets", { method: "POST", token, body: { title, description, category, photos } });
+      const data = await apiRequest("/tickets", { method: "POST", token, body: { title, description, photos } });
       setItems((prev) => [data.item, ...prev]);
       setTitle("");
       setDesc("");
-      setCategory("General");
       setPhotoFiles([]);
       setShowForm(false);
     } catch (err) {
@@ -1054,10 +1110,10 @@ export function TicketsPage() {
     }
   }
 
-  async function handleStatusUpdate(ticketId, status) {
+  async function handleStatusUpdate(ticketId, status, resolution = {}) {
     setError("");
     try {
-      const data = await apiRequest(`/tickets/${ticketId}/status`, { method: "PATCH", token, body: { status } });
+      const data = await apiRequest(`/tickets/${ticketId}/status`, { method: "PATCH", token, body: { status, ...resolution } });
       setItems((prev) => prev.map((i) => (i._id === ticketId ? { ...i, ...data.item } : i)));
       if (selectedItem?._id === ticketId) setSelectedItem((prev) => ({ ...prev, ...data.item }));
     } catch (err) {
@@ -1070,10 +1126,9 @@ export function TicketsPage() {
   }, []);
 
   const STATUS_CHIPS = [
-    { key: "All", label: "All", sub: "Tickets", Icon: Ticket, count: items.length },
-    { key: "open", label: "Open", sub: "Ticket", Icon: Ticket, count: openCount },
-    { key: "in_progress", label: "In Progress", sub: "Amber", Icon: Clock, count: inProgCount },
-    { key: "resolved", label: "Resolved", sub: "Resolved", Icon: BookmarkCheck, count: resolvedCount },
+    { key: "All",         label: "All",         Icon: Ticket,        count: items.length  },
+    { key: "in_progress", label: "In Progress", Icon: Clock,         count: inProgCount   },
+    { key: "resolved",    label: "Resolved",    Icon: BookmarkCheck, count: resolvedCount },
   ];
 
   return (
@@ -1139,18 +1194,6 @@ export function TicketsPage() {
           {error && <div className="tp-error">{error}</div>}
 
           <motion.div className="tp-body" variants={rise}>
-            <motion.aside className="tp-sidebar" variants={rise}>
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  className={`tp-sidebar-btn${activeCategory === cat ? " active" : ""}`}
-                  onClick={() => setActiveCategory(cat)}
-                >
-                  {cat}
-                </button>
-              ))}
-            </motion.aside>
 
             <motion.div className="tp-grid" layout variants={gridStagger} initial="hidden" animate="visible">
               <AnimatePresence initial={false}>
@@ -1171,19 +1214,10 @@ export function TicketsPage() {
                           <p className="tp-form-label">Title</p>
                           <input
                             className="tp-form-input"
-                            placeholder="e.g. Leaking pipe under kitchen sink"
+                            placeholder="Title"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             required
-                          />
-                        </div>
-                        <div>
-                          <p className="tp-form-label">Category</p>
-                          <input
-                            className="tp-form-input"
-                            placeholder="e.g. Plumbing, Electrical"
-                            value={category}
-                            onChange={(e) => setCategory(e.target.value)}
                           />
                         </div>
                       </div>
@@ -1191,7 +1225,7 @@ export function TicketsPage() {
                         <p className="tp-form-label">Description</p>
                         <textarea
                           className="tp-form-textarea"
-                          placeholder="Describe the issue in detail..."
+                          placeholder="Description"
                           value={description}
                           onChange={(e) => setDesc(e.target.value)}
                           required
@@ -1234,7 +1268,7 @@ export function TicketsPage() {
                 <motion.div className="tp-empty" key="tp-empty" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
                   <div className="tp-empty-icon"><Ticket size={22} /></div>
                   <h3>No tickets found</h3>
-                  <p>{activeStatus !== "All" || activeCategory !== "All" ? "Try changing your filters." : "Raise a complaint and track its progress here."}</p>
+                  <p>{activeStatus !== "All" ? "Try changing your filters." : "Raise a complaint and track its progress here."}</p>
                 </motion.div>
               )}
 

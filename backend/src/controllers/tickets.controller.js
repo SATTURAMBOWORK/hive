@@ -6,7 +6,7 @@ import { SOCKET_EVENTS } from "../config/socket-events.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 import { emitRealtime } from "../services/realtime-bus.service.js";
 
-const ALLOWED_TICKET_STATUSES = ["open", "in_progress", "resolved", "closed"];
+const ALLOWED_TICKET_STATUSES = ["in_progress", "resolved"];
 
 function sanitizeText(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -34,10 +34,13 @@ export async function uploadTicketPhotos(req, res, next) {
 
 export async function listTickets(req, res, next) {
   try {
-    const items = await Ticket.find({ tenantId: req.tenantId })
-      .sort({ createdAt: -1 })    //latest ticket first
-      .populate("createdBy", "fullName role") // replaces created by with actual user data
-      .populate("assignedTo", "fullName role"); // same as above
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const items = await Ticket.find({ tenantId: req.tenantId, createdAt: { $gte: sixMonthsAgo } })
+      .sort({ createdAt: -1 })
+      .populate("createdBy", "fullName role")
+      .populate("assignedTo", "fullName role");
 
     res.json({ items });
   } catch (error) {
@@ -49,7 +52,6 @@ export async function createTicket(req, res, next) {
   try {
     const title = sanitizeText(req.body?.title);
     const description = sanitizeText(req.body?.description);
-    const category = sanitizeText(req.body?.category) || "general";
     const photos = Array.isArray(req.body?.photos)
       ? req.body.photos.map((u) => sanitizeText(u)).filter(Boolean).slice(0, 3)
       : [];
@@ -62,7 +64,6 @@ export async function createTicket(req, res, next) {
       tenantId: req.tenantId,
       title,
       description,
-      category,
       photos,
       createdBy: req.user.userId
     });
@@ -86,7 +87,10 @@ export async function updateTicketStatus(req, res, next) {
   try {
     const ticketId = sanitizeText(req.params?.ticketId);
     const status = sanitizeText(req.body?.status);
-    const assignedTo = sanitizeText(req.body?.assignedTo);
+    const resolutionDescription = sanitizeText(req.body?.resolutionDescription);
+    const resolutionPhotos = Array.isArray(req.body?.resolutionPhotos)
+      ? req.body.resolutionPhotos.map((u) => sanitizeText(u)).filter(Boolean).slice(0, 5)
+      : [];
 
     if (!mongoose.Types.ObjectId.isValid(ticketId)) {
       throw new AppError("Invalid ticketId", StatusCodes.BAD_REQUEST);
@@ -106,25 +110,30 @@ export async function updateTicketStatus(req, res, next) {
 
     ticket.status = status;
 
-    if (assignedTo) {
-      if (!mongoose.Types.ObjectId.isValid(assignedTo)) {
-        throw new AppError("Invalid assignedTo", StatusCodes.BAD_REQUEST);
-      }
-      ticket.assignedTo = assignedTo;
+    if (status === "resolved") {
+      ticket.resolution = {
+        description: resolutionDescription,
+        photos: resolutionPhotos,
+        resolvedBy: req.user.userId,
+        resolvedAt: new Date()
+      };
     }
 
     await ticket.save();
+
+    const populated = await ticket.populate([
+      { path: "createdBy", select: "fullName role" },
+      { path: "resolution.resolvedBy", select: "fullName role" }
+    ]);
 
     const io = req.app.get("io");
     await emitRealtime(io, {
       room: `tenant:${req.tenantId}`,
       event: SOCKET_EVENTS.TICKET_STATUS_UPDATED,
-      payload: {
-        item: ticket
-      }
+      payload: { item: populated }
     });
 
-    res.json({ item: ticket });
+    res.json({ item: populated });
   } catch (error) {
     next(error);
   }

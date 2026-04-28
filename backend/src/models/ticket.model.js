@@ -5,11 +5,16 @@ const ticketSchema = new mongoose.Schema(
     tenantId: { type: mongoose.Schema.Types.ObjectId, ref: "Tenant", required: true, index: true },
     title: { type: String, required: true },
     description: { type: String, required: true },
-    category: { type: String, default: "general" },
-    status: { type: String, enum: ["open", "in_progress", "resolved", "closed"], default: "open" },
+    status: { type: String, enum: [ "in_progress", "resolved"], default: "in_progress" },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
-    photos: { type: [String], default: [] }
+    photos: { type: [String], default: [] },
+    resolution: {
+      description: { type: String, default: "" },
+      photos:      { type: [String], default: [] },
+      resolvedBy:  { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+      resolvedAt:  { type: Date, default: null }
+    }
   },
   { timestamps: true }
 );
