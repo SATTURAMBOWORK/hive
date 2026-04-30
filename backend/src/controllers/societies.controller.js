@@ -136,6 +136,36 @@ export async function createSocietyWing(req, res, next) {
   }
 }
 
+export async function renameSocietyWing(req, res, next) {
+  try {
+    const societyId = sanitizeText(req.params?.id);
+    const wingId    = sanitizeText(req.params?.wingId);
+    const name      = sanitizeText(req.body?.name);
+
+    if (!mongoose.Types.ObjectId.isValid(societyId) || !mongoose.Types.ObjectId.isValid(wingId)) {
+      throw new AppError("Invalid id", StatusCodes.BAD_REQUEST);
+    }
+
+    assertManageScope(req, societyId);
+
+    if (!name) throw new AppError("name is required", StatusCodes.BAD_REQUEST);
+
+    const wing = await SocietyWing.findOne({ _id: wingId, tenantId: societyId });
+    if (!wing) throw new AppError("Tower not found", StatusCodes.NOT_FOUND);
+
+    wing.name = name;
+    wing.code = name.trim().split(/\s+/).pop().slice(0, 5).toUpperCase();
+    await wing.save();
+
+    res.json({ item: wing });
+  } catch (error) {
+    if (error.code === 11000) {
+      return next(new AppError("A tower with this code already exists.", StatusCodes.CONFLICT));
+    }
+    next(error);
+  }
+}
+
 export async function deleteSocietyWing(req, res, next) {
   try {
     const societyId = sanitizeText(req.params?.id);

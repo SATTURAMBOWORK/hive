@@ -4,7 +4,8 @@ import {
   joinTenantRoom,
   joinUserRoom,
   leaveTenantRoom,
-  leaveUserRoom
+  leaveUserRoom,
+  getSocket
 } from "./socket";
 
 const AuthContext = createContext(null);
@@ -101,9 +102,16 @@ export function AuthProvider({ children }) {
     joinUserRoom(auth.user.id || auth.user._id);
     joinTenantRoom(auth.user.tenantId);
 
+    const socket = getSocket();
+    function onForceLogout() {
+      clearAuth();
+    }
+    socket.on("force:logout", onForceLogout);
+
     return () => {
       leaveUserRoom(auth.user.id || auth.user._id);
       leaveTenantRoom(auth.user.tenantId);
+      socket.off("force:logout", onForceLogout);
     };
   }, [auth.token, auth.user]);
 

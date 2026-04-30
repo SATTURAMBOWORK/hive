@@ -31,4 +31,5 @@ export const SOCKET_EVENTS = {
   LOST_FOUND_RESOLVED:       "lost_found:resolved",
   MEMBERSHIP_REMOVED:        "membership:removed",
   ROLE_CHANGED:              "role:changed",
+  FORCE_LOGOUT:              "force:logout",
 };

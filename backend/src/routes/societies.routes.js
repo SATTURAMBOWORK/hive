@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
 	createSocietyUnit,
 	createSocietyWing,
+	renameSocietyWing,
 	deleteSocietyUnit,
 	deleteSocietyWing,
 	listSocietyUnits,
@@ -26,6 +27,12 @@ societiesRouter.post(
 	requireTenantScope,
 	requireRoles("committee", "super_admin"),
 	createSocietyUnit
+);
+societiesRouter.patch(
+	"/:id/wings/:wingId",
+	requireTenantScope,
+	requireRoles("committee", "super_admin"),
+	renameSocietyWing
 );
 societiesRouter.delete(
 	"/:id/wings/:wingId",

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Building2, Users, LayoutGrid, Plus, RefreshCw, Phone, Mail, Home, UserCheck, XCircle, Trash2 } from "lucide-react";
+import { Building2, Users, LayoutGrid, Plus, RefreshCw, Phone, Mail, Home, UserCheck, XCircle, Trash2, Pencil, Check, X } from "lucide-react";
 import { apiRequest } from "../components/api";
 import { useAuth } from "../components/AuthContext";
 
@@ -78,6 +78,9 @@ function SetupTab({ societyId, token, wings, units, onRefresh }) {
   const [wingLoading, setWingLoading] = useState(false);
   const [unitLoading, setUnitLoading] = useState(false);
   const [deletingId, setDeletingId]   = useState(null);
+  const [editingWingId, setEditingWingId]   = useState(null);
+  const [editingWingName, setEditingWingName] = useState("");
+  const [renamingId, setRenamingId]         = useState(null);
 
   useEffect(() => { if (!unitWingId && wings.length) setUnitWingId(wings[0]._id); }, [wings]);
 
@@ -90,6 +93,19 @@ function SetupTab({ societyId, token, wings, units, onRefresh }) {
       await onRefresh();
     } catch (err) { setError(err.message); }
     finally { setWingLoading(false); }
+  }
+
+  async function handleRenameWing(wingId) {
+    if (!editingWingName.trim()) return;
+    setRenamingId(wingId); setError("");
+    try {
+      await apiRequest(`/societies/${societyId}/wings/${wingId}`, {
+        method: "PATCH", token, body: { name: editingWingName.trim() },
+      });
+      setEditingWingId(null);
+      await onRefresh();
+    } catch (err) { setError(err.message); }
+    finally { setRenamingId(null); }
   }
 
   async function handleDeleteWing(wingId) {
@@ -146,14 +162,46 @@ function SetupTab({ societyId, token, wings, units, onRefresh }) {
               <Label>Existing Towers</Label>
               <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
                 {wings.map(w => (
-                  <div key={w._id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderRadius: 10, background: "#fffbeb", border: `1px solid ${T.border}`, padding: "10px 14px" }}>
-                    <span style={{ fontWeight: 600, color: T.text, fontSize: 13 }}>{w.name}</span>
-                    <button onClick={() => handleDeleteWing(w._id)} disabled={deletingId === w._id}
-                      style={{ background: "transparent", border: "none", cursor: deletingId === w._id ? "not-allowed" : "pointer", color: T.textMuted, padding: 4, borderRadius: 6, transition: "color 0.15s", opacity: deletingId === w._id ? 0.4 : 1 }}
-                      onMouseEnter={e => e.currentTarget.style.color = T.red}
-                      onMouseLeave={e => e.currentTarget.style.color = T.textMuted}>
-                      <Trash2 size={14} />
-                    </button>
+                  <div key={w._id} style={{ borderRadius: 10, background: "#fffbeb", border: `1px solid ${T.border}`, padding: "10px 14px" }}>
+                    {editingWingId === w._id ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <input
+                          value={editingWingName}
+                          onChange={e => setEditingWingName(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter") handleRenameWing(w._id); if (e.key === "Escape") setEditingWingId(null); }}
+                          autoFocus
+                          style={{ ...inputStyle, flex: 1, padding: "6px 10px", fontSize: 13 }}
+                          onFocus={e => { e.target.style.borderColor = T.gold; e.target.style.boxShadow = `0 0 0 3px ${T.gold}22`; }}
+                          onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = "none"; }}
+                        />
+                        <button onClick={() => handleRenameWing(w._id)} disabled={renamingId === w._id}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: T.green, padding: 4 }}>
+                          <Check size={15} />
+                        </button>
+                        <button onClick={() => setEditingWingId(null)}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: T.textMuted, padding: 4 }}>
+                          <X size={15} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <span style={{ fontWeight: 600, color: T.text, fontSize: 13 }}>{w.name}</span>
+                        <div style={{ display: "flex", gap: 4 }}>
+                          <button onClick={() => { setEditingWingId(w._id); setEditingWingName(w.name); }}
+                            style={{ background: "transparent", border: "none", cursor: "pointer", color: T.textMuted, padding: 4, borderRadius: 6, transition: "color 0.15s" }}
+                            onMouseEnter={e => e.currentTarget.style.color = T.gold}
+                            onMouseLeave={e => e.currentTarget.style.color = T.textMuted}>
+                            <Pencil size={13} />
+                          </button>
+                          <button onClick={() => handleDeleteWing(w._id)} disabled={deletingId === w._id}
+                            style={{ background: "transparent", border: "none", cursor: deletingId === w._id ? "not-allowed" : "pointer", color: T.textMuted, padding: 4, borderRadius: 6, transition: "color 0.15s", opacity: deletingId === w._id ? 0.4 : 1 }}
+                            onMouseEnter={e => e.currentTarget.style.color = T.red}
+                            onMouseLeave={e => e.currentTarget.style.color = T.textMuted}>
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

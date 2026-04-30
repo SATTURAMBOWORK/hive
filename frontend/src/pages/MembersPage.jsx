@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { RefreshCw, UserX, Shield, User, Mail, Phone } from "lucide-react";
 import { apiRequest } from "../components/api";
 import { useAuth } from "../components/AuthContext";
@@ -41,90 +41,133 @@ const CSS = `
 
   .mem-skeleton { animation: pulse-skeleton 1.5s ease-in-out infinite; }
 
-  .mem-card {
-    border-radius: 18px;
-    border: 1px solid ${T.border};
-    border-left: 3px solid ${T.goldLight};
-    background: ${T.surface};
-    overflow: hidden;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    box-shadow: 0 4px 16px rgba(15,23,42,0.05);
+  .mem-row {
+    padding: 16px 8px;
+    border-bottom: 1px solid ${T.border};
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    transition: background 0.15s;
   }
-  .mem-card:hover {
-    border-color: ${T.borderHov};
-    box-shadow: 0 10px 28px rgba(15,23,42,0.09);
+  .mem-row:hover {
+    background: ${T.surfaceHi};
   }
 
-  .mem-pill-btn {
+  .mem-row-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .mem-row-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: ${T.text};
+    margin: 0;
+  }
+
+  .mem-row-desc {
+    font-size: 12px;
+    color: ${T.textMuted};
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mem-row-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    min-width: 200px;
+  }
+
+  .mem-role-select {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid ${T.border};
+    background: ${T.surface};
+    color: ${T.text};
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .mem-role-select:hover {
+    border-color: ${T.borderHov};
+  }
+
+  .mem-btn {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 5px 14px;
-    border-radius: 99px;
+    padding: 6px 12px;
+    border-radius: 6px;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 600;
     font-family: 'DM Sans', sans-serif;
     cursor: pointer;
-    transition: opacity 0.15s, transform 0.15s, background 0.15s, border-color 0.15s;
-    border: 1.5px solid transparent;
-  }
-  .mem-pill-btn:hover:not(:disabled) { transform: translateY(-1px); opacity: 0.82; }
-  .mem-pill-btn:disabled { cursor: not-allowed; opacity: 0.6; }
-
-  .mem-action-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 16px;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 700;
-    font-family: 'DM Sans', sans-serif;
-    cursor: pointer;
-    transition: opacity 0.15s, transform 0.15s;
     border: none;
+    transition: opacity 0.15s, background 0.15s;
+    background: ${T.surfaceHi};
+    color: ${T.text};
   }
-  .mem-action-btn:hover:not(:disabled) { transform: translateY(-1px); opacity: 0.85; }
-  .mem-action-btn:disabled { cursor: not-allowed; opacity: 0.55; }
+  .mem-btn:hover:not(:disabled) {
+    opacity: 0.8;
+  }
+  .mem-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
 
   .mem-confirm-box {
     animation: slide-down 0.18s ease;
   }
 `;
 
-function SkeletonCard() {
+function SkeletonRow() {
   return (
-    <div style={{
-      borderRadius: 18, border: `1px solid ${T.border}`,
-      background: T.surface, padding: 22,
-      display: "flex", alignItems: "flex-start", gap: 16,
-    }}>
-      <div className="mem-skeleton" style={{ width: 46, height: 46, borderRadius: "50%", background: `${T.goldLight}22`, flexShrink: 0 }} />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
-        <div className="mem-skeleton" style={{ height: 16, width: "45%", borderRadius: 8, background: `${T.gold}18` }} />
-        <div className="mem-skeleton" style={{ height: 13, width: "65%", borderRadius: 8, background: `${T.gold}10` }} />
-        <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-          <div className="mem-skeleton" style={{ height: 24, width: 80, borderRadius: 99, background: `${T.gold}10` }} />
-          <div className="mem-skeleton" style={{ height: 24, width: 60, borderRadius: 99, background: `${T.gold}10` }} />
-        </div>
+    <div className="mem-row" style={{ pointerEvents: "none" }}>
+      <div className="mem-row-left">
+        <div className="mem-skeleton" style={{ height: 14, width: "35%", borderRadius: 4, background: `${T.textMuted}18` }} />
+        <div className="mem-skeleton" style={{ height: 12, width: "55%", borderRadius: 4, background: `${T.textMuted}10` }} />
+      </div>
+      <div className="mem-row-right">
+        <div className="mem-skeleton" style={{ height: 24, width: 60, borderRadius: 4, background: `${T.textMuted}10` }} />
+        <div className="mem-skeleton" style={{ height: 24, width: 70, borderRadius: 4, background: `${T.textMuted}10` }} />
       </div>
     </div>
   );
 }
 
-function MemberCard({ item, onRemoved, onRoleChanged }) {
+function MemberRow({ item, wings, units, onRemoved, onRoleChanged }) {
   const { token } = useAuth();
   const [confirmRemove, setConfirmRemove] = useState(false);
-  const [removing,      setRemoving]      = useState(false);
-  const [savingRole,    setSavingRole]    = useState(null); // "resident" | "committee" | null
-  const [roleSuccess,   setRoleSuccess]   = useState("");
-  const [currentRole,   setCurrentRole]   = useState(item.userId?.role || "resident");
+  const [removing, setRemoving] = useState(false);
+  const [savingRole, setSavingRole] = useState(false);
+  const [currentRole, setCurrentRole] = useState(item.userId?.role || "resident");
+  const [showUnitPanel, setShowUnitPanel] = useState(false);
+  const [selWingId, setSelWingId] = useState("");
+  const [selUnitId, setSelUnitId] = useState("");
+  const [savingUnit, setSavingUnit] = useState(false);
 
-  const name  = item.userId?.fullName || "Resident";
-  const email = item.userId?.email    || "";
-  const phone = item.userId?.phone    || "";
-  const unit  = `${item.wingId?.name || ""}‑${item.unitId?.unitNumber || ""}`;
-  const initial = name[0]?.toUpperCase() || "?";
+  const wingUnits = useMemo(
+    () => units.filter(u => String(u.wing?._id) === selWingId),
+    [units, selWingId]
+  );
+
+  const name = item.userId?.fullName || "Resident";
+  const email = item.userId?.email || "";
+  const phone = item.userId?.phone || "";
+  const unit = `${item.wingId?.name || ""}‑${item.unitId?.unitNumber || ""}`;
 
   async function handleRemove() {
     setRemoving(true);
@@ -135,201 +178,253 @@ function MemberCard({ item, onRemoved, onRoleChanged }) {
     finally { setRemoving(false); setConfirmRemove(false); }
   }
 
+  async function handleUnitChange() {
+    if (!selUnitId || !selWingId) return;
+    setSavingUnit(true);
+    try {
+      await apiRequest(`/admin/residents/${item._id}/unit`, {
+        token, method: "PATCH", body: { unitId: selUnitId, wingId: selWingId },
+      });
+      setShowUnitPanel(false);
+      setSelWingId(""); setSelUnitId("");
+      window.location.reload();
+    } catch (_) {}
+    finally { setSavingUnit(false); }
+  }
+
   async function handleRoleChange(role) {
-    setSavingRole(role);
-    setRoleSuccess("");
+    setSavingRole(true);
     try {
       await apiRequest(`/admin/residents/${item._id}/role`, {
         token, method: "PATCH", body: { role },
       });
-      setRoleSuccess(role);
       setCurrentRole(role);
       onRoleChanged(item._id, role);
-      setTimeout(() => setRoleSuccess(""), 2500);
     } catch (_) {}
-    finally { setSavingRole(null); }
+    finally { setSavingRole(false); }
   }
 
   return (
-    <article className="mem-card">
-      <div style={{ padding: "20px 22px" }}>
-        {/* Top row */}
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 16 }}>
-          {/* Avatar */}
-          <div style={{
-            width: 46, height: 46, borderRadius: "50%", flexShrink: 0,
-            background: `linear-gradient(135deg, ${T.goldLight}, ${T.gold})`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 18, fontWeight: 800, color: "#fff",
-            boxShadow: `0 3px 10px ${T.goldLight}44`,
-          }}>
-            {initial}
-          </div>
-
-          {/* Info */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 15, fontWeight: 800, color: T.text, margin: "0 0 5px" }}>
-              {name}
-            </p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 10 }}>
-              {email && (
-                <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: T.textMuted }}>
-                  <Mail size={11} color={T.textMuted} /> {email}
-                </span>
-              )}
-              {phone && (
-                <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: T.textMuted }}>
-                  <Phone size={11} color={T.textMuted} /> {phone}
-                </span>
-              )}
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-              <span style={{
-                padding: "4px 11px", borderRadius: 99,
-                background: "#fffbeb", border: `1px solid ${T.border}`,
-                fontSize: 11, fontWeight: 700, color: T.textSub,
-              }}>
-                🏠 {unit}
-              </span>
-              <span style={{
-                padding: "4px 11px", borderRadius: 99,
-                background: T.blueL, border: `1px solid ${T.blueBr}`,
-                fontSize: 11, fontWeight: 700, color: T.blue, textTransform: "capitalize",
-              }}>
-                {item.residentRole || "resident"}
-              </span>
-              {item.userId?.role && (
-                <span style={{
-                  padding: "4px 11px", borderRadius: 99,
-                  background: item.userId.role === "committee" ? "#fff8f0" : "#f3f4f6",
-                  border: `1px solid ${item.userId.role === "committee" ? `${T.goldLight}55` : T.border}`,
-                  fontSize: 11, fontWeight: 700,
-                  color: item.userId.role === "committee" ? T.goldLight : T.textMuted,
-                  textTransform: "capitalize",
-                }}>
-                  {item.userId.role === "committee" ? "🛡 Committee" : "👤 Resident"}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Action row */}
-        <div style={{
-          paddingTop: 14, borderTop: `1px solid ${T.border}`,
-          display: "flex", flexWrap: "wrap", alignItems: "center",
-          gap: 10, justifyContent: "space-between",
-        }}>
-          {/* Role pills */}
-          <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, letterSpacing: "0.06em", textTransform: "uppercase" }}>
-              Set role:
+    <>
+      <div className="mem-row">
+        <div className="mem-row-left">
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <p className="mem-row-name">{name}</p>
+            <span style={{
+              padding: "2px 8px", borderRadius: 99, fontSize: 11, fontWeight: 700,
+              background: currentRole === "committee" ? "#fff8f0" : "#f3f4f6",
+              color:      currentRole === "committee" ? T.goldLight : T.textMuted,
+              border:     `1px solid ${currentRole === "committee" ? `${T.goldLight}66` : T.border}`,
+              flexShrink: 0,
+            }}>
+              {currentRole === "committee" ? "Committee" : "Resident"}
             </span>
-            {["resident", "committee"].map(role => {
-              const isThis   = savingRole === role;
-              const success  = roleSuccess === role;
-              const isCurrent = currentRole === role && !isThis && !success;
-              return (
-                <button
-                  key={role}
-                  className="mem-pill-btn"
-                  onClick={() => !isCurrent && handleRoleChange(role)}
-                  disabled={!!savingRole || isCurrent}
-                  title={isCurrent ? "Current role" : `Set as ${role}`}
-                  style={{
-                    background:  success ? T.greenL : isCurrent ? (role === "committee" ? "#fff8f0" : "#f3f4f6") : T.surfaceHi,
-                    color:       success ? T.green  : isCurrent ? (role === "committee" ? T.goldLight : T.textSub) : T.textMuted,
-                    borderColor: success ? T.greenBr : isCurrent ? (role === "committee" ? T.goldLight : T.borderHov) : T.border,
-                    fontWeight:  isCurrent ? 800 : 700,
-                    opacity:     isCurrent ? 1 : undefined,
-                  }}
-                >
-                  {role === "committee" ? <Shield size={11} /> : <User size={11} />}
-                  {isThis ? "Saving…" : success ? "✓ Set" : isCurrent ? `${role.charAt(0).toUpperCase() + role.slice(1)} ✓` : role.charAt(0).toUpperCase() + role.slice(1)}
-                </button>
-              );
-            })}
           </div>
+          <p className="mem-row-desc">{unit} · {email || phone || "—"}</p>
+        </div>
+        <div className="mem-row-right">
+          <select
+            value={currentRole}
+            onChange={e => handleRoleChange(e.target.value)}
+            disabled={savingRole}
+            className="mem-role-select"
+            style={{ minWidth: 100 }}
+          >
+            <option value="resident">Resident</option>
+            <option value="committee">Committee</option>
+          </select>
+          {!showUnitPanel && !confirmRemove && (
+            <>
+              <button
+                className="mem-btn"
+                onClick={() => setShowUnitPanel(true)}
+                disabled={savingUnit}
+              >
+                Move Unit
+              </button>
+              <button
+                className="mem-btn"
+                onClick={() => setConfirmRemove(true)}
+                style={{ color: T.red }}
+              >
+                <UserX size={12} /> Remove
+              </button>
+            </>
+          )}
+        </div>
+      </div>
 
-          {/* Remove button */}
+      {showUnitPanel && (
+        <div style={{
+          padding: "12px 8px",
+          background: T.blueL,
+          borderBottom: `1px solid ${T.blueBr}`,
+          display: "flex", gap: 8, alignItems: "center",
+        }}>
+          <select
+            value={selWingId}
+            onChange={e => { setSelWingId(e.target.value); setSelUnitId(""); }}
+            className="mem-role-select"
+          >
+            <option value="">Select tower</option>
+            {wings.map(w => <option key={w._id} value={w._id}>{w.name}</option>)}
+          </select>
+          <select
+            value={selUnitId}
+            onChange={e => setSelUnitId(e.target.value)}
+            disabled={!selWingId}
+            className="mem-role-select"
+          >
+            <option value="">Select flat</option>
+            {wingUnits.map(u => <option key={u._id} value={u._id}>{u.unitNumber} · Floor {u.floor}</option>)}
+          </select>
+          <button
+            className="mem-btn"
+            onClick={handleUnitChange}
+            disabled={savingUnit || !selUnitId}
+            style={{ background: T.blue, color: "#fff" }}
+          >
+            {savingUnit ? "Saving…" : "Confirm"}
+          </button>
+          <button
+            className="mem-btn"
+            onClick={() => { setShowUnitPanel(false); setSelWingId(""); setSelUnitId(""); }}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {confirmRemove && (
+        <div style={{
+          padding: "12px 8px",
+          background: T.redL,
+          borderBottom: `1px solid ${T.redBr}`,
+          display: "flex", gap: 8, alignItems: "center",
+        }}>
+          <span style={{ fontSize: 12, color: T.red, fontWeight: 600 }}>Remove this member?</span>
+          <button
+            className="mem-btn"
+            onClick={handleRemove}
+            disabled={removing}
+            style={{ background: T.red, color: "#fff", marginLeft: "auto" }}
+          >
+            {removing ? "Removing…" : "Yes, remove"}
+          </button>
+          <button
+            className="mem-btn"
+            onClick={() => setConfirmRemove(false)}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
+function GuardRow({ guard, onRemoved }) {
+  const { token } = useAuth();
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const [removing,      setRemoving]      = useState(false);
+
+  async function handleRemove() {
+    setRemoving(true);
+    try {
+      await apiRequest(`/admin/guards/${guard._id}`, { token, method: "DELETE" });
+      onRemoved(guard._id);
+    } catch (_) {}
+    finally { setRemoving(false); setConfirmRemove(false); }
+  }
+
+  return (
+    <>
+      <div className="mem-row">
+        <div className="mem-row-left">
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <p className="mem-row-name">{guard.fullName}</p>
+            <span style={{
+              padding: "2px 8px", borderRadius: 99, fontSize: 11, fontWeight: 700,
+              background: "#f0f9ff", color: "#0369a1",
+              border: "1px solid #bae6fd", flexShrink: 0,
+            }}>
+              Security
+            </span>
+          </div>
+          <p className="mem-row-desc">
+            {guard.email || guard.phone || "—"}
+            {guard.shift ? ` · ${guard.shift} shift` : ""}
+          </p>
+        </div>
+        <div className="mem-row-right">
           {!confirmRemove && (
             <button
-              className="mem-action-btn"
+              className="mem-btn"
               onClick={() => setConfirmRemove(true)}
-              style={{ background: T.redL, color: T.red, border: `1px solid ${T.redBr}` }}
+              style={{ color: T.red }}
             >
-              <UserX size={13} /> Remove
+              <UserX size={12} /> Remove
             </button>
           )}
         </div>
-
-        {/* Inline remove confirmation */}
-        {confirmRemove && (
-          <div className="mem-confirm-box" style={{
-            marginTop: 12, padding: "14px 16px",
-            background: T.redL, border: `1px solid ${T.redBr}`,
-            borderRadius: 12,
-          }}>
-            <p style={{ fontSize: 13, fontWeight: 700, color: T.red, margin: "0 0 4px" }}>
-              Remove this member?
-            </p>
-            <p style={{ fontSize: 12, color: "#ef4444", margin: "0 0 12px", lineHeight: 1.5 }}>
-              This will revoke their access to the society immediately.
-            </p>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-                className="mem-action-btn"
-                onClick={handleRemove}
-                disabled={removing}
-                style={{
-                  background: removing ? "#fca5a5" : T.red,
-                  color: "#fff", opacity: 1,
-                }}
-              >
-                <UserX size={13} /> {removing ? "Removing…" : "Yes, remove"}
-              </button>
-              <button
-                className="mem-action-btn"
-                onClick={() => setConfirmRemove(false)}
-                style={{ background: T.surface, color: T.textMuted, border: `1px solid ${T.border}` }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
       </div>
-    </article>
+
+      {confirmRemove && (
+        <div style={{
+          padding: "12px 8px", background: T.redL,
+          borderBottom: `1px solid ${T.redBr}`,
+          display: "flex", gap: 8, alignItems: "center",
+        }}>
+          <span style={{ fontSize: 12, color: T.red, fontWeight: 600 }}>Remove this guard?</span>
+          <button
+            className="mem-btn"
+            onClick={handleRemove}
+            disabled={removing}
+            style={{ background: T.red, color: "#fff", marginLeft: "auto" }}
+          >
+            {removing ? "Removing…" : "Yes, remove"}
+          </button>
+          <button className="mem-btn" onClick={() => setConfirmRemove(false)}>Cancel</button>
+        </div>
+      )}
+    </>
   );
 }
 
 export function MembersPage() {
   const { token, user } = useAuth();
+  const [tab,     setTab]     = useState("members");
   const [items,   setItems]   = useState([]);
+  const [guards,  setGuards]  = useState([]);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
+  const [wings,   setWings]   = useState([]);
+  const [units,   setUnits]   = useState([]);
 
   const canManage = useMemo(() => ["committee", "super_admin"].includes(user?.role), [user?.role]);
 
-  async function loadMembers() {
+  async function loadAll() {
     setLoading(true); setError("");
     try {
-      const data = await apiRequest("/admin/residents", { token });
-      setItems(data.items || []);
+      const [membersData, unitsData, guardsData] = await Promise.all([
+        apiRequest("/admin/residents", { token }),
+        apiRequest(`/societies/${user.tenantId}/units`, { token }),
+        apiRequest("/admin/guards", { token }),
+      ]);
+      setItems(membersData.items || []);
+      setWings(unitsData.wings || []);
+      setUnits(unitsData.allUnits || []);
+      setGuards(guardsData.guards || []);
     } catch (err) { setError(err.message); }
     finally { setLoading(false); }
   }
 
-  useEffect(() => { if (canManage) loadMembers(); }, [canManage]);
+  useEffect(() => { if (canManage) loadAll(); }, [canManage]);
 
-  function handleRemoved(membershipId) {
-    setItems(prev => prev.filter(i => i._id !== membershipId));
-  }
-
-  function handleRoleChanged(membershipId, role) {
-    // role change doesn't affect the membership list display, just a UI hint
-    // The actual role is on the User document; we just acknowledge success
-    setItems(prev => prev.map(i => i._id === membershipId ? { ...i, _roleHint: role } : i));
+  function handleMemberRemoved(id) { setItems(prev => prev.filter(i => i._id !== id)); }
+  function handleGuardRemoved(id)  { setGuards(prev => prev.filter(g => g._id !== id)); }
+  function handleRoleChanged(id, role) {
+    setItems(prev => prev.map(i => i._id === id ? { ...i, _roleHint: role } : i));
   }
 
   if (!canManage) {
@@ -340,93 +435,105 @@ export function MembersPage() {
     );
   }
 
+  const TABS = [
+    { key: "members", label: `Members (${items.length})` },
+    { key: "guards",  label: `Guards (${guards.length})` },
+  ];
+
   return (
     <>
       <style>{CSS}</style>
       <div style={{
         maxWidth: 900, margin: "0 auto", padding: "32px 16px 64px",
-        fontFamily: "'DM Sans', sans-serif",
-        background: `radial-gradient(circle at 8% -10%, #fde68a44 0%, transparent 36%), ${T.page}`,
-        borderRadius: 24,
+        fontFamily: "'DM Sans', sans-serif", background: T.page,
       }}>
 
         {/* Header */}
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          gap: 12, marginBottom: 24, flexWrap: "wrap",
-          borderRadius: 18, border: `1px solid ${T.border}`,
-          background: T.surface, padding: "18px 22px",
-          boxShadow: "0 4px 16px rgba(15,23,42,0.05)",
+          gap: 12, marginBottom: 20, flexWrap: "wrap",
+          borderRadius: 8, border: `1px solid ${T.border}`,
+          background: T.surface, padding: "16px 20px",
         }}>
-          <div>
-            <h1 style={{ fontSize: 26, fontWeight: 800, color: T.text, margin: 0 }}>Members</h1>
-            <p style={{ fontSize: 13, color: T.textMuted, marginTop: 4 }}>
-              {loading
-                ? "Loading members…"
-                : items.length > 0
-                  ? `${items.length} approved member${items.length !== 1 ? "s" : ""}`
-                  : "No approved members yet"}
-            </p>
-          </div>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, margin: 0 }}>People</h1>
           <button
-            onClick={loadMembers}
+            onClick={loadAll}
             style={{
               display: "flex", alignItems: "center", gap: 6,
-              borderRadius: 12, border: `1px solid ${T.border}`,
-              padding: "8px 16px", background: T.surfaceHi,
-              cursor: "pointer", color: T.textSub, fontSize: 13, fontWeight: 600,
+              borderRadius: 6, border: `1px solid ${T.border}`,
+              padding: "7px 14px", background: T.surfaceHi,
+              cursor: "pointer", color: T.textSub, fontSize: 12, fontWeight: 600,
               transition: "all 0.2s", fontFamily: "'DM Sans', sans-serif",
             }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = T.goldLight; e.currentTarget.style.color = T.goldLight; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = T.border;    e.currentTarget.style.color = T.textSub;   }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = T.blue; e.currentTarget.style.color = T.blue; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSub; }}
           >
-            <RefreshCw size={14} /> Refresh
+            <RefreshCw size={13} /> Refresh
           </button>
+        </div>
+
+        {/* Tab bar */}
+        <div style={{ display: "flex", gap: 4, marginBottom: 20 }}>
+          {TABS.map(t => (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              style={{
+                padding: "8px 18px", borderRadius: 6, border: `1px solid ${tab === t.key ? T.goldLight : T.border}`,
+                background: tab === t.key ? "#fff8f0" : T.surface,
+                color: tab === t.key ? T.goldLight : T.textMuted,
+                fontSize: 13, fontWeight: 700, cursor: "pointer",
+                fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s",
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
         {/* Error */}
         {error && (
-          <div style={{
-            marginBottom: 20, borderRadius: 12,
-            background: T.redL, border: `1px solid ${T.redBr}`,
-            padding: "12px 16px", fontSize: 13, color: T.red,
-          }}>
+          <div style={{ marginBottom: 16, borderRadius: 8, background: T.redL, border: `1px solid ${T.redBr}`, padding: "12px 16px", fontSize: 12, color: T.red }}>
             {error}
           </div>
         )}
 
         {/* Skeletons */}
         {loading && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <SkeletonCard /><SkeletonCard /><SkeletonCard />
+          <div style={{ border: `1px solid ${T.border}`, borderRadius: 8 }}>
+            <SkeletonRow /><SkeletonRow /><SkeletonRow />
           </div>
         )}
 
-        {/* Empty */}
-        {!loading && items.length === 0 && !error && (
-          <div style={{
-            borderRadius: 20, border: `1px solid ${T.border}`,
-            background: T.surface, padding: "56px 24px",
-            textAlign: "center", boxShadow: "0 18px 38px rgba(15,23,42,0.06)",
-          }}>
-            <p style={{ fontSize: 44, marginBottom: 12 }}>👥</p>
-            <p style={{ fontSize: 16, fontWeight: 700, color: T.text }}>No members yet</p>
-            <p style={{ fontSize: 13, color: T.textMuted, marginTop: 4 }}>Approved members will appear here.</p>
-          </div>
+        {/* Members tab */}
+        {!loading && tab === "members" && (
+          items.length === 0 ? (
+            <div style={{ borderRadius: 8, border: `1px solid ${T.border}`, background: T.surface, padding: "40px 24px", textAlign: "center" }}>
+              <p style={{ fontSize: 36, marginBottom: 8 }}>👥</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: T.text }}>No members yet</p>
+            </div>
+          ) : (
+            <div style={{ border: `1px solid ${T.border}`, borderRadius: 8, overflow: "hidden" }}>
+              {items.map(item => (
+                <MemberRow key={item._id} item={item} wings={wings} units={units}
+                  onRemoved={handleMemberRemoved} onRoleChanged={handleRoleChanged} />
+              ))}
+            </div>
+          )
         )}
 
-        {/* Member cards */}
-        {!loading && items.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {items.map(item => (
-              <MemberCard
-                key={item._id}
-                item={item}
-                onRemoved={handleRemoved}
-                onRoleChanged={handleRoleChanged}
-              />
-            ))}
-          </div>
+        {/* Guards tab */}
+        {!loading && tab === "guards" && (
+          guards.length === 0 ? (
+            <div style={{ borderRadius: 8, border: `1px solid ${T.border}`, background: T.surface, padding: "40px 24px", textAlign: "center" }}>
+              <p style={{ fontSize: 36, marginBottom: 8 }}>🛡️</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: T.text }}>No guards found</p>
+            </div>
+          ) : (
+            <div style={{ border: `1px solid ${T.border}`, borderRadius: 8, overflow: "hidden" }}>
+              {guards.map(g => (
+                <GuardRow key={g._id} guard={g} onRemoved={handleGuardRemoved} />
+              ))}
+            </div>
+          )
         )}
       </div>
     </>

@@ -21,7 +21,9 @@ const notificationSchema = new mongoose.Schema(
         "staff_leave_toggled",
         "poll_created",
         "delivery_arrived",
-        "delivery_approval_request"
+        "delivery_approval_request",
+        "membership_removed",
+        "role_changed"
       ],
       required: true
     },

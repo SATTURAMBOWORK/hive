@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 import { StatusCodes } from "http-status-codes";
 import { Membership } from "../models/membership.model.js";
 import { User } from "../models/user.model.js";
+import { SocietyUnit } from "../models/society-unit.model.js";
+import { SocietyWing } from "../models/society-wing.model.js";
 import { AppError } from "../utils/app-error.js";
 import { SOCKET_EVENTS } from "../config/socket-events.js";
 import { createNotification } from "../utils/create-notification.js";
@@ -9,6 +11,49 @@ import { emitRealtime } from "../services/realtime-bus.service.js";
 
 function sanitizeText(value) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+export async function listGuards(req, res, next) {
+  try {
+    const guards = await User.find({ tenantId: req.tenantId, role: "security" })
+      .sort({ createdAt: -1 })
+      .select("fullName email phone shift createdAt");
+
+    res.json({ guards });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function removeGuard(req, res, next) {
+  try {
+    const userId = sanitizeText(req.params?.id);
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new AppError("Invalid user id", StatusCodes.BAD_REQUEST);
+    }
+
+    if (userId === req.user.userId) {
+      throw new AppError("You cannot remove yourself", StatusCodes.FORBIDDEN);
+    }
+
+    const guard = await User.findOne({ _id: userId, tenantId: req.tenantId, role: "security" });
+    if (!guard) throw new AppError("Guard not found", StatusCodes.NOT_FOUND);
+
+    // Emit before deleting so the socket room still resolves
+    const io = req.app.get("io");
+    await emitRealtime(io, {
+      room: `user:${userId}`,
+      event: SOCKET_EVENTS.FORCE_LOGOUT,
+      payload: { reason: "Your account has been removed by an administrator." },
+    });
+
+    await guard.deleteOne();
+
+    res.json({ message: "Guard removed successfully" });
+  } catch (error) {
+    next(error);
+  }
 }
 
 export async function listResidents(req, res, next) {
@@ -164,6 +209,12 @@ export async function removeMember(req, res, next) {
     });
 
     await emitRealtime(io, {
+      room: `user:${targetUserId}`,
+      event: SOCKET_EVENTS.FORCE_LOGOUT,
+      payload: { reason: "Your membership has been removed by an administrator." },
+    });
+
+    await emitRealtime(io, {
       room: `tenant:${req.tenantId}`,
       event: SOCKET_EVENTS.MEMBERSHIP_REMOVED,
       payload: { userId: targetUserId },
@@ -240,6 +291,57 @@ export async function changeMemberRole(req, res, next) {
     });
 
     res.json({ message: "Role updated successfully", role });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function reassignMemberUnit(req, res, next) {
+  try {
+    const membershipId = sanitizeText(req.params?.id);
+    const unitId       = sanitizeText(req.body?.unitId);
+    const wingId       = sanitizeText(req.body?.wingId);
+
+    if (
+      !mongoose.Types.ObjectId.isValid(membershipId) ||
+      !mongoose.Types.ObjectId.isValid(unitId) ||
+      !mongoose.Types.ObjectId.isValid(wingId)
+    ) {
+      throw new AppError("Invalid id", StatusCodes.BAD_REQUEST);
+    }
+
+    const membership = await Membership.findOne({
+      _id: membershipId,
+      tenantId: req.tenantId,
+      status: "approved",
+    });
+
+    if (!membership) throw new AppError("Active membership not found", StatusCodes.NOT_FOUND);
+
+    // Verify the new unit and wing belong to this society
+    const newUnit = await SocietyUnit.findOne({ _id: unitId, tenantId: req.tenantId, isActive: true });
+    if (!newUnit) throw new AppError("Unit not found", StatusCodes.NOT_FOUND);
+
+    const wing = await SocietyWing.findOne({ _id: wingId, tenantId: req.tenantId });
+    if (!wing) throw new AppError("Wing not found", StatusCodes.NOT_FOUND);
+
+    // Prevent moving to the same unit they're already in
+    if (String(membership.unitId) === unitId) {
+      throw new AppError("Resident is already in this unit", StatusCodes.BAD_REQUEST);
+    }
+
+    // Prevent moving to an already-occupied unit
+    const occupied = await Membership.findOne({ tenantId: req.tenantId, unitId, status: "approved" });
+    if (occupied) throw new AppError("That unit is already occupied by another resident", StatusCodes.CONFLICT);
+
+    membership.unitId = unitId;
+    membership.wingId = wingId;
+    await membership.save();
+
+    // Keep User.flatNumber in sync
+    await User.findByIdAndUpdate(membership.userId, { flatNumber: newUnit.unitNumber });
+
+    res.json({ message: "Unit reassigned successfully" });
   } catch (error) {
     next(error);
   }
