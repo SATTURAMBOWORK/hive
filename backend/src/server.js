@@ -14,9 +14,14 @@ async function bootstrap() {
   await connectDB();
 
   const server = http.createServer(app);
+  const allowedOrigins = [
+    env.clientOrigin,
+    "http://localhost:5175",
+  ].filter(Boolean);
+
   const io = new Server(server, {
     cors: {
-      origin: env.clientOrigin,
+      origin: allowedOrigins,
       credentials: true,
     },
   });

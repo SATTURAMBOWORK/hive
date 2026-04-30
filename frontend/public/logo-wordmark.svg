@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80">
+  <defs>
+    <linearGradient id="hexGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24"/>
+      <stop offset="100%" stop-color="#C97508"/>
+    </linearGradient>
+    <clipPath id="hexClip">
+      <!-- Scaled-down hex for 64px icon at (8,8) with scale 0.32 of the 200px version -->
+      <polygon points="62.1,40 54.5,53.5 39.4,53.5 31.8,40 39.4,26.5 54.5,26.5"/>
+    </clipPath>
+  </defs>
+
+  <!-- ── Icon mark (scaled to 64×64 centered at 8,8) ── -->
+  <!-- Hexagon -->
+  <polygon
+    points="62.1,40 54.5,53.5 39.4,53.5 31.8,40 39.4,26.5 54.5,26.5"
+    fill="url(#hexGrad)"
+  />
+
+  <g clip-path="url(#hexClip)">
+    <!-- Left wing -->
+    <rect x="33.2" y="44.8" width="9.6" height="19.2" rx="1.5" fill="white"/>
+    <!-- Right wing -->
+    <rect x="51.2" y="44.8" width="9.6" height="19.2" rx="1.5" fill="white"/>
+    <!-- Central tower -->
+    <rect x="41.7" y="26.3" width="10.6" height="37.7" rx="1.5" fill="white"/>
+
+    <!-- Windows central — 2 cols × 2 rows -->
+    <rect x="43.1" y="28.6" width="3.2" height="2.9" rx="0.8" fill="#E8890C"/>
+    <rect x="48"   y="28.6" width="3.2" height="2.9" rx="0.8" fill="#E8890C"/>
+    <rect x="43.1" y="33.1" width="3.2" height="2.9" rx="0.8" fill="#E8890C"/>
+    <rect x="48"   y="33.1" width="3.2" height="2.9" rx="0.8" fill="#E8890C"/>
+
+    <!-- Windows wings -->
+    <rect x="34.8" y="46.4" width="6.4" height="3.8" rx="0.8" fill="#E8890C"/>
+    <rect x="52.8" y="46.4" width="6.4" height="3.8" rx="0.8" fill="#E8890C"/>
+
+    <!-- Door -->
+    <rect x="44.2" y="38.4" width="5.6" height="9.6" rx="1" fill="#E8890C"/>
+  </g>
+
+  <!-- ── Wordmark text ── -->
+  <!-- "Apt" in dark -->
+  <text
+    x="78" y="52"
+    font-family="'Georgia', 'Times New Roman', serif"
+    font-size="36"
+    font-weight="700"
+    fill="#111111"
+    letter-spacing="-1"
+  >Apt</text>
+
+  <!-- "Hive" in gold -->
+  <text
+    x="145" y="52"
+    font-family="'Georgia', 'Times New Roman', serif"
+    font-size="36"
+    font-weight="700"
+    fill="#E8890C"
+    letter-spacing="-1"
+  >Hive</text>
+</svg>

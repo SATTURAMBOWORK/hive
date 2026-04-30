@@ -127,6 +127,23 @@ export async function createAnnouncement(req, res, next) {
   }
 }
 
+export async function deleteAnnouncement(req, res, next) {
+  try {
+    const announcement = await Announcement.findOne({
+      _id: req.params.id,
+      tenantId: req.tenantId,
+    });
+
+    if (!announcement) throw new AppError("Announcement not found", StatusCodes.NOT_FOUND);
+
+    await announcement.deleteOne();
+
+    res.json({ message: "Announcement deleted" });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function markAnnouncementRead(req, res, next) {
   try {
     const item = await Announcement.findOneAndUpdate(

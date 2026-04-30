@@ -9,30 +9,30 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["apartment.png"],
+      includeAssets: ["logo.png", "logo.svg"],
       manifest: {
         name: "AptHive",
         short_name: "AptHive",
         description: "Smart visitor management and community security for modern apartments.",
-        theme_color: "#2563EB",
-        background_color: "#F7F9FF",
+        theme_color: "#111111",
+        background_color: "#111111",
         display: "standalone",
         orientation: "portrait",
         scope: "/",
         start_url: "/",
         icons: [
           {
-            src: "apartment.png",
+            src: "logo.png",
             sizes: "192x192",
             type: "image/png",
           },
           {
-            src: "apartment.png",
+            src: "logo.png",
             sizes: "512x512",
             type: "image/png",
           },
           {
-            src: "apartment.png",
+            src: "logo.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "any maskable",
@@ -41,6 +41,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        cleanupOutdatedCaches: true,
+        navigateFallback: "index.html",
+        navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiRequest } from '../components/api';
 import { useAuth } from '../components/AuthContext';
-import { Clock, MapPin, Plus, X, ArrowRight } from 'lucide-react';
+import { Clock, MapPin, Plus, X, ArrowRight, Trash2 } from 'lucide-react';
 
 /* ─── Design tokens (shared with dashboard) ─────────────────── */
 const C = {
@@ -278,6 +278,23 @@ const CSS = `
     transition: gap 0.18s, opacity 0.18s;
   }
   .ep-view-btn:hover { gap: 8px; opacity: 0.8; }
+
+  .ep-cancel-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: ${C.muted};
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 7px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .ep-cancel-btn:hover { color: ${C.red}; background: #FEF2F2; }
 
   /* ── Empty / Loading ── */
   .ep-empty {
@@ -596,7 +613,9 @@ function getCategoryCounts(items) {
 }
 
 /* ─── EventCard ─────────────────────────────────────────────── */
-function EventCard({ event, onOpen }) {
+function EventCard({ event, onOpen, canModerate, onDelete }) {
+  const [confirming, setConfirming] = useState(false);
+
   return (
     <motion.article
       className="ep-card"
@@ -632,10 +651,29 @@ function EventCard({ event, onOpen }) {
         </div>
       </div>
 
-      <div className="ep-card-footer">
+      <div className="ep-card-footer" style={{ justifyContent: 'space-between' }}>
         <button className="ep-view-btn" onClick={() => onOpen(event)}>
           View Details <ArrowRight size={13} strokeWidth={2.5} />
         </button>
+
+        {canModerate && !confirming && (
+          <button className="ep-cancel-btn" onClick={e => { e.stopPropagation(); setConfirming(true); }}>
+            <Trash2 size={12} /> Cancel
+          </button>
+        )}
+        {canModerate && confirming && (
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <span style={{ fontSize: '0.72rem', color: C.red, fontWeight: 700 }}>Cancel event?</span>
+            <button className="ep-cancel-btn" style={{ color: C.red, fontWeight: 800 }}
+              onClick={e => { e.stopPropagation(); onDelete(event._id); }}>
+              Yes
+            </button>
+            <button className="ep-cancel-btn"
+              onClick={e => { e.stopPropagation(); setConfirming(false); }}>
+              No
+            </button>
+          </div>
+        )}
       </div>
     </motion.article>
   );
@@ -799,6 +837,14 @@ export function EventsPage() {
 
   const canCreate = ['committee', 'super_admin'].includes(user?.role);
 
+  async function handleDelete(eventId) {
+    try {
+      await apiRequest(`/events/${eventId}`, { token, method: 'DELETE', notifySuccess: true, successMessage: 'Event cancelled.' });
+      setEvents(prev => prev.filter(e => e._id !== eventId));
+      if (selEvent?._id === eventId) setSelEvent(null);
+    } catch (_) {}
+  }
+
   return (
     <>
       <style>{CSS}</style>
@@ -866,7 +912,7 @@ export function EventsPage() {
             ) : (
               <AnimatePresence mode="popLayout">
                 {filtered.map(event => (
-                  <EventCard key={event._id} event={event} onOpen={setSelEvent} />
+                  <EventCard key={event._id} event={event} onOpen={setSelEvent} canModerate={canCreate} onDelete={handleDelete} />
                 ))}
               </AnimatePresence>
             )}

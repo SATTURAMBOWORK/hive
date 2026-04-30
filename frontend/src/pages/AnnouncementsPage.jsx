@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DOMPurify from "dompurify";
-import { Bell, CalendarDays, Megaphone, Plus, RefreshCw, Search, Users, Wallet, X } from "lucide-react";
+import { Bell, CalendarDays, Megaphone, Plus, RefreshCw, Search, Trash2, Users, Wallet, X } from "lucide-react";
 import ReactQuill from "react-quill";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiRequest } from "../components/api";
@@ -695,7 +695,18 @@ function AnnCard({ item, unread, onOpen, index }) {
    The card's top/title/footer morph into the modal equivalents.
    The body animates in separately with a slight delay (different content).
 ───────────────────────────────────────────────────────────── */
-function SmartModal({ item, onClose }) {
+function SmartModal({ item, onClose, canModerate, onDelete }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await onDelete(item._id);
+      onClose();
+    } catch (_) {}
+    finally { setDeleting(false); }
+  }
   const cat = catOf(item);
 
   // Lock background scroll
@@ -774,6 +785,52 @@ function SmartModal({ item, onClose }) {
               <div style={{ fontSize: "0.68rem", color: "#9CA3AF", fontWeight: 500 }}>Posted by</div>
             </div>
           </div>
+
+          {canModerate && !confirmDelete && (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 5,
+                padding: "7px 12px", borderRadius: 8, border: "1px solid #FECACA",
+                background: "#FEF2F2", color: "#DC2626",
+                fontSize: "0.76rem", fontWeight: 700, cursor: "pointer",
+                fontFamily: "inherit", transition: "opacity 0.15s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
+              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+            >
+              <Trash2 size={12} /> Delete
+            </button>
+          )}
+
+          {canModerate && confirmDelete && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: "0.76rem", fontWeight: 700, color: "#DC2626" }}>Delete this post?</span>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                style={{
+                  padding: "6px 12px", borderRadius: 8, border: "none",
+                  background: deleting ? "#FCA5A5" : "#DC2626", color: "#fff",
+                  fontSize: "0.76rem", fontWeight: 800, cursor: deleting ? "not-allowed" : "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                {deleting ? "Deleting…" : "Yes, delete"}
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                style={{
+                  padding: "6px 12px", borderRadius: 8, border: "1px solid #E8E8ED",
+                  background: "#fff", color: "#6B7280",
+                  fontSize: "0.76rem", fontWeight: 700, cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </motion.div>
       </motion.div>
     </div>
@@ -925,6 +982,12 @@ export function AnnouncementsPage() {
   function openDetail(item) {
     setSelectedItem(item);
     if (item.unread) markRead(item._id);
+  }
+
+  /* ── delete announcement ── */
+  async function handleDelete(id) {
+    await apiRequest(`/announcements/${id}`, { token, method: "DELETE" });
+    setItems(prev => prev.filter(it => it._id !== id));
   }
 
   /* ── create announcement ── */
@@ -1127,6 +1190,8 @@ export function AnnouncementsPage() {
             key={selectedItem._id}
             item={selectedItem}
             onClose={() => setSelectedItem(null)}
+            canModerate={canCreate}
+            onDelete={handleDelete}
           />
         )}
       </AnimatePresence>

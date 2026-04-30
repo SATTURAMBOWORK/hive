@@ -38,7 +38,11 @@ app.use(helmet());
 app.use(compression());
 
 // ── CORS ───────────────────────────────────────────────────────
-app.use(cors({ origin: env.clientOrigin, credentials: true }));
+const allowedOrigins = [
+	env.clientOrigin,
+	"http://localhost:5175",
+].filter(Boolean);
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 
 // ── Body parser — cap at 50kb to prevent large payload attacks ─
 app.use(express.json({ limit: "50kb" }));

@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="hexGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24"/>
+      <stop offset="100%" stop-color="#C97508"/>
+    </linearGradient>
+    <clipPath id="hexClip">
+      <polygon points="172,100 136,163.5 64,163.5 28,100 64,36.5 136,36.5"/>
+    </clipPath>
+  </defs>
+
+  <!-- Hexagon background -->
+  <polygon
+    points="172,100 136,163.5 64,163.5 28,100 64,36.5 136,36.5"
+    fill="url(#hexGrad)"
+  />
+
+  <!-- Building complex, clipped inside hex -->
+  <g clip-path="url(#hexClip)">
+
+    <!-- Left wing -->
+    <rect x="40" y="112" width="30" height="60" rx="4" fill="white"/>
+    <!-- Right wing -->
+    <rect x="130" y="112" width="30" height="60" rx="4" fill="white"/>
+    <!-- Central tower (taller) -->
+    <rect x="68" y="52" width="64" height="120" rx="4" fill="white"/>
+
+    <!-- Windows — central tower, 2 cols × 3 rows -->
+    <rect x="76"  y="62" width="18" height="13" rx="3" fill="#E8890C"/>
+    <rect x="106" y="62" width="18" height="13" rx="3" fill="#E8890C"/>
+
+    <rect x="76"  y="82" width="18" height="13" rx="3" fill="#E8890C"/>
+    <rect x="106" y="82" width="18" height="13" rx="3" fill="#E8890C"/>
+
+    <rect x="76"  y="102" width="18" height="13" rx="3" fill="#E8890C"/>
+    <rect x="106" y="102" width="18" height="13" rx="3" fill="#E8890C"/>
+
+    <!-- Windows — left wing -->
+    <rect x="47" y="120" width="16" height="11" rx="2" fill="#E8890C"/>
+    <rect x="47" y="138" width="16" height="11" rx="2" fill="#E8890C"/>
+
+    <!-- Windows — right wing -->
+    <rect x="137" y="120" width="16" height="11" rx="2" fill="#E8890C"/>
+    <rect x="137" y="138" width="16" height="11" rx="2" fill="#E8890C"/>
+
+    <!-- Door -->
+    <rect x="86" y="136" width="28" height="36" rx="4" fill="#E8890C"/>
+
+    <!-- Door knob -->
+    <circle cx="108" cy="155" r="2.5" fill="white"/>
+  </g>
+</svg>
