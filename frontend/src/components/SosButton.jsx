@@ -43,6 +43,20 @@ export function SosButton() {
   const role    = user?.role;
   const visible = role === "resident" || role === "committee";
 
+  // Restore active alert from server on mount (handles page refresh)
+  useEffect(() => {
+    if (!visible || !token) return;
+    apiRequest("/sos/mine/active", { token, notifyError: false })
+      .then(data => {
+        if (!data.alert) return;
+        setActiveAlert(data.alert);
+        if (data.alert.status === "pending_user_confirmation") {
+          setShowConfirmSafe(true);
+        }
+      })
+      .catch(() => {});
+  }, [visible, token]);
+
   // Listen for status updates from guards
   useEffect(() => {
     if (!visible) return;
@@ -53,13 +67,21 @@ export function SosButton() {
     }
     function onResolutionRequested({ alertId }) {
       setActiveAlert(prev => {
-        if (prev?._id !== alertId) return prev;
-        setShowConfirmSafe(true); // prompt the resident
-        return { ...prev, status: "pending_user_confirmation" };
+        // If a different alert is active, ignore this event
+        if (prev && prev._id !== alertId) return prev;
+        setShowConfirmSafe(true);
+        // If we already have the full alert object, just update its status
+        if (prev) return { ...prev, status: "pending_user_confirmation" };
+        // Page was refreshed — we don't have alert data yet, create a minimal
+        // placeholder so the popup can render. The _id is enough to confirm/reject.
+        return { _id: alertId, status: "pending_user_confirmation" };
       });
     }
     function onResolved({ alertId }) {
-      setActiveAlert(prev => prev?._id === alertId ? { ...prev, status: "resolved" } : prev);
+      setActiveAlert(prev => {
+        if (prev && prev._id !== alertId) return prev;
+        return prev ? { ...prev, status: "resolved" } : prev;
+      });
       setShowConfirmSafe(false);
       setTimeout(() => setActiveAlert(null), 6000);
     }

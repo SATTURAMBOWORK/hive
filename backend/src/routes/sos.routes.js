@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   sendSos,
   getAlerts,
+  getMyActiveAlert,
   acknowledgeAlert,
   resolveAlert,
   confirmResolveAlert,
@@ -23,6 +24,10 @@ sosRouter.post(
   requireApprovedMembership,
   sendSos
 );
+
+// Resident restores their own active alert after page refresh
+// IMPORTANT: must be declared before /:id routes so "mine" isn't parsed as an ID
+sosRouter.get("/mine/active", requireRoles("resident", "committee"), getMyActiveAlert);
 
 // Security and committee can view all alerts
 sosRouter.get(

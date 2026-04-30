@@ -54,6 +54,21 @@ export async function sendSos(req, res, next) {
   }
 }
 
+// GET /sos/mine/active — resident fetches their own unresolved alert (used to restore UI after refresh)
+export async function getMyActiveAlert(req, res, next) {
+  try {
+    const alert = await SosAlert.findOne({
+      tenantId:   req.tenantId,
+      residentId: req.user.userId,
+      status:     { $ne: "resolved" },
+    }).populate("residentId", "fullName flatNumber");
+
+    res.json({ alert: alert || null });
+  } catch (error) {
+    next(error);
+  }
+}
+
 // GET /sos — security/committee fetches all alerts for their society
 export async function getAlerts(req, res, next) {
   try {
