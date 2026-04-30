@@ -231,9 +231,10 @@ export function VisitorLogPage() {
     if (!/^\d{6}$/.test(otpValue)) { setOtpError("Enter a valid 6-digit OTP."); return; }
     setOtpError(""); setOtpLoading(true); setOtpSuccess(null); setGroupPassInfo(null);
     try {
-      // Try pre-reg pass first
+      // Try pre-reg pass first — suppress the error toast because failure here
+      // is the normal path when the OTP belongs to a group pass instead.
       const data = await apiRequest("/visitor-prereg/verify-otp", {
-        token, method: "POST", body: { otp: otpValue }
+        token, method: "POST", body: { otp: otpValue }, notifyError: false
       });
       setVisitors(prev => [data.item, ...prev]);
       setOtpSuccess(data.item);

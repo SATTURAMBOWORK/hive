@@ -799,6 +799,9 @@ export function LostFoundPage() {
                     className="lfx-chip"
                     onClick={() => setFilter(key)}
                     animate={{ color: isActive ? C.ink : C.muted }}
+                    variants={!isActive ? { "chip-hover": { color: "#374151" } } : {}}
+                    whileHover="chip-hover"
+                    whileTap={{ scale: 0.96 }}
                     transition={{ color: { duration: 0.14 } }}
                   >
                     {isActive && (
