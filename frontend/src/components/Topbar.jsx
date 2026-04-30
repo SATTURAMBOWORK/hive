@@ -568,6 +568,7 @@ const SECURITY_LINKS = [
 
 const ADMIN_LINKS = [
   { to: "/admin/approvals",     label: "Approvals",    roles: ["committee","super_admin"] },
+  { to: "/admin/members",       label: "Members",      roles: ["committee","super_admin"] },
   { to: "/admin/society-setup", label: "Society Setup", roles: ["committee","super_admin"] },
 ];
 

@@ -4,19 +4,20 @@ import { apiRequest } from "../components/api";
 import { useAuth } from "../components/AuthContext";
 
 const T = {
-  surface:   "#111008",
-  surfaceHi: "#181510",
-  border:    "rgba(200,145,74,0.15)",
-  borderHov: "rgba(200,145,74,0.32)",
-  gold:      "#c8914a",
-  goldLight: "#e8c47a",
-  text:      "#f5f0e8",
-  textSub:   "rgba(245,240,232,0.55)",
-  textMuted: "rgba(245,240,232,0.3)",
-  green:     "#3d9e6e",
-  red:       "#e85d5d",
-  amber:     "#d4a843",
-  blue:      "#4d8dd4",
+  page:      "#f8fafc",
+  surface:   "#ffffff",
+  surfaceHi: "#f9fafb",
+  border:    "#e2e8f0",
+  borderHov: "#cbd5e1",
+  gold:      "#b45309",
+  goldLight: "#f59e0b",
+  text:      "#0f172a",
+  textSub:   "#334155",
+  textMuted: "#64748b",
+  green:     "#16a34a",
+  red:       "#dc2626",
+  amber:     "#d97706",
+  blue:      "#2563eb",
 };
 
 const TABS = [
@@ -27,7 +28,7 @@ const TABS = [
 
 const inputStyle = {
   width: "100%", borderRadius: 12, border: `1px solid ${T.border}`,
-  background: "#0f0e0b", padding: "10px 14px",
+  background: "#ffffff", padding: "10px 14px",
   color: T.text, fontSize: 14, outline: "none",
   transition: "border-color 0.2s, box-shadow 0.2s", boxSizing: "border-box",
 };
@@ -59,7 +60,7 @@ function FocusSelect({ children, style: s = {}, ...props }) {
 function GoldBtn({ children, disabled, type = "button", onClick, style: s = {} }) {
   return (
     <button type={type} disabled={disabled} onClick={onClick}
-      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12, background: disabled ? `${T.gold}44` : `linear-gradient(135deg, ${T.gold}, ${T.goldLight})`, padding: "10px 0", width: "100%", fontSize: 13, fontWeight: 700, color: "#0a0907", border: "none", cursor: disabled ? "not-allowed" : "pointer", transition: "all 0.2s", ...s }}
+      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12, background: disabled ? "#fed7aa" : `linear-gradient(135deg, ${T.gold}, ${T.goldLight})`, padding: "10px 0", width: "100%", fontSize: 13, fontWeight: 700, color: "#ffffff", border: "none", cursor: disabled ? "not-allowed" : "pointer", transition: "all 0.2s", ...s }}
       onMouseEnter={e => { if (!disabled) e.currentTarget.style.transform = "translateY(-1px)"; }}
       onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; }}>
       {children}
@@ -124,7 +125,7 @@ function SetupTab({ societyId, token, wings, units, onRefresh }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {error && (
-        <div style={{ borderRadius: 12, background: `${T.red}18`, border: `1px solid ${T.red}44`, padding: "12px 16px", fontSize: 13, color: T.red, display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ borderRadius: 12, background: "#fff1f2", border: "1px solid #fecdd3", padding: "12px 16px", fontSize: 13, color: T.red, display: "flex", alignItems: "center", gap: 8 }}>
           <XCircle size={14} /> {error}
         </div>
       )}
@@ -145,7 +146,7 @@ function SetupTab({ societyId, token, wings, units, onRefresh }) {
               <Label>Existing Towers</Label>
               <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
                 {wings.map(w => (
-                  <div key={w._id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderRadius: 10, background: `${T.gold}0a`, border: `1px solid ${T.border}`, padding: "10px 14px" }}>
+                  <div key={w._id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderRadius: 10, background: "#fffbeb", border: `1px solid ${T.border}`, padding: "10px 14px" }}>
                     <span style={{ fontWeight: 600, color: T.text, fontSize: 13 }}>{w.name}</span>
                     <button onClick={() => handleDeleteWing(w._id)} disabled={deletingId === w._id}
                       style={{ background: "transparent", border: "none", cursor: deletingId === w._id ? "not-allowed" : "pointer", color: T.textMuted, padding: 4, borderRadius: 6, transition: "color 0.15s", opacity: deletingId === w._id ? 0.4 : 1 }}
@@ -168,8 +169,8 @@ function SetupTab({ societyId, token, wings, units, onRefresh }) {
             <div>
               <Label>Tower</Label>
               <FocusSelect value={unitWingId} onChange={e => setUnitWingId(e.target.value)}>
-                <option value="" style={{ background: "#111008" }}>Select tower</option>
-                {wings.map(w => <option key={w._id} value={w._id} style={{ background: "#111008" }}>{w.name} ({w.code})</option>)}
+                <option value="" style={{ background: "#ffffff" }}>Select tower</option>
+                {wings.map(w => <option key={w._id} value={w._id} style={{ background: "#ffffff" }}>{w.name} ({w.code})</option>)}
               </FocusSelect>
             </div>
             <div><Label>Flat Number</Label><FocusInput placeholder="e.g. 402" value={unitNumber} onChange={e => setUnitNumber(e.target.value)} required /></div>
@@ -177,7 +178,7 @@ function SetupTab({ societyId, token, wings, units, onRefresh }) {
             <GoldBtn type="submit" disabled={unitLoading || !wings.length}><Plus size={14} />{unitLoading ? "Creating…" : "Add Flat"}</GoldBtn>
           </form>
 
-          <div style={{ marginTop: 16, borderRadius: 10, background: `${T.gold}0a`, border: `1px solid ${T.border}`, padding: "12px 14px", fontSize: 13, color: T.textSub }}>
+          <div style={{ marginTop: 16, borderRadius: 10, background: "#fffbeb", border: `1px solid ${T.border}`, padding: "12px 14px", fontSize: 13, color: T.textSub }}>
             <span style={{ fontWeight: 700, color: T.text }}>{units.length}</span> flats registered across <span style={{ fontWeight: 700, color: T.text }}>{wings.length}</span> towers
           </div>
         </div>
@@ -189,7 +190,7 @@ function SetupTab({ societyId, token, wings, units, onRefresh }) {
           <Label>Existing Flats</Label>
           <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", marginTop: 10 }}>
             {units.map(u => (
-              <div key={u._id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderRadius: 10, background: `${T.gold}0a`, border: `1px solid ${T.border}`, padding: "10px 14px" }}>
+              <div key={u._id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderRadius: 10, background: "#fffbeb", border: `1px solid ${T.border}`, padding: "10px 14px" }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>
                   {u.wing?.name || "—"}-{u.unitNumber}
                   <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 400, color: T.textMuted }}>Floor {u.floor}</span>
@@ -227,7 +228,7 @@ function ResidentsTab({ residents, loading }) {
   if (loading) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {[1,2,3,4].map(i => <div key={i} style={{ height: 56, borderRadius: 12, background: `${T.gold}08`, animation: "pulse 1.5s infinite" }} />)}
+        {[1,2,3,4].map(i => <div key={i} style={{ height: 56, borderRadius: 12, background: "#f1f5f9", animation: "pulse 1.5s infinite" }} />)}
       </div>
     );
   }
@@ -256,7 +257,7 @@ function ResidentsTab({ residents, loading }) {
         <div style={{ borderRadius: 18, border: `1px solid ${T.border}`, background: T.surface, overflow: "hidden" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
-              <tr style={{ borderBottom: `1px solid ${T.border}`, background: `${T.gold}08` }}>
+              <tr style={{ borderBottom: `1px solid ${T.border}`, background: "#fff7ed" }}>
                 {["Resident", "Contact", "Flat", "Type"].map(h => (
                   <th key={h} style={{ padding: "12px 20px", textAlign: "left", fontSize: 11, fontWeight: 700, color: T.textMuted, letterSpacing: "0.08em", textTransform: "uppercase" }}>{h}</th>
                 ))}
@@ -266,7 +267,7 @@ function ResidentsTab({ residents, loading }) {
               {filtered.map((r, i) => (
                 <tr key={r._id}
                   style={{ borderBottom: i < filtered.length - 1 ? `1px solid ${T.border}` : "none", transition: "background 0.15s" }}
-                  onMouseEnter={e => e.currentTarget.style.background = `${T.gold}08`}
+                  onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                   <td style={{ padding: "14px 20px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -344,7 +345,7 @@ function UnitsTab({ units, residents, wings }) {
           { label: "Occupied",    value: totalOccupied,  color: T.green },
           { label: "Vacant",      value: totalVacant,    color: T.amber },
         ].map(({ label, value, color }) => (
-          <div key={label} style={{ borderRadius: 16, border: `1px solid ${color}33`, background: `${color}10`, padding: "16px 20px", textAlign: "center" }}>
+          <div key={label} style={{ borderRadius: 16, border: `1px solid ${color}33`, background: "#ffffff", padding: "16px 20px", textAlign: "center", boxShadow: "0 8px 24px rgba(15, 23, 42, 0.05)" }}>
             <p style={{ fontSize: 28, fontWeight: 800, color, margin: 0 }}>{value}</p>
             <p style={{ fontSize: 11, fontWeight: 700, color: `${color}aa`, letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 4 }}>{label}</p>
           </div>
@@ -354,13 +355,13 @@ function UnitsTab({ units, residents, wings }) {
       {/* Filters */}
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
         <FocusSelect style={selectStyle} value={filterWing} onChange={e => setFilterWing(e.target.value)}>
-          <option value="all" style={{ background: "#111008" }}>All Towers</option>
-          {wings.map(w => <option key={w._id} value={w._id} style={{ background: "#111008" }}>{w.name}</option>)}
+          <option value="all" style={{ background: "#ffffff" }}>All Towers</option>
+          {wings.map(w => <option key={w._id} value={w._id} style={{ background: "#ffffff" }}>{w.name}</option>)}
         </FocusSelect>
         <FocusSelect style={selectStyle} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-          <option value="all"      style={{ background: "#111008" }}>All Status</option>
-          <option value="occupied" style={{ background: "#111008" }}>Occupied</option>
-          <option value="vacant"   style={{ background: "#111008" }}>Vacant</option>
+          <option value="all"      style={{ background: "#ffffff" }}>All Status</option>
+          <option value="occupied" style={{ background: "#ffffff" }}>Occupied</option>
+          <option value="vacant"   style={{ background: "#ffffff" }}>Vacant</option>
         </FocusSelect>
         <p style={{ fontSize: 12, color: T.textMuted }}>{filtered.length} flats shown</p>
       </div>
@@ -376,7 +377,7 @@ function UnitsTab({ units, residents, wings }) {
             const borderCol = occupied ? T.green : T.border;
             return (
               <div key={unit._id}
-                style={{ borderRadius: 14, border: `1px solid ${borderCol}44`, background: occupied ? `${T.green}0d` : T.surface, padding: 16, transition: "border-color 0.2s" }}
+                style={{ borderRadius: 14, border: `1px solid ${borderCol}44`, background: occupied ? "#f0fdf4" : T.surface, padding: 16, transition: "border-color 0.2s" }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = occupied ? T.green : T.borderHov}
                 onMouseLeave={e => e.currentTarget.style.borderColor = `${borderCol}44`}>
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
@@ -392,7 +393,7 @@ function UnitsTab({ units, residents, wings }) {
                 {occupied && resident ? (
                   <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.green}33` }}>
                     <p style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{resident.userId?.fullName}</p>
-                    <span style={{ marginTop: 4, display: "inline-block", borderRadius: 100, background: `${T.blue}22`, padding: "2px 8px", fontSize: 10, fontWeight: 700, color: T.blue, textTransform: "capitalize" }}>
+                    <span style={{ marginTop: 4, display: "inline-block", borderRadius: 100, background: "#eff6ff", padding: "2px 8px", fontSize: 10, fontWeight: 700, color: T.blue, textTransform: "capitalize", border: "1px solid #bfdbfe" }}>
                       {resident.residentRole}
                     </span>
                   </div>
@@ -449,16 +450,16 @@ export function SocietySetupPage() {
   useEffect(() => { loadAll(); }, [societyId]);
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 16px 48px", fontFamily: "'DM Sans', sans-serif", display: "flex", flexDirection: "column", gap: 24 }}>
+    <div style={{ maxWidth: 980, margin: "0 auto", padding: "32px 16px 48px", fontFamily: "'DM Sans', sans-serif", display: "flex", flexDirection: "column", gap: 24, background: `radial-gradient(circle at 8% -10%, #fde68a66 0%, transparent 36%), ${T.page}`, borderRadius: 24 }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, borderRadius: 18, border: `1px solid ${T.border}`, background: T.surface, padding: "20px 24px", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, borderRadius: 18, border: `1px solid ${T.border}`, background: T.surface, padding: "20px 24px", flexWrap: "wrap", boxShadow: "0 16px 36px rgba(15, 23, 42, 0.08)" }}>
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 800, color: T.text, margin: 0 }}>Society Setup</h2>
           <p style={{ fontSize: 13, color: T.textMuted, marginTop: 4 }}>Manage towers, flats and residents</p>
         </div>
         <button onClick={loadAll} disabled={loading}
-          style={{ display: "flex", alignItems: "center", gap: 6, borderRadius: 12, border: `1px solid ${T.border}`, padding: "8px 16px", background: "transparent", cursor: loading ? "not-allowed" : "pointer", color: T.textSub, fontSize: 13, fontWeight: 600, opacity: loading ? 0.5 : 1, transition: "all 0.2s" }}
+          style={{ display: "flex", alignItems: "center", gap: 6, borderRadius: 12, border: `1px solid ${T.border}`, padding: "8px 16px", background: T.surfaceHi, cursor: loading ? "not-allowed" : "pointer", color: T.textSub, fontSize: 13, fontWeight: 600, opacity: loading ? 0.5 : 1, transition: "all 0.2s" }}
           onMouseEnter={e => { if (!loading) { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.color = T.gold; }}}
           onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSub; }}>
           <RefreshCw size={14} style={{ animation: loading ? "spin 1s linear infinite" : "none" }} /> Refresh
@@ -466,16 +467,16 @@ export function SocietySetupPage() {
       </div>
 
       {error && (
-        <div style={{ borderRadius: 12, background: `${T.red}18`, border: `1px solid ${T.red}44`, padding: "12px 16px", fontSize: 13, color: T.red, display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ borderRadius: 12, background: "#fff1f2", border: "1px solid #fecdd3", padding: "12px 16px", fontSize: 13, color: T.red, display: "flex", alignItems: "center", gap: 8 }}>
           <XCircle size={14} /> {error}
         </div>
       )}
 
       {/* Tab bar */}
-      <div style={{ display: "flex", gap: 4, borderRadius: 16, background: `${T.gold}10`, padding: 4, border: `1px solid ${T.border}` }}>
+      <div style={{ display: "flex", gap: 4, borderRadius: 16, background: "#fff7ed", padding: 4, border: `1px solid ${T.border}` }}>
         {TABS.map(({ key, label, icon: Icon }) => (
           <button key={key} onClick={() => setTab(key)}
-            style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 16px", fontSize: 13, fontWeight: 700, borderRadius: 12, border: "none", cursor: "pointer", transition: "all 0.2s", background: tab === key ? T.gold : "transparent", color: tab === key ? "#0a0907" : T.textMuted }}>
+            style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 16px", fontSize: 13, fontWeight: 700, borderRadius: 12, border: "none", cursor: "pointer", transition: "all 0.2s", background: tab === key ? T.gold : "transparent", color: tab === key ? "#ffffff" : T.textMuted }}>
             <Icon size={15} /> {label}
           </button>
         ))}

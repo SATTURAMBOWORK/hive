@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { MainLayout } from "./layout/MainLayout";
 import { AdminApprovalsPage } from "./pages/AdminApprovalsPage";
+import { MembersPage } from "./pages/MembersPage";
 import { AmenitiesPage } from "./pages/AmenitiesPage";
 import { AnnouncementsPage } from "./pages/AnnouncementsPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -94,6 +95,7 @@ export function App() {
         <Route path="/events" element={<ProtectedFeature><EventsPage /></ProtectedFeature>} />
         <Route path="/amenities" element={<ProtectedFeature><AmenitiesPage /></ProtectedFeature>} />
         <Route path="/admin/approvals" element={<ProtectedFeature><AdminApprovalsPage /></ProtectedFeature>} />
+        <Route path="/admin/members"   element={<ProtectedFeature><MembersPage /></ProtectedFeature>} />
         <Route path="/admin/society-setup" element={<ProtectedFeature><SocietySetupPage /></ProtectedFeature>} />
         <Route path="/profile" element={<ProtectedFeature><ProfilePage /></ProtectedFeature>} />
         <Route path="/visitors" element={<ProtectedFeature><VisitorLogPage /></ProtectedFeature>} />

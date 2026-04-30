@@ -18,7 +18,7 @@ export async function listResidents(req, res, next) {
       status: "approved"
     })
       .sort({ createdAt: -1 })
-      .populate("userId", "fullName email phone")
+      .populate("userId", "fullName email phone role")
       .populate("wingId", "name code")
       .populate("unitId", "unitNumber floor");
 
@@ -121,6 +121,125 @@ export async function approveResident(req, res, next) {
     });
 
     res.json({ item: populated });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function removeMember(req, res, next) {
+  try {
+    const membershipId = sanitizeText(req.params?.id);
+
+    if (!mongoose.Types.ObjectId.isValid(membershipId)) {
+      throw new AppError("Invalid membership id", StatusCodes.BAD_REQUEST);
+    }
+
+    const membership = await Membership.findOne({
+      _id: membershipId,
+      tenantId: req.tenantId,
+      status: "approved",
+    });
+
+    if (!membership) {
+      throw new AppError("Active membership not found", StatusCodes.NOT_FOUND);
+    }
+
+    const targetUserId = membership.userId.toString();
+
+    if (targetUserId === req.user.userId) {
+      throw new AppError("You cannot remove yourself", StatusCodes.FORBIDDEN);
+    }
+
+    await membership.deleteOne();
+
+    // Revoke access — isVerified gates all member-only features
+    await User.findByIdAndUpdate(targetUserId, { isVerified: false });
+
+    const io = req.app.get("io");
+
+    await emitRealtime(io, {
+      room: `user:${targetUserId}`,
+      event: SOCKET_EVENTS.MEMBERSHIP_REMOVED,
+      payload: { message: "Your membership has been removed by an administrator." },
+    });
+
+    await emitRealtime(io, {
+      room: `tenant:${req.tenantId}`,
+      event: SOCKET_EVENTS.MEMBERSHIP_REMOVED,
+      payload: { userId: targetUserId },
+    });
+
+    await createNotification(io, {
+      tenantId: req.tenantId,
+      userId: targetUserId,
+      type: "membership_removed",
+      title: "Membership Removed",
+      message: "Your membership has been removed by the society administrator.",
+      data: { membershipId },
+    });
+
+    res.json({ message: "Member removed successfully" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function changeMemberRole(req, res, next) {
+  try {
+    const membershipId = sanitizeText(req.params?.id);
+    const role = sanitizeText(req.body?.role);
+
+    if (!mongoose.Types.ObjectId.isValid(membershipId)) {
+      throw new AppError("Invalid membership id", StatusCodes.BAD_REQUEST);
+    }
+
+    if (!["resident", "committee"].includes(role)) {
+      throw new AppError("Role must be resident or committee", StatusCodes.BAD_REQUEST);
+    }
+
+    const membership = await Membership.findOne({
+      _id: membershipId,
+      tenantId: req.tenantId,
+      status: "approved",
+    });
+
+    if (!membership) {
+      throw new AppError("Active membership not found", StatusCodes.NOT_FOUND);
+    }
+
+    const targetUserId = membership.userId.toString();
+
+    if (targetUserId === req.user.userId) {
+      throw new AppError("You cannot change your own role", StatusCodes.FORBIDDEN);
+    }
+
+    const targetUser = await User.findById(targetUserId);
+    if (!targetUser) throw new AppError("User not found", StatusCodes.NOT_FOUND);
+
+    if (targetUser.role === role) {
+      throw new AppError(`User is already a ${role}`, StatusCodes.BAD_REQUEST);
+    }
+
+    await User.findByIdAndUpdate(targetUserId, { role });
+
+    const io = req.app.get("io");
+
+    await emitRealtime(io, {
+      room: `user:${targetUserId}`,
+      event: SOCKET_EVENTS.ROLE_CHANGED,
+      payload: { role },
+    });
+
+    await createNotification(io, {
+      tenantId: req.tenantId,
+      userId: targetUserId,
+      type: "role_changed",
+      title: "Role Updated",
+      message: `Your role has been changed to ${role}.`,
+      data: { role },
+    });
+
+    res.json({ message: "Role updated successfully", role });
   } catch (error) {
     next(error);
   }

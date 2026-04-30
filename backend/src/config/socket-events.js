@@ -29,4 +29,6 @@ export const SOCKET_EVENTS = {
   LOST_FOUND_CREATED:        "lost_found:created",
   LOST_FOUND_CLAIMED:        "lost_found:claimed",
   LOST_FOUND_RESOLVED:       "lost_found:resolved",
+  MEMBERSHIP_REMOVED:        "membership:removed",
+  ROLE_CHANGED:              "role:changed",
 };

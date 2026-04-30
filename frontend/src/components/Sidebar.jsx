@@ -2,7 +2,7 @@ import { NavLink, Link } from "react-router-dom";
 import {
   Building2, LayoutDashboard, Megaphone, Ticket, Calendar,
   BarChart2, Dumbbell, Users, PackageCheck,
-  UserCog, ClipboardCheck, Settings, LogOut, Package, PackageSearch,
+  UserCog, ClipboardCheck, Settings, LogOut, Package, PackageSearch, UsersRound,
 } from "lucide-react";
 import { useAuth } from "./AuthContext";
 
@@ -296,6 +296,7 @@ const NAV_GROUPS = [
     label: "COMMITTEE",
     items: [
       { to: "/admin/approvals",     label: "Approvals",    Icon: ClipboardCheck, roles: ["committee","super_admin"] },
+      { to: "/admin/members",       label: "Members",      Icon: UsersRound,     roles: ["committee","super_admin"] },
       { to: "/admin/society-setup", label: "Society Setup", Icon: Settings,      roles: ["committee","super_admin"] },
     ],
   },
