@@ -22,7 +22,12 @@ export function createRedisRateLimiter(options) {
   return async function redisRateLimiter(req, _res, next) {
     try {
       const ip = resolveClientIp(req);
-      const key = `${keyPrefix}:${ip}`;
+      const userId = req.user?.userId;
+      // Authenticated routes: each user gets their own counter regardless of IP.
+      // Unauthenticated routes (e.g. /auth/login): fall back to IP.
+      const key = userId
+        ? `${keyPrefix}:${userId}:${ip}`
+        : `${keyPrefix}:${ip}`;
       const count = await incrementCounter(key, { ttlSeconds: windowSeconds });
 
       if (typeof count === "number" && count > maxRequests) {

@@ -11,8 +11,17 @@ import {
 import { requireAuth, requireRoles } from "../middlewares/auth.middleware.js";
 import { requireTenantScope } from "../middlewares/tenant.middleware.js";
 import { requireApprovedMembership } from "../middlewares/membership.middleware.js";
+import { createRedisRateLimiter } from "../middlewares/redis-rate-limit.middleware.js";
 
 const sosRouter = Router();
+
+// 5 SOS alerts per IP per 15 min — blocks spam while allowing genuine emergencies
+const sosLimiter = createRedisRateLimiter({
+  keyPrefix: "sos:send",
+  windowSeconds: 15 * 60,
+  maxRequests: 5,
+  message: "Too many SOS requests. Please try again shortly.",
+});
 
 // All SOS routes require a valid JWT and tenant scope
 sosRouter.use(requireAuth, requireTenantScope);
@@ -22,6 +31,7 @@ sosRouter.post(
   "/",
   requireRoles("resident", "committee"),
   requireApprovedMembership,
+  sosLimiter,
   sendSos
 );
 

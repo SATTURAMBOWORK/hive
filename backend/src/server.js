@@ -18,10 +18,11 @@ async function bootstrap() {
     env.clientOrigin,
     "http://localhost:5175",
   ].filter(Boolean);
+  const socketCorsOrigin = env.nodeEnv === "development" ? true : allowedOrigins;
 
   const io = new Server(server, {
     cors: {
-      origin: allowedOrigins,
+      origin: socketCorsOrigin,
       credentials: true,
     },
   });

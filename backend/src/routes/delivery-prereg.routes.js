@@ -7,8 +7,17 @@ import {
 } from "../controllers/delivery-prereg.controller.js";
 import { requireAuth, requireRoles } from "../middlewares/auth.middleware.js";
 import { requireTenantScope } from "../middlewares/tenant.middleware.js";
+import { createRedisRateLimiter } from "../middlewares/redis-rate-limit.middleware.js";
 
 const deliveryPreRegRouter = Router();
+
+// 20 delivery pre-registrations per IP per hour
+const createPreRegLimiter = createRedisRateLimiter({
+  keyPrefix: "delivery-prereg:create",
+  windowSeconds: 60 * 60,
+  maxRequests: 20,
+  message: "Too many delivery pre-registration requests. Please wait an hour and try again.",
+});
 
 // Every route needs a valid JWT + a tenant context
 deliveryPreRegRouter.use(requireAuth, requireTenantScope);
@@ -19,6 +28,7 @@ deliveryPreRegRouter.use(requireAuth, requireTenantScope);
 deliveryPreRegRouter.post(
   "/",
   requireRoles("resident", "committee", "super_admin"),
+  createPreRegLimiter,
   createPreReg
 );
 

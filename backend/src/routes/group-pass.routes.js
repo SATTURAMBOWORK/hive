@@ -8,8 +8,17 @@ import {
 } from "../controllers/group-pass.controller.js";
 import { requireAuth, requireRoles } from "../middlewares/auth.middleware.js";
 import { requireTenantScope } from "../middlewares/tenant.middleware.js";
+import { createRedisRateLimiter } from "../middlewares/redis-rate-limit.middleware.js";
 
 const groupPassRouter = Router();
+
+// 10 group passes per IP per hour — prevents OTP spam
+const createPassLimiter = createRedisRateLimiter({
+  keyPrefix: "group-pass:create",
+  windowSeconds: 60 * 60,
+  maxRequests: 10,
+  message: "Too many group pass requests. Please wait an hour and try again.",
+});
 
 groupPassRouter.use(requireAuth, requireTenantScope);
 
@@ -27,6 +36,7 @@ groupPassRouter.get(
 groupPassRouter.post(
   "/",
   requireRoles("resident", "committee", "super_admin"),
+  createPassLimiter,
   createGroupPass
 );
 

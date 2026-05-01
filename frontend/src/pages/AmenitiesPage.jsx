@@ -300,7 +300,7 @@ const CSS = `
   /* Passes grid */
   .amn-passes-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 16px;
     align-items: start;
   }
@@ -314,6 +314,7 @@ const CSS = `
     .amn-root { padding: 16px 14px 64px; }
     .amn-form-grid { grid-template-columns: 1fr; }
     .amn-header { align-items: flex-start; }
+    .amn-passes-grid { grid-template-columns: 1fr; }
   }
 `;
 

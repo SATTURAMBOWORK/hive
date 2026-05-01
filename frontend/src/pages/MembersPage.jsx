@@ -85,7 +85,8 @@ const CSS = `
     gap: 8px;
     flex-wrap: wrap;
     justify-content: flex-end;
-    min-width: 200px;
+    min-width: 180px;
+    flex-shrink: 0;
   }
 
   .mem-role-select {
@@ -130,6 +131,29 @@ const CSS = `
 
   .mem-confirm-box {
     animation: slide-down 0.18s ease;
+  }
+
+  @media (max-width: 600px) {
+    .mem-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 14px 8px;
+    }
+    .mem-row-right {
+      min-width: 0;
+      width: 100%;
+      justify-content: flex-start;
+    }
+    .mem-btn {
+      padding: 8px 14px;
+      min-height: 36px;
+    }
+    .mem-role-select {
+      padding: 8px 10px;
+      min-height: 36px;
+      flex: 1;
+    }
   }
 `;
 
@@ -259,7 +283,7 @@ function MemberRow({ item, wings, units, onRemoved, onRoleChanged }) {
           padding: "12px 8px",
           background: T.blueL,
           borderBottom: `1px solid ${T.blueBr}`,
-          display: "flex", gap: 8, alignItems: "center",
+          display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap",
         }}>
           <select
             value={selWingId}

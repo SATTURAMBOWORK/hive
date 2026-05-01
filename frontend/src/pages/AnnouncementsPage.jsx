@@ -239,7 +239,13 @@ const CSS = `
     /* default align-items: stretch — all cards in a row match the tallest */
   }
   @media (max-width: 900px) { .ann-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 580px) { .ann-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 580px) {
+    .ann-grid { grid-template-columns: 1fr; }
+    .ann-root { padding: 20px 14px 64px; }
+    .ann-search-wrap { width: 100%; }
+    .ann-search { min-width: 0; width: 100%; }
+    .ann-controls { gap: 6px; }
+  }
 
   /* ── Card ─────────────────────────────────── */
   .ann-card {

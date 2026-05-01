@@ -309,7 +309,7 @@ export function SecurityDashboard() {
   );
 
   return (
-    <div style={{
+    <div className="sd-root" style={{
       fontFamily: "'DM Sans', sans-serif",
       background: tok.cream,
       minHeight: "calc(100vh - 90px)",
@@ -331,10 +331,11 @@ export function SecurityDashboard() {
         )}
 
         {/* ── HERO ──────────────────────────────────── */}
-        <div style={{
+        <div className="sd-hero" style={{
           background: "#fff", border: `1px solid ${tok.stone100}`,
           borderRadius: 32, padding: "36px 40px",
           display: "flex", alignItems: "flex-end", justifyContent: "space-between",
+          flexWrap: "wrap",
           gap: 24, position: "relative", overflow: "hidden", marginBottom: 20,
         }}>
           {/* Decorative blob — orange tint for security */}
@@ -350,7 +351,7 @@ export function SecurityDashboard() {
             <div style={{ fontSize: 13, fontWeight: 500, color: tok.stone400, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>
               Good {word} · {today}
             </div>
-            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 48, lineHeight: 1, color: tok.stone800, marginBottom: 18 }}>
+            <div className="sd-greeting" style={{ fontFamily: "'DM Serif Display', serif", fontSize: 48, lineHeight: 1, color: tok.stone800, marginBottom: 18 }}>
               Welcome back,{" "}
               <em style={{ fontStyle: "italic", color: tok.orange }}>{first}.</em>
             </div>
@@ -401,7 +402,7 @@ export function SecurityDashboard() {
         </div>
 
         {/* ── BENTO GRID ─────────────────────────────── */}
-        <div style={{
+        <div className="sd-bento" style={{
           display: "grid",
           gridTemplateColumns: "1fr 360px",
           gap: 20,
@@ -552,6 +553,15 @@ export function SecurityDashboard() {
       <style>{`
         @keyframes spin  { to { transform: rotate(360deg); } }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+        @media (max-width: 860px) {
+          .sd-bento { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 640px) {
+          .sd-root { padding: 16px 14px 64px !important; margin: -16px -14px !important; }
+          .sd-hero { padding: 24px 20px !important; border-radius: 20px !important; }
+          .sd-greeting { font-size: 32px !important; }
+        }
       `}</style>
     </div>
   );

@@ -3,6 +3,7 @@ import cors from "cors";
 import morgan from "morgan";
 import helmet from "helmet";
 import compression from "compression";
+import rateLimit from "express-rate-limit";
 
 import { env } from "./config/env.js";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
@@ -38,17 +39,33 @@ app.use(helmet());
 app.use(compression());
 
 // ── CORS ───────────────────────────────────────────────────────
+// In development, allow any origin so local devices (phones, tablets)
+// on the same network can reach the API without adding each IP manually.
 const allowedOrigins = [
 	env.clientOrigin,
 	"http://localhost:5175",
 ].filter(Boolean);
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+const corsOrigin = env.nodeEnv === "development"
+  ? true
+  : allowedOrigins;
+app.use(cors({ origin: corsOrigin, credentials: true }));
 
 // ── Body parser — cap at 50kb to prevent large payload attacks ─
 app.use(express.json({ limit: "50kb" }));
 
 // ── HTTP request logging ───────────────────────────────────────
 app.use(morgan("dev"));
+
+// ── Global rate limit ─────────────────────────────────────────
+// Safety net: 200 requests per 15 minutes per IP across all API routes.
+// Tighter per-route limits are applied on sensitive endpoints (auth, OTP, SOS).
+app.use("/api", rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 300,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { message: "Too many requests, please try again later." },
+}));
 
 // ── Routes ─────────────────────────────────────────────────────
 app.use("/api/health",        healthRouter);
