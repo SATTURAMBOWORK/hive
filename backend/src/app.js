@@ -6,6 +6,7 @@ import compression from "compression";
 import rateLimit from "express-rate-limit";
 
 import { env } from "./config/env.js";
+import { responseTimeMiddleware } from "./middlewares/response-time.middleware.js";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
 import { healthRouter } from "./routes/health.routes.js";
 import { authRouter } from "./routes/auth.routes.js";
@@ -31,6 +32,12 @@ import { sosRouter } from "./routes/sos.routes.js";
 
 const app = express();
 
+// ── Trust reverse proxy ────────────────────────────────────────
+// Required in production so req.ip returns the real client IP
+// instead of the load balancer's IP. Without this, all users
+// share one rate-limit bucket (the proxy's IP).
+app.set("trust proxy", 1);
+
 // ── Security headers (XSS protection, clickjacking, etc.) ──────
 app.use(helmet());
 
@@ -53,8 +60,15 @@ app.use(cors({ origin: corsOrigin, credentials: true }));
 // ── Body parser — cap at 50kb to prevent large payload attacks ─
 app.use(express.json({ limit: "50kb" }));
 
+// ── Request timing headers for latency checks ─────────────────
+app.use(responseTimeMiddleware);
+
 // ── HTTP request logging ───────────────────────────────────────
-app.use(morgan("dev"));
+// "dev" format is noisy — only use it in development.
+// In production, logs are handled by PM2 / the hosting platform.
+if (env.nodeEnv !== "production") {
+  app.use(morgan("dev"));
+}
 
 // ── Global rate limit ─────────────────────────────────────────
 // Safety net: 200 requests per 15 minutes per IP across all API routes.

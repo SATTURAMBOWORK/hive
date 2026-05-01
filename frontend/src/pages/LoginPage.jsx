@@ -168,8 +168,9 @@ export function LoginPage() {
 
           <div className="lgi-right-visual" style={{ position:"relative", minHeight:680, background:"#0F172A" }}>
             <img
-              src="/apartment.png"
+              src="/apartment1.jpg"
               alt="Residential apartment building"
+              loading="lazy"
               style={{
                 width:"100%",
                 height:"100%",

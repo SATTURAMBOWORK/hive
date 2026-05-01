@@ -92,8 +92,7 @@ export function VisitorRequestPopup() {
         setResponding(false);
         setQueue(prev => prev.slice(1)); // remove the responded item
       }, 2500);
-    } catch (err) {
-      console.error("Failed to respond to visitor request:", err.message);
+    } catch (_err) {
       setResponding(false);
     }
   }

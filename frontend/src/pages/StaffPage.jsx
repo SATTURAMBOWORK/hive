@@ -781,8 +781,7 @@ export function StaffPage() {
     try {
       const data = await apiRequest("/staff/society", { token });
       setAllStaff(data.items || []);
-    } catch (err) {
-      console.error(err);
+    } catch (_err) {
     } finally {
       setAllLoading(false);
     }

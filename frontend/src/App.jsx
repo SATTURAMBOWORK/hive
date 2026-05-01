@@ -107,6 +107,7 @@ export function App() {
         <Route path="/polls" element={<ProtectedFeature><PollsPage /></ProtectedFeature>} />
         <Route path="/lost-found" element={<ProtectedFeature><LostFoundPage /></ProtectedFeature>} />
       </Route>
+      <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
   );
 }

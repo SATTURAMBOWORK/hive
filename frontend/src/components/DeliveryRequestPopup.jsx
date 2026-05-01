@@ -90,8 +90,7 @@ export function DeliveryRequestPopup() {
         setResponding(false);
         setQueue(prev => prev.slice(1));
       }, 2500);
-    } catch (err) {
-      console.error("Failed to respond to delivery request:", err.message);
+    } catch (_err) {
       setResponding(false);
     }
   }

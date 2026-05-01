@@ -1170,8 +1170,7 @@ export function PollsPage() {
     try {
       const data = await apiRequest("/polls", { token });
       setPolls(data.items || []);
-    } catch (error) {
-      console.error(error);
+    } catch (_error) {
     } finally {
       setLoading(false);
     }

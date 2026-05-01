@@ -358,8 +358,7 @@ export function StaffGatePage() {
     try {
       const data = await apiRequest("/staff/expected-today", { token });
       setExpected(data.items || []);
-    } catch (err) {
-      console.error(err);
+    } catch (_err) {
     } finally {
       setExpectedLoading(false);
     }
@@ -370,8 +369,7 @@ export function StaffGatePage() {
     try {
       const data = await apiRequest("/staff/entries/pending-exits", { token });
       setPending(data.items || []);
-    } catch (err) {
-      console.error(err);
+    } catch (_err) {
     } finally {
       setPendingLoading(false);
     }
@@ -391,8 +389,7 @@ export function StaffGatePage() {
     try {
       const data = await apiRequest(`/staff/search?q=${encodeURIComponent(searchQuery.trim())}`, { token });
       setSearchResult(data.items || []);
-    } catch (err) {
-      console.error(err);
+    } catch (_err) {
     } finally {
       setSearching(false);
     }

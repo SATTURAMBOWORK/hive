@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DOMPurify from "dompurify";
 import { Bell, CalendarDays, Megaphone, Plus, RefreshCw, Search, Trash2, Users, Wallet, X } from "lucide-react";
 import ReactQuill from "react-quill";
@@ -641,13 +641,14 @@ function CategoryPill({ category }) {
    Uses layoutId on container, title, preview-wrapper, and footer
    so Framer Motion can morph them into the modal.
 ───────────────────────────────────────────────────────────── */
-function AnnCard({ item, unread, onOpen, index }) {
+const AnnCard = forwardRef(function AnnCard({ item, unread, onOpen, index }, ref) {
   const cat   = catOf(item);
   const c     = CATS[cat] || CATS.General;
   const plain = useMemo(() => htmlToPlain(item.body || ""), [item.body]);
 
   return (
     <motion.article
+      ref={ref}
       layoutId={`ann-card-${item._id}`}
       className={`ann-card${unread ? " unread" : ""}`}
       onClick={() => onOpen(item)}
@@ -693,7 +694,7 @@ function AnnCard({ item, unread, onOpen, index }) {
       </motion.div>
     </motion.article>
   );
-}
+});
 
 /* ─────────────────────────────────────────────────────────────
    SMART MODAL
