@@ -99,18 +99,33 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    joinUserRoom(auth.user.id || auth.user._id);
-    joinTenantRoom(auth.user.tenantId);
+    const userId   = auth.user.id || auth.user._id;
+    const tenantId = auth.user.tenantId;
 
+    // Initialize socket immediately and join rooms
     const socket = getSocket();
+
+    function doJoin() {
+      joinUserRoom(userId);
+      joinTenantRoom(tenantId);
+    }
+
+    // Join now if already connected, otherwise wait for connect event
+    if (socket.connected) {
+      doJoin();
+    } else {
+      socket.once("connect", doJoin);
+    }
+
     function onForceLogout() {
       clearAuth();
     }
     socket.on("force:logout", onForceLogout);
 
     return () => {
-      leaveUserRoom(auth.user.id || auth.user._id);
-      leaveTenantRoom(auth.user.tenantId);
+      socket.off("connect", doJoin);
+      leaveUserRoom(userId);
+      leaveTenantRoom(tenantId);
       socket.off("force:logout", onForceLogout);
     };
   }, [auth.token, auth.user]);
