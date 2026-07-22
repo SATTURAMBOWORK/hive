@@ -51,19 +51,15 @@ export function LoginPage() {
   }
 
   async function handleSubmit(e) {
-    e.preventDefault();
-    if (emailError) return;
-    setError("");
-    setLoading(true);
-    try {
-      await login(form);
-      navigate("/");
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+  e.preventDefault();   // stops browser from refreshing the page
+  setLoading(true);     // shows the spinner
+  try {
+    await login(form);  // calls AuthContext's login()
+    navigate("/");      // after success → go to dashboard
+  } catch (err) {
+    setError(err.message); // shows red error box
   }
+}
 
   const spinner = (
     <span style={{ width:14, height:14, border:"2px solid rgba(255,255,255,.4)", borderTopColor:"#fff", borderRadius:"50%", animation:"lgi-spin .7s linear infinite", display:"inline-block" }}/>

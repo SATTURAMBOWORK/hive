@@ -94,41 +94,20 @@ export function AuthProvider({ children }) {
     clearAuth();
   }
 
-  useEffect(() => {
-    if (!auth.token || !auth.user) {
-      return;
-    }
+ useEffect(() => {
+  if (!auth.token || !auth.user) return;
 
-    const userId   = auth.user.id || auth.user._id;
-    const tenantId = auth.user.tenantId;
+  const socket = getSocket();  // opens socket.io connection
 
-    // Initialize socket immediately and join rooms
-    const socket = getSocket();
+  function doJoin() {
+    joinUserRoom(userId);     // emits "user:join" to backend
+    joinTenantRoom(tenantId); // emits "tenant:join" to backend
+  }
 
-    function doJoin() {
-      joinUserRoom(userId);
-      joinTenantRoom(tenantId);
-    }
+  if (socket.connected) { doJoin(); }
+  else { socket.once("connect", doJoin); }
 
-    // Join now if already connected, otherwise wait for connect event
-    if (socket.connected) {
-      doJoin();
-    } else {
-      socket.once("connect", doJoin);
-    }
-
-    function onForceLogout() {
-      clearAuth();
-    }
-    socket.on("force:logout", onForceLogout);
-
-    return () => {
-      socket.off("connect", doJoin);
-      leaveUserRoom(userId);
-      leaveTenantRoom(tenantId);
-      socket.off("force:logout", onForceLogout);
-    };
-  }, [auth.token, auth.user]);
+}, [auth.token, auth.user]);
 
   useEffect(() => {
     if (auth.token) {
