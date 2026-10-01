@@ -15,6 +15,8 @@ import { emitRealtime } from "../services/realtime-bus.service.js";
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const ALLOWED_STATUS_UPDATES = ["approved", "rejected", "cancelled"];
+const BOOKING_LOCK_ATTEMPTS = 3;
+const BOOKING_LOCK_RETRY_MS = 150;
 const DAY_KEYS = [
   "sunday",
   "monday",
@@ -253,11 +255,20 @@ export async function createAmenityBooking(req, res, next) {
 
     ensureWithinOperatingHours(amenity, date, startTime, endTime);
 
-    const lockKey = `amenity-booking:${req.tenantId}:${amenityId}:${date}:${startTime}:${endTime}`;
-    const lockHandle = await acquireLock(lockKey, { ttlMs: 12_000 });
+    // Lock per amenity + date, not per exact slot. Overlapping slots
+    // (5:00–6:00 and 5:30–6:30) must share one lock, otherwise both pass
+    // the conflict check below before either booking is saved.
+    const lockKey = `amenity-booking:${req.tenantId}:${amenityId}:${date}`;
+    let lockHandle = await acquireLock(lockKey, { ttlMs: 12_000 });
+
+    // The lock is now shared by the whole day, so wait briefly before giving up.
+    for (let attempt = 1; isRedisEnabled() && !lockHandle && attempt < BOOKING_LOCK_ATTEMPTS; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, BOOKING_LOCK_RETRY_MS));
+      lockHandle = await acquireLock(lockKey, { ttlMs: 12_000 });
+    }
 
     if (isRedisEnabled() && !lockHandle) {
-      throw new AppError("Another booking request for this slot is already in progress", StatusCodes.CONFLICT);
+      throw new AppError("Another booking for this amenity is in progress. Please try again.", StatusCodes.CONFLICT);
     }
 
     try {

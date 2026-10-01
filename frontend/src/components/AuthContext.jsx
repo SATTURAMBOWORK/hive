@@ -1,5 +1,8 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiRequest } from "./api";
+import { subscribeToAuthExpired } from "./auth-bus";
+import { emitToast } from "./toast-bus";
 import {
   joinTenantRoom,
   joinUserRoom,
@@ -114,6 +117,22 @@ export function AuthProvider({ children }) {
       refreshMembership(auth.token);
     }
   }, [auth.token, refreshMembership]);
+
+  // Session expired: api.js saw a 401 on an authenticated request.
+  // tokenRef guards against several parallel 401s each firing a logout + toast.
+  const navigate = useNavigate();
+  const tokenRef = useRef(auth.token);
+  tokenRef.current = auth.token;
+
+  useEffect(() => {
+    return subscribeToAuthExpired(() => {
+      if (!tokenRef.current) return;
+      tokenRef.current = "";
+      clearAuth();
+      emitToast("error", "Session expired. Please log in again.");
+      navigate("/login", { replace: true });
+    });
+  }, [clearAuth, navigate]);
 
   const membershipStatus = membership?.status || null;
   const isMembershipApproved = membershipStatus === "approved";
